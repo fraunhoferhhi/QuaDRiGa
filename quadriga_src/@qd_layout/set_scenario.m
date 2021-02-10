@@ -200,7 +200,7 @@ else
         if h_layout.simpar.show_progress_bars && SC_lambda_tx > 0
             disp(['Setting TX LOS state correlation distance to ',num2str(SC_lambda_tx),' m'])
         end
-    else
+    elseif isempty( SC_lambda_tx )
         SC_lambda_tx = 0;   % Disable
     end
     
@@ -258,7 +258,7 @@ else
         
     elseif SC_lambda_tx == 0                        % LOS state does not depend on TX position
         randC = qd_sos.rand( SC_lambda_rx(1,ones(1,no_tx)), rx_pos_3d(:,:,1) );
-        randC = reshape( randC, no_rx_pos, no_tx ).';
+        randC = reshape( randC', no_rx_pos, no_tx ).';
         
     elseif SC_lambda_rx == 0                        % LOS state does not depend on RX position  
         randC = zeros( no_tx,no_rx_pos );
@@ -268,13 +268,13 @@ else
         
     elseif SC_lambda_rx == SC_lambda_tx             % TX and RX decorrelation distance are identical
         randC = qd_sos.rand( SC_lambda_rx, reshape(rx_pos_3d,3,[]), reshape(tx_pos_3d,3,[]) );
-        randC = reshape( randC, no_rx_pos, no_tx ).';
+        randC = reshape( randC', no_rx_pos, no_tx ).';
         
     else                                            % TX and RX decorrelation distances are different
         h_sos = qd_sos( 'Comb300', 'Uniform', SC_lambda_rx );
         h_sos.dist_decorr(1,2) = SC_lambda_tx;
         randC = h_sos.val( reshape(rx_pos_3d,3,[]),reshape(tx_pos_3d,3,[]) );
-        randC = reshape( randC, no_rx_pos, no_tx ).';
+        randC = reshape( randC', no_rx_pos, no_tx ).';
     end
     
     % Spatial COnsistency might change the distribution. We fix this here.
