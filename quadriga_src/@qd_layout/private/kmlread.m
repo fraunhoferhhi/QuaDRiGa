@@ -95,40 +95,6 @@ while iExtendedData                                         % Read contents
     
     % Read key
     p1 = regexp(l,'<Data name="','once');                   % Check for next data field
-    while isempty( p1 )                                     % If there is none ...
-        l = fgets(file);                                    % Read new line from file
-        p1 = regexp(l,'<Data name="','once');               % Check for next data field
-    end
-    p2 = regexp(l,'">','once');                             % Check for closing tag
-    ExtendedData_name = l( p1+12:p2-1 );                    % Store extended data name
-    l = l( p2+2:end );                                      % Shorten line string
-        
-    % Read value
-    ExtendedData_value = '';                                % Empty string
-    p1 = regexp( l,'<value>', 'once');                      % Check for value field
-    while isempty( p1 )                                     % If there is none ...
-        l = fgets(file);                                    % Read new line from file
-        p1 = regexp( l,'<value>', 'once');                  % Check for value field
-    end
-    doRead = true;
-    while doRead
-        p2 = regexp( l,'</value>', 'once');               	% Check for closing value field
-        if isempty( p2 )
-            ExtendedData_value = [ ExtendedData_value, l(p1+7:end) ];
-            l = fgets(file);                              	% Read new line from file
-            p1 = -6;                                        % Adjust p1 so that the next iteration starts at 1
-        else
-            ExtendedData_value = [ ExtendedData_value, l(p1+7:p2-1)]; 
-            l = l( p2+8:end );
-            doRead = false;
-        end
-    end
-
-    % Add data to struct
-    ExtendedData.( ExtendedData_name ) = ExtendedData_value;
-    
-    % Check if there are more keys
-    p1 = regexp(l,'<Data name="','once');                   % Check for next data field
     while iExtendedData && isempty( p1 )
         p2 = regexp(l,'</ExtendedData>','once');            % Check for end of <ExtendedData>
         if isempty( p2 )
@@ -139,8 +105,37 @@ while iExtendedData                                         % Read contents
             iExtendedData = false;
         end
     end
+    if iExtendedData
+        p2 = regexp(l,'">','once');                        	% Check for closing tag
+        ExtendedData_name = l( p1+12:p2-1 );               	% Store extended data name
+        l = l( p2+2:end );                                	% Shorten line string
+        
+        % Read value
+        ExtendedData_value = '';                           	% Empty string
+        p1 = regexp( l,'<value>', 'once');                	% Check for value field
+        while isempty( p1 )                                 % If there is none ...
+            l = fgets(file);                                % Read new line from file
+            p1 = regexp( l,'<value>', 'once');              % Check for value field
+        end
+        doRead = true;
+        while doRead
+            p2 = regexp( l,'</value>', 'once');             % Check for closing value field
+            if isempty( p2 )
+                ExtendedData_value = [ ExtendedData_value, l(p1+7:end) ];
+                l = fgets(file);                            % Read new line from file
+                p1 = -6;                                    % Adjust p1 so that the next iteration starts at 1
+            else
+                ExtendedData_value = [ ExtendedData_value, l(p1+7:p2-1)];
+                l = l( p2+8:end );
+                doRead = false;
+            end
+        end
+        
+        % Add data to struct
+        ExtendedData.( ExtendedData_name ) = ExtendedData_value;
+    end
 end
-    
+
 end
 
 
@@ -169,6 +164,16 @@ while iDescription
         else
             Description_value = regexp( l(p1+1:p2-1) ,'[A-Za-z0-9_\-:,. ]+','match');
         end
+        
+        % Remove spaces at the beginning of the values
+        ind_space = 0;
+        while Description_value{1}(ind_space+1) == ' '
+            ind_space = ind_space + 1;
+        end
+        if ind_space
+            Description_value{1} = Description_value{1}(ind_space+1:end);
+        end
+        
         try
             Description.( Description_name{1} ) = Description_value{1};   % Save to output variable
         end

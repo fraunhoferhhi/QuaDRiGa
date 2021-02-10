@@ -103,8 +103,15 @@ elseif all( size( txpos ) ~= [3,nP] )
     error('QuaDRiGa:qd_builder:get_sf_profile','Tx-position is ambiguous.');
 end
 
-% Calculate the KF and the SF from the SOS generators
-[ ~, kf, sf ] = generate_lsf( txpos, [x;y;z], h_builder.lsp_vals,...
-    h_builder.lsp_xcorr, h_builder.sos );
+if isempty( h_builder.sos )
+    % We don't have a SOS generator for the LSPs. We want to enforce the values from the builder.
+    error('QuaDRiGa:qd_builder:get_sf_profile','No qd_sos object found.');  
+else
+    % Calculate the KF and the SF from the SOS generators
+    [ ~, kf, sf ] = generate_lsf( txpos, [x;y;z], h_builder.lsp_vals,...
+        h_builder.lsp_xcorr, h_builder.sos, [], [], h_builder.dual_mobility );
+end
+
+
 
 end

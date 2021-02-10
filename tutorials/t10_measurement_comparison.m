@@ -69,7 +69,7 @@ l.tx_array.rotate_pattern(-90,'z');                     % point southwards
 l.rx_array = qd_arrayant('lhcp-rhcp-dipole');           % Rx-Antenna
 l.rx_array.rotate_pattern(-90,'y');                     % point skywards
 
-set(0,'DefaultFigurePaperSize',[14.5 7.3])              % Adjust paper size for plot
+set(0,'DefaultFigurePaperSize',[14.5 7.7])              % Adjust paper size for plot
 l.visualize;                                            % Plot the layout
 view(-33, 45);                                          % 3D view
 
@@ -97,7 +97,7 @@ h =  cn.fr( 20e6,256 );                                 % Freq.-domain channel
 pdp = squeeze(sum(sum( abs(ifft(h,[],3)).^2 , 1),2));
 pdp = 10*log10(pdp.');
 
-set(0,'DefaultFigurePaperSize',[14.5 4.5])              % Change paper Size
+set(0,'DefaultFigurePaperSize',[14.5 4.7])              % Change paper Size
 figure('Position',[ 100 , 100 , 760 , 400]);            % New figure
 imagesc(pdp(end:-1:1,1:192));
 

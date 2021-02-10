@@ -282,14 +282,14 @@ if isfield( par , 'model' )
         case 'dual_slope'
             
             % Set defaults
-            if ~isfield( par,'A1' );    par.A2 = par.A;         end;
-            if ~isfield( par,'A2' );    par.A2 = par.A1;        end;
-            if ~isfield( par,'C' );     par.C = 0;              end;
-            if ~isfield( par,'D' );     par.D = 0;              end;
-            if ~isfield( par,'hE' );    par.hE = 0;             end;
+            if ~isfield( par,'A1' );    par.A2 = par.A;         end
+            if ~isfield( par,'A2' );    par.A2 = par.A1;        end
+            if ~isfield( par,'C' );     par.C = 0;              end
+            if ~isfield( par,'D' );     par.D = 0;              end
+            if ~isfield( par,'hE' );    par.hE = 0;             end
             
             hBS = txpos(3,:);           % BS height
-            hBS(hBS < par.hE) = 1.1*par.hE;
+            hBS(hBS < 1.1*par.hE) = 1.1*par.hE;
             hBS(hBS < 0.1) = 0.1;
             
             hMS = rxpos(3,:);           % MS height
@@ -315,15 +315,15 @@ if isfield( par , 'model' )
         case 'tripple_slope'
             
             % Set defaults
-            if ~isfield( par,'A1' );    par.A2 = par.A;         end;
-            if ~isfield( par,'A2' );    par.A2 = par.A1;        end;
-            if ~isfield( par,'A3' );    par.A2 = par.A2;        end;
-            if ~isfield( par,'C' );     par.C = 0;              end;
-            if ~isfield( par,'D' );     par.D = 0;              end;
-            if ~isfield( par,'D1' );    par.D1 = par.D;         end;
-            if ~isfield( par,'D2' );    par.D2 = par.D1;        end;
-            if ~isfield( par,'hE1' );   par.hE1 = 0;            end;
-            if ~isfield( par,'hE2' );   par.hE2 = 0;            end;
+            if ~isfield( par,'A1' );    par.A2 = par.A;         end
+            if ~isfield( par,'A2' );    par.A2 = par.A1;        end
+            if ~isfield( par,'A3' );    par.A2 = par.A2;        end
+            if ~isfield( par,'C' );     par.C = 0;              end
+            if ~isfield( par,'D' );     par.D = 0;              end
+            if ~isfield( par,'D1' );    par.D1 = par.D;         end
+            if ~isfield( par,'D2' );    par.D2 = par.D1;        end
+            if ~isfield( par,'hE1' );   par.hE1 = 0;            end
+            if ~isfield( par,'hE2' );   par.hE2 = 0;            end
             
             hE = max(par.hE1,par.hE2);
             
@@ -392,18 +392,18 @@ if isfield( par , 'model' )
             %		 + G1 * log10^2( G2 * hUT )
             
             % Set defaults
-            if ~isfield( par,'Cn' );    par.Cn = 0;             end;
-            if ~isfield( par,'Dn' );    par.Dn = 0;             end;
-            if ~isfield( par,'D1n' );   par.D1n = 0;            end;
-            if ~isfield( par,'D2n' );   par.D2n = 0;            end;
-            if ~isfield( par,'D3n' );   par.D3n = 0;            end;
-            if ~isfield( par,'En' );    par.En = 0;             end;
-            if ~isfield( par,'E1n' );   par.E1n = 0;            end;
-            if ~isfield( par,'E2n' );   par.E2n = 0;            end;
-            if ~isfield( par,'E3n' );   par.E3n = 0;            end;
-            if ~isfield( par,'Fn' );    par.Fn = 0;             end;
-            if ~isfield( par,'G1n' );   par.G1n = 0;            end;
-            if ~isfield( par,'G2n' );   par.G2n = 1;            end;
+            if ~isfield( par,'Cn' );    par.Cn = 0;             end
+            if ~isfield( par,'Dn' );    par.Dn = 0;             end
+            if ~isfield( par,'D1n' );   par.D1n = 0;            end
+            if ~isfield( par,'D2n' );   par.D2n = 0;            end
+            if ~isfield( par,'D3n' );   par.D3n = 0;            end
+            if ~isfield( par,'En' );    par.En = 0;             end
+            if ~isfield( par,'E1n' );   par.E1n = 0;            end
+            if ~isfield( par,'E2n' );   par.E2n = 0;            end
+            if ~isfield( par,'E3n' );   par.E3n = 0;            end
+            if ~isfield( par,'Fn' );    par.Fn = 0;             end
+            if ~isfield( par,'G1n' );   par.G1n = 0;            end
+            if ~isfield( par,'G2n' );   par.G2n = 1;            end
             
             % Get values from dual-slope LOS model
             par.model = 'dual_slope';
@@ -434,11 +434,11 @@ if isfield( par , 'model' )
         case 'satellite'
             
             % Set defaults
-            if ~isfield( par,'A' );   par.A = 20;            end;
-            if ~isfield( par,'B' );   par.B = 32.45;         end;
-            if ~isfield( par,'C' );   par.C = 20;            end;
-            if ~isfield( par,'D' );   par.D = 0;             end;
-            if ~isfield( par,'usePLa' ); par.usePLa = 1;     end;
+            if ~isfield( par,'A' );   par.A = 20;            end
+            if ~isfield( par,'B' );   par.B = 32.45;         end
+            if ~isfield( par,'C' );   par.C = 20;            end
+            if ~isfield( par,'D' );   par.D = 0;             end
+            if ~isfield( par,'usePLa' ); par.usePLa = 1;     end
             
             % Athmospheric attenuation at zenith angle
             % Frequency values
@@ -489,7 +489,7 @@ end
 % The shadow fading might change with distance. Hence, if
 % the value did change, we have to rescale the values from
 % the map.
-SF_sigma_scenpar = scenpar.SF_sigma + scenpar.SF_delta * CenterFrequency;
+SF_sigma_scenpar = scenpar.SF_sigma + scenpar.SF_delta * log10( CenterFrequency );
 if any( sf_sigma(:) ~= 0 ) && all( SF_sigma_scenpar ~= 0 )
     scale_sf = sf_sigma ./ (SF_sigma_scenpar * oP);
 else

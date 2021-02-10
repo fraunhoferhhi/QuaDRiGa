@@ -51,7 +51,7 @@ l.rx_array = qd_arrayant('dipole');                     % Set Dipole antenna
 l.tx_position(3) = 25;                                  % BE height
 l.rx_track = t;                                         % Assign track
 
-set(0,'DefaultFigurePaperSize',[14.5 7.3])              % Adjust paper size for plot
+set(0,'DefaultFigurePaperSize',[14.5 7.7])              % Adjust paper size for plot
 l.visualize;                                            % Plot the layout
 
 
@@ -78,7 +78,7 @@ dist_orig = (0:nsnap-1) * t.get_length/(nsnap-1);       % Distances
 pwr_orig  = 10*log10(squeeze(abs(cn.coeff(1,1,1:3,:))).^2);  % Power before interpolation
 pwr_int   = 10*log10(squeeze(abs(ci.coeff(1,1,1:3,:))).^2);  % Power after interpolation
 
-set(0,'DefaultFigurePaperSize',[14.5 4.5])              % Change Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 4.7])              % Change Paper Size
 figure('Position',[ 100 , 100 , 760 , 400]);            % New figure
 
 plot( dist_orig,pwr_orig , 'r','Linewidth',2 )
@@ -119,7 +119,7 @@ title('PDP with fixed speed');
 % sample interval (in s) as an input argument. Here, we choose an interval of 1 ms which gives us
 % 1000 samples per second. The plot the illustrates the results.
 
-t.movement_profile = [ 0,7 ; 5,0 ; 6,0 ; 20,20  ]';     % Generate movement profile
+t.movement_profile = [ 0,7 ; 5,0 ; 6,0 ; 20,t.get_length  ]';   % Generate movement profile
 dist = t.interpolate_movement( 1e-3 );                  % Get snapshot positions
 ci = cn.interpolate( dist );                            % Interpolate channels
 

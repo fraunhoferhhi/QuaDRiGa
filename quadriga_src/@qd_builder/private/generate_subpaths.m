@@ -31,9 +31,6 @@ n_clusters = h_builder.NumClusters;             % Number of clusters
 n_mobiles = h_builder.no_rx_positions;          % Number of mobiles
 n_freq = numel( h_builder.simpar.center_frequency );
 
-% ACF
-acf = h_builder.simpar.autocorrelation_function;
-
 % Use tx-position for dual-mobility scenarios
 if h_builder.dual_mobility
     tx_position = h_builder.tx_position;
@@ -53,9 +50,9 @@ end
 
 switch h_builder.scenpar.SubpathMethod
     
-    case 'legacy'
+    case {'legacy','Laplacian'}
         % This is the legacy subpath generation method for bandwidths below 100 MHz. 
-        % See: 3GPP TR 38.901 V14.1.0 (2017-06), pp36
+        % See: 3GPP TR 38.901 V16.1.0 (2019-12), pp39
         
         % Determine if clusters will be split in sub-clusters with different delays
         % This depends on 3 conditions:
@@ -66,7 +63,7 @@ switch h_builder.scenpar.SubpathMethod
             h_builder.scenpar.NumSubPaths == 20 &...
             n_clusters > nLOS;
         
-        % Plot a warning if NumSubPaths is npt 20
+        % Plot a warning if NumSubPaths is not 20
         if h_builder.scenpar.PerClusterDS ~= 0 && h_builder.scenpar.NumSubPaths ~= 20
             if isempty( did_warn )
                 disp(' ');
@@ -75,16 +72,31 @@ switch h_builder.scenpar.SubpathMethod
                 did_warn = true;
             end
         end
-            
-        % According the 3GPP 38.901 v14.1.0, Table 7.5-5, p37, the 2 strongest clusters should
+        
+        % According the 3GPP 38.901 16.1.0, Table 7.5-5, p40, the 2 strongest clusters should
         % be split in sub-clusters with a delay-offset that is determined by the
         % "PerClusterDS". However, this would break the spatial consistency sice the strongest
         % clusters change with locations. To solve this, ALL clusters are split into sub-clusters.
+        
+        no_SC = strcmp( h_builder.simpar.autocorrelation_function, 'Disable' ) | ...
+            h_builder.scenpar.SC_lambda == 0 | h_builder.simpar.use_3GPP_baseline ;
+                
+        if use_cluster_DS && no_SC         % Test if clusters are sorted by powers
+            [~,ii] = sort(  h_builder.pow( :, nLOS+1:end ), 2, 'descend' );
+            ii = diff(ii,[],2);
+            if ~all( ii(:) == 1 )           % Powers are not sorted
+                no_SC = false;              % Split all clusters
+            end
+        end
+        
         if use_cluster_DS
             
             % Get the number of clusters that need to be split
-            % nSPL = min( n_clusters-nLOS , 2 );  % Original version with 2 clusters
-            nSPL = n_clusters-nLOS;
+            if no_SC         % Split 2 first clusters
+                nSPL = min( n_clusters-nLOS , 2 );
+            else
+                nSPL = n_clusters-nLOS;
+            end
             splt = sort( [ 1:nLOS, (1:nSPL)+nLOS, (1:nSPL)+nLOS, (1:nSPL)+nLOS, nLOS+nSPL+1:n_clusters ] );
             
             if numel( PerClusterDS ) > 1        % Frequency-dependent !!!

@@ -37,7 +37,11 @@ if M == max( num_subpath )
     expand_only = false;
 end
 
-val_subpath = zeros( N,sum(num_subpath) );
+if isa( val_cluster,'logical' ) % Fix for older MATLAB versions
+    val_subpath = false( N,sum(num_subpath) );
+else
+    val_subpath = zeros( N,sum(num_subpath), class( val_cluster ) );
+end
 
 ls = 1;
 for l = 1:L

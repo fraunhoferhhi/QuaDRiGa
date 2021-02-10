@@ -1,5 +1,5 @@
 function [ is1n, is1o, is2o, isn, iso ] = find_overlapping_snapshots( h_channel, ic1, ic2, overlap, seg_ind )
-%FIND_OVERLAPPING_SNAPSHOTS Tinds the overlapping snapshot indices of the two channelsegments
+%FIND_OVERLAPPING_SNAPSHOTS Finds the overlapping snapshot indices of the two channel segments
 %
 % Two tracks overlap as in the following example ( x = snapshot )
 %
@@ -99,7 +99,7 @@ end
 
 % Find the track in the channel objects
 current_trk = seg_ind( ic1 );            % Current  track index
-trk_ind = seg_ind == current_trk;       % Indices that blong to the current track
+trk_ind = seg_ind == current_trk;        % Indices that blong to the current track
 i_seg = sum( trk_ind( 1:ic1 ) );         % Current segment
 
 % Output starting point

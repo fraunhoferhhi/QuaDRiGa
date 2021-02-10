@@ -34,32 +34,36 @@ function a = phase_interpolation_1d( a, b, u )
 % Neagive u
 uN = 1-u;
 
-% Calculate absolute values
-aa = abs( a );
-ba = abs( b );
-
-% Check if none of the values are 0
-ia = aa > 1e-6;
-aa( ~ia ) = 1e-6;
-
-ib = ba > 1e-6;
-ba( ~ib ) = 1e-6;
-
-% Separate real and imaginary parts of the phase
-ar = real(a)./aa; 
-ai = imag(a)./aa;
-br = real(b)./ba; 
-bi = imag(b)./ba;
-
-% Do we need circular interpolation for point x ???
-xc = ia & ib;                           % Values cannot be 0
-xc(xc) = u(xc) > 1e-6;                  % Grid points
-xc(xc) = u(xc) < 1-1e-6;
-
-% Only use circular interpolation if there are large phase differences
-% The value 0.25 corrsponds to roughly 0.25*180/pi ~ 15 degree
-Dab     = (ar(xc)-br(xc)).^2 + (ai(xc)-bi(xc)).^2;
-xc(xc)  = Dab > 0.0625;                   
+if isreal(a) && isreal(b)  % Special case - only real values, no phase interpolation needed
+    xc = false;
+else
+    % Calculate absolute values
+    aa = abs( a );
+    ba = abs( b );
+    
+    % Check if none of the values are 0
+    ia = aa > 1e-6;
+    aa( ~ia ) = 1e-6;
+    
+    ib = ba > 1e-6;
+    ba( ~ib ) = 1e-6;
+    
+    % Separate real and imaginary parts of the phase
+    ar = real(a)./aa;
+    ai = imag(a)./aa;
+    br = real(b)./ba;
+    bi = imag(b)./ba;
+    
+    % Do we need circular interpolation for point x ???
+    xc = ia & ib;                           % Values cannot be 0
+    xc(xc) = u(xc) > 1e-6;                  % Grid points
+    xc(xc) = u(xc) < 1-1e-6;
+    
+    % Only use circular interpolation if there are large phase differences
+    % The value 0.25 corrsponds to roughly 0.25*180/pi ~ 15 degree
+    Dab     = (ar(xc)-br(xc)).^2 + (ai(xc)-bi(xc)).^2;
+    xc(xc)  = Dab > 0.0625;
+end
 
 if any(xc(:))
     % Calculate the angle omega between points a and b

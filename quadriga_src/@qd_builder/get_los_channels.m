@@ -159,8 +159,8 @@ else
     wave_no = 2*pi/lambda;
     
     % Extract the travel directions at the initial position
-    rx_orientation = zeros(3,n_positions);
-    tx_orientation = zeros(3,n_positions);
+    rx_orientation = zeros(3,n_positions,precision);
+    tx_orientation = zeros(3,n_positions,precision);
     for i_pos = 1 : n_positions
         if i_pos == 1 || ( ~single_rx_track && ~qf.eqo( h_builder.rx_track(1,i_pos),h_builder.rx_track(1,i_pos-1) ) )
             [~,ind] = min( sum( h_builder.rx_track(1,i_pos).positions.^2 ) );
@@ -190,6 +190,8 @@ else
     angles = h_builder.get_angles*pi/180;
     if single_precision
         angles = single( angles );
+        rx_orientation = single( rx_orientation );
+        tx_orientation = single( tx_orientation );
     end
     
     % Calculate the effective rotation angles for the antennas
@@ -208,6 +210,9 @@ else
         Ct = tx_array.coupling;
         n_tx = tx_array.no_elements;
     end
+    if single_precision
+        Ct = single(Ct);
+    end
     
     if raw_coeff
         n_rx = 2;
@@ -221,6 +226,9 @@ else
         [ Vr,Hr,Pr ] = rx_array.interpolate( aoa_c , eoa_c );
         n_rx = rx_array.no_elements;
         Cr = rx_array.coupling.';
+    end
+    if single_precision
+        Cr = single(Cr);
     end
     
     % Calculate the distance-dependent phases
@@ -237,7 +245,7 @@ else
         % Precalculate Rx pattern response
         co_a = cos( deg_a(1,:) );
         si_a = sin( deg_a(1,:) );
-        PatRx = zeros( 2,n_positions,n_rx);
+        PatRx = zeros( 2,n_positions,n_rx,precision );
         for i_rx = 1 : n_rx
             % Rx Patterns
             PatRx(:,:,i_rx) = [ reshape( Vr(1,:,i_rx) , 1,n_positions ) ;...

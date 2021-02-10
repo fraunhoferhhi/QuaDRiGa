@@ -16,11 +16,19 @@ function indoor_rx = set_scenario( h_layout, scenario, rx, tx, indoor_frc, SC_la
 %      * 3GPP_38.901_RMa
 %      * 3GPP_38.901_Indoor_Mixed_Office
 %      * 3GPP_38.901_Indoor_Open_Office
-%      * 3GPP_38.881_DenseUrban (Satellite)
+%      * 3GPP_38.901_InF_SL
+%      * 3GPP_38.901_InF_DL
+%      * 3GPP_38.901_InF_SH
+%      * 3GPP_38.901_InF_DH      
+%      * 5G-ALLSTAR_DenseUrban (Satellite)
+%      * 5G-ALLSTAR_Urban (Satellite)
+%      * 5G-ALLSTAR_Suburban (Satellite)
+%      * 5G-ALLSTAR_Rural (Satellite)
 %      * mmMAGIC_UMi
 %      * mmMAGIC_Indoor
 %      * QuaDRiGa_Industrial
 %      * QuaDRiGa_UD2D
+%
 %
 %    Alternatively, you can use all scenarios specified in 'qd_builder.supported_scenarios'.
 %
@@ -145,12 +153,16 @@ else
     elseif isempty( SC_lambda_rx )
         switch scenario
             case { '3GPP_38.901_UMi', '3GPP_38.901_UMa', '3GPP_38.901_RMa','mmMAGIC_UMi',...
-                    '3GPP_38.881_DenseUrban' }
+                    '5G-ALLSTAR_DenseUrban','5G-ALLSTAR_Urban','5G-ALLSTAR_Suburban','5G-ALLSTAR_Rural' }
                 SC_lambda_rx = 50;
             case { '3GPP_38.901_Indoor_Mixed_Office','3GPP_38.901_Indoor_Open_Office','mmMAGIC_Indoor' }  
                 SC_lambda_rx = 10;
             case { 'QuaDRiGa_Industrial' }
                 SC_lambda_rx = 25;
+            case { '3GPP_38.901_InF_SL', '3GPP_38.901_InF_SH' }
+                SC_lambda_rx = 5; % dclutter/2 (38.901 table 7.2-4)
+            case { '3GPP_38.901_InF_DL', '3GPP_38.901_InF_DH' }
+                SC_lambda_rx = 1; % dclutter/2 (38.901 table 7.2-4)
             otherwise
                 SC_lambda_rx = 0;
         end
@@ -162,15 +174,15 @@ else
     % Set the default SC_lambda_tx values
     if h_layout.simpar.use_3GPP_baseline && isempty( SC_lambda_tx )
         SC_lambda_tx = 0;   % Disable
-    elseif isempty( SC_lambda_tx ) && h_layout.no_tx > 1
+    elseif isempty( SC_lambda_tx ) && numel(tx) > 1
         switch scenario
             case {'QuaDRiGa_UD2D' , 'QuaDRiGa_Industrial' }
                 % Dual Mobility Scenarios
                 SC_lambda_tx = SC_lambda_rx;
                 
-            case { '3GPP_38.881_DenseUrban' }
+            case { '5G-ALLSTAR_DenseUrban','5G-ALLSTAR_Urban','5G-ALLSTAR_Suburban','5G-ALLSTAR_Rural' }
                 % Satellite Scenarios
-                hnn = positions_abs( h_layout.tx_track );
+                hnn = positions_abs( h_layout.tx_track(:,tx) );
                 hnn = cat(2,hnn{:});
                 hnn = max(hnn(3,:));                % Orbit height above NN
                 
@@ -208,7 +220,7 @@ else
     switch scenario
         case { '3GPP_38.901_UMi', '3GPP_38.901_UMa', '3GPP_38.901_RMa', 'mmMAGIC_UMi',...
                 '3GPP_3D_UMi', '3GPP_3D_UMa'   }
-            if SC_lambda_rx == 0
+            if SC_lambda_rx == 0 || h_layout.no_rx < 1.5
                 tmp = rand( 1, numel(rx) );                                 % Random
             else
                 tmp = qd_sos.rand( SC_lambda_rx , h_layout.rx_position );  	% Spatially consistent
@@ -267,18 +279,20 @@ else
     
     % Spatial COnsistency might change the distribution. We fix this here.
     % Calculate the CDF in the output values.
-    bins = 0:0.01:1;
-    cdf = qf.acdf(randC(:),bins);
-    
-    % Obtain unique values for the renormalization
-    [cdfU,ii] = unique(cdf);
-    binsU = bins(ii);
-    binsU(end) = 1;
-    
-    % Interpolate output such that the values match a Uniform distribution
-    sic = size(randC);
-    randC = qf.interp( binsU, [], cdfU.', randC(:) );
-    randC = reshape( randC, sic );
+    if numel( randC ) > 1.5
+        bins = 0:0.01:1;
+        cdf = qf.acdf(randC(:),bins);
+        
+        % Obtain unique values for the renormalization
+        [cdfU,ii] = unique(cdf);
+        binsU = bins(ii);
+        binsU(end) = 1;
+        
+        % Interpolate output such that the values match a Uniform distribution
+        sic = size(randC);
+        randC = qf.interp( binsU, [], cdfU.', randC(:) );
+        randC = reshape( randC, sic );
+    end
     
     if 0  % Debugging plot
         plot(bins,cdf,'--k');
@@ -436,9 +450,9 @@ else
                 p_LOS( ii )  = exp( -(dist_2d(ii)-49)/211.7 )*0.54;
                 i_LOS = ( randR >= p_LOS ) + 1;
                 
-            case '3GPP_38.881_DenseUrban'
-                % See: 3GPP TR 38.811 V15.0.0 (2018-06), pp 47, Table 6.6.1-1
-                scen = { '3GPP_38.881_DenseUrban_LOS', '3GPP_38.881_DenseUrban_NLOS', 'Null' };
+            case '5G-ALLSTAR_DenseUrban'
+                % See: 3GPP TR 38.811 V15.2.0 (2019-09), pp 48, Table 6.6.1-1
+                scen = { '5G-ALLSTAR_DenseUrban_LOS', '5G-ALLSTAR_DenseUrban_NLOS', 'Null' };
                 
                 % Height of the TX above the receivers tangential plane
                 h_tx = reshape( tx_pos_3d(3,rxi,:) , nS, [] ).';
@@ -448,6 +462,63 @@ else
                 
                 % LOS probabilities vs. elevation angle in [%] from 3GPP TR 38.811
                 los_prob = [ 0, 0, 28.2, 33.1, 39.8, 46.8, 53.7, 61.2, 73.8, 82.0, 98.1 ];
+                p_LOS = qf.interp( [-90,0:10:90], [], los_prob, elevation(:).'  ).';
+                p_LOS = reshape( p_LOS,[],nS );
+                
+                % Get the scnario index
+                i_LOS = ( randR >= p_LOS/100 ) + 1;
+                i_LOS( h_tx<0 ) = 3;    % Satelite is below the horizon
+                
+            case '5G-ALLSTAR_Urban'
+                % See: 3GPP TR 38.811 V15.2.0 (2019-09), pp 48, Table 6.6.1-1
+                scen = { '5G-ALLSTAR_Urban_LOS', '5G-ALLSTAR_Urban_NLOS', 'Null' };
+                
+                % Height of the TX above the receivers tangential plane
+                h_tx = reshape( tx_pos_3d(3,rxi,:) , nS, [] ).';
+                
+                % Elevation angle in [degree]
+                elevation = atand( h_tx ./ dist_2d );
+                
+                % LOS probabilities vs. elevation angle in [%] from 3GPP TR 38.811
+                los_prob = [ 0, 0, 24.6, 38.6, 49.3, 61.3, 72.6, 80.5, 91.9, 96.8, 99.2 ];
+                p_LOS = qf.interp( [-90,0:10:90], [], los_prob, elevation(:).'  ).';
+                p_LOS = reshape( p_LOS,[],nS );
+                
+                % Get the scnario index
+                i_LOS = ( randR >= p_LOS/100 ) + 1;
+                i_LOS( h_tx<0 ) = 3;    % Satelite is below the horizon
+                
+            case '5G-ALLSTAR_Suburban'
+                % See: 3GPP TR 38.811 V15.2.0 (2019-09), pp 48, Table 6.6.1-1
+                scen = { '5G-ALLSTAR_Suburban_LOS', '5G-ALLSTAR_Suburban_NLOS', 'Null' };
+                
+                % Height of the TX above the receivers tangential plane
+                h_tx = reshape( tx_pos_3d(3,rxi,:) , nS, [] ).';
+                
+                % Elevation angle in [degree]
+                elevation = atand( h_tx ./ dist_2d );
+                
+                % LOS probabilities vs. elevation angle in [%] from 3GPP TR 38.811
+                los_prob = [ 0, 0, 78.2, 86.9, 91.9, 92.9, 93.5, 94.0, 94.9, 95.2, 99.8 ];
+                p_LOS = qf.interp( [-90,0:10:90], [], los_prob, elevation(:).'  ).';
+                p_LOS = reshape( p_LOS,[],nS );
+                
+                % Get the scnario index
+                i_LOS = ( randR >= p_LOS/100 ) + 1;
+                i_LOS( h_tx<0 ) = 3;    % Satelite is below the horizon
+                
+            case '5G-ALLSTAR_Rural'
+                % See: 3GPP TR 38.811 V15.2.0 (2019-09), pp 48, Table 6.6.1-1
+                scen = { '5G-ALLSTAR_Rural_LOS', '5G-ALLSTAR_Rural_NLOS', 'Null' };
+                
+                % Height of the TX above the receivers tangential plane
+                h_tx = reshape( tx_pos_3d(3,rxi,:) , nS, [] ).';
+                
+                % Elevation angle in [degree]
+                elevation = atand( h_tx ./ dist_2d );
+                
+                % LOS probabilities vs. elevation angle in [%] from 3GPP TR 38.811
+                los_prob = [ 0, 0, 78.2, 86.9, 91.9, 92.9, 93.5, 94.0, 94.9, 95.2, 99.8 ];
                 p_LOS = qf.interp( [-90,0:10:90], [], los_prob, elevation(:).'  ).';
                 p_LOS = reshape( p_LOS,[],nS );
                 
@@ -513,6 +584,96 @@ else
                 p_LOS = ones( size( dist_2d ));
                 ii = dist_2d > 18;
                 p_LOS( ii )  = 18./dist_2d(ii) + exp(-dist_2d(ii)/36) .* (1 - 18./dist_2d(ii));
+                i_LOS = ( randR >= p_LOS ) + 1;
+                
+            case '3GPP_38.901_InF_SL'
+                % See: 3GPP TR 38.901 V16.0.0, pp 30, Table 7.4.2-1
+                % The corresponding scenario configuration files
+                scen = { '3GPP_38.901_InF_LOS', '3GPP_38.901_InF_NLOS_SL'};
+                % Determine the LOS probability for each BS-MT
+                r = 0.2; % clutter density (fix at 20% or use a random value under 40%) *38.901 table 7.2-4*
+                if ~exist('r','var')
+                    r = rand(1,1);
+                    while (r>= 0.4)
+                        r = rand(1,1);
+                    end
+                end
+               
+                d_clutter = 10; %clutter size *38.901 table 7.2-4*
+                ksub = -d_clutter/log(1-r);
+                p_LOS = ones( size( dist_2d ));
+                p_LOS = exp(-dist_2d./ksub);
+                i_LOS = ( randR >= p_LOS ) + 1;
+                
+            case '3GPP_38.901_InF_DL'
+                % See: 3GPP TR 38.901 V16.0.0, pp 30, Table 7.4.2-1
+                % The corresponding scenario configuration files
+                scen = { '3GPP_38.901_InF_LOS', '3GPP_38.901_InF_NLOS_DL'};
+                % Determine the LOS probability for each BS-MT
+                r = 0.6; % clutter density (fix at 60% or use a random value greater than oe equal 40%) *38.901 table 7.2-4*
+                if ~exist('r','var')
+                    r = rand(1,1);
+                    while (r< 0.4)
+                        r = rand(1,1);
+                    end
+                end
+                
+                d_clutter = 2; % clutter size *38.901 table 7.2-4*
+                ksub = -d_clutter/log(1-r);
+                p_LOS = ones( size( dist_2d ));
+                p_LOS = exp(-dist_2d./ksub);
+                i_LOS = ( randR >= p_LOS ) + 1;
+                
+            case '3GPP_38.901_InF_SH'
+                % See: 3GPP TR 38.901 V16.0.0, pp 30, Table 7.4.2-1
+                % The corresponding scenario configuration files
+                scen = { '3GPP_38.901_InF_LOS', '3GPP_38.901_InF_NLOS_SH'};
+                % Determine the LOS probability for each BS-MT
+                r = 0.2; % clutter density (fix at 20% or use a random value under 40%) *38.901 table 7.2-4*
+                if ~exist('r','var')
+                    r = rand(1,1);
+                    while (r>= 0.4)
+                        r = rand(1,1);
+                    end
+                end
+                
+                % Include height-dependency of the user terminals
+                h_UT = h_layout.rx_track( 1,rx( i_rx ) ).positions( 3,segment_index ) +...
+                    h_layout.rx_track( 1,rx( i_rx ) ).initial_position(3);
+                h_tx = reshape( tx_pos_3d(3,rxi,:) , nS, [] ).';
+                
+                %h_c = 10*rand(1,1);
+                h_c = 2; % clutter height *38.901 table 7.2-4*
+                d_clutter = 10; % clutter size *38.901 table 7.2-4*
+                ksub = -d_clutter/log(1-r)*((h_tx-h_UT)/(h_c-h_UT));
+                p_LOS = ones( size( dist_2d ));
+                p_LOS = exp(-dist_2d./ksub);
+                i_LOS = ( randR >= p_LOS ) + 1;
+                
+            case '3GPP_38.901_InF_DH'
+                % See: 3GPP TR 38.901 V16.0.0, pp 30, Table 7.4.2-1
+                % The corresponding scenario configuration files
+                scen = { '3GPP_38.901_InF_LOS', '3GPP_38.901_InF_NLOS_DH'};    
+                % Determine the LOS probability for each BS-MT
+                r = 0.4; % clutter density (fix at 40% or use a random value greater than or equal 40%) *38.901 table 7.2-4*
+                if ~exist('r','var')
+                    r = rand(1,1);
+                    while (r< 0.4)
+                        r = rand(1,1);
+                    end
+                end
+                
+                % Include height-dependency of the user terminals
+                h_UT = h_layout.rx_track( 1,rx( i_rx ) ).positions( 3,segment_index ) +...
+                    h_layout.rx_track( 1,rx( i_rx ) ).initial_position(3);
+                h_tx = reshape( tx_pos_3d(3,rxi,:) , nS, [] ).';
+                
+                %h_c = 10*rand(1,1);
+                h_c = 6; % Clutter height *38.901 table 7.2-4*
+                d_clutter = 2; %Clutter size *38.901 table 7.2-4*
+                ksub = -d_clutter/log(1-r)*((h_tx-h_UT)/(h_c-h_UT));
+                p_LOS = ones( size( dist_2d ));
+                p_LOS = exp(-dist_2d./ksub);
                 i_LOS = ( randR >= p_LOS ) + 1;
                 
             otherwise

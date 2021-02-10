@@ -1,4 +1,4 @@
-function set_speed( qd_simulation_parameters, speed_kmh, sampling_rate_s )
+function set_speed( h_simulation_parameters, speed_kmh, sampling_rate_s )
 %SET_SPEED This method can be used to automatically calculate the sample density for a given mobile speed
 %
 % Calling object:
@@ -30,7 +30,7 @@ function set_speed( qd_simulation_parameters, speed_kmh, sampling_rate_s )
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
 
-qd_simulation_parameters.samples_per_meter = 1/( speed_kmh/3.6 * sampling_rate_s);
+h_simulation_parameters.samples_per_meter = 1/( speed_kmh/3.6 * sampling_rate_s);
 
 end
 

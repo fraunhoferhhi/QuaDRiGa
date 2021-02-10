@@ -44,6 +44,7 @@ l.rx_array = a;
 % Next, we rotate the receive antenna in 10 degree steps around its x-axis and calculate the channel
 % response for each angle. 
 
+warning('off','QuaDRiGa:qd_layout:BuilderReset');       % Disable builder-reset warnings
 rot = -120:10:120;                                      % Rotation angle 
 h = zeros(4,4,numel(rot));
 for n = 1 : numel(rot)
@@ -54,6 +55,7 @@ for n = 1 : numel(rot)
     c = l.get_channels;                                 % Update channel coefficients
     h(:,:,n) = c.coeff(:,:,1,1);
 end
+warning('on','all');                                    % Enable all warnings
 
 %% Linear Polarization results
 % Now we plot the results for the linear polarization. There are two linearly polarized antennas at
@@ -68,7 +70,7 @@ set(0,'defaultAxesFontName','Times')               	    % Default Font Type
 set(0,'defaultTextFontName','Times')                 	% Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')       	% Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')             	% Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 4.5])            	% Default Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 4.7])            	% Default Paper Size
 
 figure('Position',[ 100 , 100 , 760 , 400]);
 g = h([3,4],[3,4],:);

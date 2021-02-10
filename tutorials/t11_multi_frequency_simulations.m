@@ -40,7 +40,7 @@ set(0,'defaultAxesFontName','Times')                    % Default Font Type
 set(0,'defaultTextFontName','Times')                    % Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')          % Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')              % Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 7.3])            	% Default Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 7.7])            	% Default Paper Size
 
 s = qd_simulation_parameters;
 s.center_frequency = [2.6e9, 28e9];                     % Assign two frequencies

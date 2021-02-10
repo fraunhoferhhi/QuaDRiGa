@@ -16,7 +16,7 @@ function [ c, dist_snap ] = interpolate( h_channel, dist, algorithm )
 %   dist
 %   A vector containing distance values on the track. The distance is measured in [m] relative to
 %   the beginning of the track.  Alternatively, "dist" can be given as a 3-D tensor with dimensions
-%   [ Rx-Antenna , Tx-Antenna , Snapshot ].  In this case, interpolation os done for each antenna
+%   [ Rx-Antenna , Tx-Antenna , Snapshot ].  In this case, interpolation is done for each antenna
 %   element separately.
 %
 %   algorithm
@@ -114,16 +114,20 @@ else
     dist = reshape( dist,[],1 );
 end
 
+% Reorder coefficient matrix to [ path , snap , ant ]
 cf = h_channel.coeff;                                       % Copy the coefficients
 cf = permute( cf, [3,4,1,2] );                              % Reorder dimensions
 cf = reshape( cf, L, nsnap, [] );
 
+% Get the average power over all antennas with dimensions [ path, snap ]
 if size( cf,3 ) ~= 1                                        % Needed for Octave
     PC = mean( abs( cf ).^2, 3 );                           % Get the combined power
 else
     PC = abs( cf ).^2;
 end
 
+% Get the delays with dimension [ path , snap , ant ]
+% Get the average delays with dimensions [ path, snap ]
 tmp_channel = qd_channel;                                   % Copy the delays
 copy( tmp_channel, h_channel );
 if individual_delays
@@ -169,7 +173,7 @@ end
 ddl = abs( diff( dlC,[],2 ) );                              % Delay differences
 
 % For debugging
-% plot(ddl'*1e9); hold on; plot( [1,size(ddl,2)],[thres,thres]*1e9,'--k' ); hold off
+% plot(ddl'*1e9); hold on; plot( [1,size(ddl,2)],[thres,thres]*1e9,'--k' ); hold off; title( sample_density );
 
 % Get the list of all MPCs
 mpc = zeros( nsnap, 3 );                                    % List of MPCs
@@ -225,14 +229,14 @@ for n = 1 : size( mpc,1 )                                   % Interpolate channe
             end
             
             if use_linear_interpolation
-                cfA  = qf.interp( pin, 0, cfIa, po );
+                cfA  = qf.interp( pin, 0, cfIa, po, [], true );
                 cfIp = permute( angle( cfI ), [2,3,1] );
-                cfP  = permute( qf.slerp( pin, cfIp, 0, po ), [3,1,2] );
-                dlO  = qf.interp( pin, 0, dlI, po );
+                cfP  = permute( qf.slerp( pin, cfIp, 0, po, true ), [3,1,2] );
+                dlO  = qf.interp( pin, 0, dlI, po, [], true );
             else
                 cfA  = permute( pchip( pin, permute( cfIa,[3,2,1] ), po ) ,[3,2,1] );
                 cfIp = permute( angle( cfI ), [2,3,1] );
-                cfP  = permute( qf.slerp( pin, cfIp, 0, po ), [3,1,2] );
+                cfP  = permute( qf.slerp( pin, cfIp, 0, po, true ), [3,1,2] );
                 dlO  = permute( pchip( pin, permute( dlI,[3,2,1] ), po ) ,[3,2,1] );
             end
             
@@ -258,15 +262,15 @@ c.individual_delays = individual_delays;
 po = mean(dist,2);
 if use_linear_interpolation
     tmp = permute(h_channel.rx_position,[3,2,1]);
-    tmp = qf.interp( dist_snap, 0, tmp , po );
+    tmp = qf.interp( dist_snap, 0, tmp , po, [], true );        % Use double
     c.rx_position = permute( tmp,[3,2,1]);
 else
     c.rx_position = pchip( dist_snap, h_channel.rx_position, po );
 end
-if size(h_channel.tx_position,2) > 1                        % Dual Mobility
+if size(h_channel.tx_position,2) > 1                            % Dual Mobility
     if use_linear_interpolation
         tmp = permute(h_channel.tx_position,[3,2,1]);
-        tmp = qf.interp( dist_snap, 0, tmp , po );
+        tmp = qf.interp( dist_snap, 0, tmp , po, [], true );    % Use double
         c.tx_position = permute( tmp,[3,2,1]);
     else
         c.tx_position = pchip( dist_snap, h_channel.tx_position, po );
@@ -278,7 +282,7 @@ end
 % Process the par-struct
 par = h_channel.par;
 if ~isempty('par')
-    if isfield(par,'pg')
+    if isfield(par,'pg') && numel(par.pg) > 1.5
         if use_linear_interpolation
             par.pg = qf.interp( dist_snap, 0, par.pg , po );
         else

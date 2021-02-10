@@ -82,7 +82,7 @@ for n = 1 : nel
     wel(n) = avg_cos * (en-st)/pi;
 end
 
-% Combined azimuth an elevation weights
+% Combined azimuth and elevation weights
 w = wel * waz ;
 w = w./sum(w(:));
 

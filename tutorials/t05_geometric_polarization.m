@@ -50,7 +50,7 @@ l.tx_array.rotate_pattern(45,'y',2);                    % 45 degree polarization
 l.tx_array.rotate_pattern(90,'y',3);                    % 90 degree polarization
 l.rx_array = l.tx_array;                                % Use the same array for the Rx
 
-set(0,'DefaultFigurePaperSize',[14.5 5.3])              % Adjust paper size for plot
+set(0,'DefaultFigurePaperSize',[14.5 5.7])              % Adjust paper size for plot
 l.tx_array.visualize(1);pause(1);                       % Plot the first antenna element
 l.tx_array.visualize(2);pause(1);                       % Plot the second antenna element
 l.tx_array.visualize(3);pause(1);                       % Plot the third antenna element
@@ -66,7 +66,7 @@ l.tx_position = [ 0 ; 12 ; 6 ];                         % Tx position
 l.rx_position = [ 20 ; 0 ; 0 ];                         % Start position for the Rx track
 l.set_scenario('BERLIN_UMa_LOS');
 
-set(0,'DefaultFigurePaperSize',[14.5 7.3])              % Adjust paper size for plot
+set(0,'DefaultFigurePaperSize',[14.5 7.7])              % Adjust paper size for plot
 l.visualize;                                            % Plot the layout
 
 %% Generating channel coefficients
@@ -92,7 +92,7 @@ c = cb.get_channels;                                    % Get the channel coeffi
 % received power of 0.67W for the LOS component. The remaining 0.33 W are in the NLOS components.
 % The results can be seen in the following figure.
 
-set(0,'DefaultFigurePaperSize',[14.5 4.5])              % Change Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 4.7])              % Change Paper Size
 figure('Position',[ 100 , 100 , 760 , 400]);            % New figure
 
 plot(abs(squeeze( c.coeff(1,1,:,:) )').^2);             % Plot the graph

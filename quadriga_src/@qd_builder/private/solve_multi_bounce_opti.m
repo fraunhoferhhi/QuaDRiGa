@@ -92,15 +92,15 @@ elseif size(dist,1) == 1 && size(dist,2) == N && size(dist,3) == 1 && M > 1
     dist = reshape( dist(:,:,ones(1,M)) , 1 , NM );
 end
 
-% Calculate the maximum distance
+% Calculate the maximum distance betwee the RX and the LBS
 dist_los = sqrt(sum(abs(r).^2,1));
-d_max = dist - dist_los;
+d_max = min( 0.5*(dist+dist_los), 4000 );
 
 % Initial step to determine if the optimization problem has a solution.
+norm_a = oNM * d_min;
 [ ~, norm_c, norm_b ] = solve_cos_theorem( -bhat , r + ahat.*d_min , dist-d_min );
 
-norm_a     = oNM * d_min;
-step_size  = max( 0.005*dist, 5 );
+step_size  = max( 0.05*d_max, 10 );
 
 norm_a_new = norm_a;
 norm_b_new = norm_b;
@@ -112,7 +112,7 @@ upd = norm_b > 0 & d_max > d_min;
 % Iteratively find the optimal solution where |c| is minimized.
 
 stp_cnt = 0;
-while any( upd ) && stp_cnt < 200
+while any( upd ) && stp_cnt < 400
     norm_a_new(upd) = norm_a(upd) + step_size(upd);
     
     % Case |a| < d_min
@@ -123,7 +123,7 @@ while any( upd ) && stp_cnt < 200
     % Case |a| > d_max
     ind = norm_a_new > d_max & upd;
     if any( ind )
-        norm_a_new( ind ) = d_max( ind );
+        norm_a_new( ind ) = d_max( ind ); 
         step_size( ind ) = 0;
     end
     

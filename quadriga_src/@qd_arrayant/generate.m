@@ -77,6 +77,21 @@ function [ h_qd_arrayant, par ] = generate( array_type, Ain, Bin, Cin, Din, Ein,
 %      * Iin - Panel spacing in vertical direction (dg,V) in [λ], Default: 0.5 M
 %      * Jin - Panel spacing in horizontal direction (dg,H) in [λ], Default: 0.5 N
 %
+%   parabolic
+%   An ideal parabolic reflector antenna with input parameters:
+%      * Ain - Radius of the antenna aperture in [meters]
+%      * Bin - Center frequency in [Hz]
+%      * Cin - Min. sidelobe power relative to directivity in [dB] (default: -40 dB)
+%      * Din - Polarization indicator
+%           1. vertical (E-theta) polarization (default)
+%           2. horizontal (E-phi) polarization
+%           3. LHCP
+%           4. RHCP
+%           5. dual-polarized two-port antenna (LHCP,RHCP)
+%      * Ein - number of beams for a multibeam antenna (hexagonal layout)
+%      * Fin - beam separation in [deg], default is the FWHM
+%      * Gin - Satellite Tx max Gain in (dBi)
+%
 %   xpol
 %   Two elements with ideal isotropic patterns (vertical polarization). The second element is
 %   slanted by 90°.
@@ -93,6 +108,16 @@ function [ h_qd_arrayant, par ] = generate( array_type, Ain, Bin, Cin, Din, Ein,
 %   Two crossed dipoles. For input port 1, the signal on the second element is shifted by +90° out
 %   of phase. For input port 2, the the signal on the second element is shifted by -90° out of
 %   phase. Port 1 thus transmits a LHCP signal and port 2 transmits a RHCP signal.
+%
+%   testarray
+%   An array antenna with near-optimal angular resolution for testing the spatial properties of the
+%   channel model. This antenna can be used either as a transmit or receive antenna. The generated
+%   channel coefficients can be used by 'qf.calc_angels' to obtain the departure and
+%   arrival angles of clusters. The first 28 elements sample the whole sphere in vertical
+%   polarization. Element 29 is ideally horizontally polarized to calculate the XPR per path.
+%   Elements 30 and 31 are circularly polarized to obtain the XPR for circular and elliptic
+%   polarization.
+%      * Ain - Angular sampling resolution in [deg] - Default is 1 degree
 %
 %   ula2
 %   Uniform linear arrays composed of 2 omni-antennas (vertical polarization) with 10 cm element
@@ -197,12 +222,14 @@ switch array_type
     case 'xpol'
         h_qd_arrayant = gen_arrayant_omni;
         h_qd_arrayant.copy_element(1,2);
-        h_qd_arrayant.rotate_pattern(90,'x',2);
+        h_qd_arrayant.Fa(:,:,2) = 0;
+        h_qd_arrayant.Fb(:,:,2) = 1;
         
     case 'rhcp-dipole'
+        
         h_qd_arrayant = gen_arrayant_dipole;
-        h_qd_arrayant.copy_element(1,2);
-        h_qd_arrayant.rotate_pattern(90,'x',2);
+        copy_element( h_qd_arrayant,1,2 );
+        rotate_pattern( h_qd_arrayant,90,'x',2 );
         h_qd_arrayant.coupling = 1/sqrt(2) * [1;-1j];
         
     case 'lhcp-dipole'
@@ -232,7 +259,10 @@ switch array_type
         h_qd_arrayant = gen_arrayant_vehicular( Ain, Bin, Cin );
         
     case 'parabolic'
-        h_qd_arrayant = gen_arrayant_parabolic( Ain, Bin, Cin, Din );
+        h_qd_arrayant = gen_arrayant_parabolic( Ain, Bin, Cin, Din, Ein, Fin, Gin );
+        
+    case 'testarray'
+        h_qd_arrayant = gen_arrayant_testarray( Ain );
         
     otherwise
         error('QuaDRiGa:qd_arrayant:generate',['??? Array type "',array_type,'" is not supported.']);

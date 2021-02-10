@@ -52,8 +52,11 @@ classdef qd_track < handle
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
+properties
+    name = 'track';                 % Name of the track
+end
+
 properties(Dependent)
-    name                            % Name of the track
     no_snapshots                    % Number of positions on the track
     
     % Position offset (will be added to positions)
@@ -119,7 +122,6 @@ properties(Access=private)
     Porientation        = [0;0;0];
     Psegment_index      = 1;
     Pscenario           = {''};
-    Pname               = 'Track';
 end
 
 properties(Hidden)
@@ -136,9 +138,6 @@ methods
     end
     
     % Get functions
-    function out = get.name(h_track)
-        out = h_track.Pname;
-    end
     function out = get.no_snapshots(h_track)
         out = h_track.Pno_snapshots;
     end
@@ -178,13 +177,12 @@ methods
     % Set functions
     function set.name(h_track,value)
         if ~( ischar(value) )
-            error('QuaDRiGa:qd_track:wrongInputValue',...
-                '??? Name must be a string.')
-        elseif ~isempty( strfind(value,'_') )
+            error('QuaDRiGa:qd_track:wrongInputValue','??? Name must be a string.')
+        elseif ~isempty( strfind(value,'_') ) && isempty( strfind(value,'_seg') ) %#ok
             error('QuaDRiGa:qd_track:wrongInputValue',...
                 '??? Name cannot contain the underscore "_" character.')
         end
-        h_track.Pname = value;
+        h_track.name = value;
     end
     
     function set.no_snapshots(h_track,value)

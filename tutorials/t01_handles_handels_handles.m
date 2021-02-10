@@ -41,10 +41,10 @@ set(0,'defaultAxesFontName','Times')               	    % Default Font Type
 set(0,'defaultTextFontName','Times')                 	% Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')       	% Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')             	% Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 7.3])            	% Default Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 7.7])            	% Default Paper Size
 
 [ map,x_coords,y_coords] = l.power_map( '3GPP_38.901_UMa_LOS','quick',5,-500,500,-500,500,1.5 );
-P = 10*log10(sum( abs( cat(3,map{:}) ).^2 ,3));         % Total received power
+P = 10*log10( sum(cat(3,map{:}),3));                    % Total received power
 
 l.visualize([],[],0);                                   % Show BS and MT positions on the map
 hold on
@@ -75,7 +75,7 @@ l.tx_array(1,2).rotate_pattern( 180 , 'z' );            % Rotate BS2 antenna by 
 % The following plot shows the intended result.
 
 [ map,x_coords,y_coords] = l.power_map( '3GPP_38.901_UMa_LOS','quick',5,-500,500,-500,500,1.5 );
-P = 10*log10(sum( abs( cat(3,map{:}) ).^2 ,3));         % Total received power
+P = 10*log10( sum(cat(3,map{:}),3));                    % Total received power
 
 l.visualize([],[],0);                                   % Show BS and MT positions on the map
 hold on

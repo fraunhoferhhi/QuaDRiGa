@@ -19,7 +19,11 @@ function gen_parameters( h_builder, usage, vb_dots )
 %   * Generates the small-scale-fading parameters for the channel builder. Already existing
 %     parameters are overwritten. However, due to the spatial consistency of the model, identical
 %     values will be obtained for the same rx positions. Spatial consistency can be disabled by
-%     setting "qd_builder.scenpar.SC_lambda = 0".* Calculates the positions of the scatterers.
+%     setting 
+%              "qd_builder.scenpar.SC_lambda = 0" or 
+%              "qd_builder.simpar.autocorrelation_function = 'Disable'"
+%
+%   * Calculates the positions of the scatterers.
 %
 %
 % Input:
@@ -48,8 +52,11 @@ function gen_parameters( h_builder, usage, vb_dots )
 %     Clears exisiting LSF parameters, SSF parameters and cluster positions and calculates new ones.
 %     Existing SOS generators are reused.
 %
-% 
-% QuaDRiGa Copyright (C) 2011-2019
+%   * usage = 5 
+%     Keeps all existing parameters and creates new parameters only if they are missing.
+%
+%
+% QuaDRiGa Copyright (C) 2011-2020
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -62,9 +69,9 @@ function gen_parameters( h_builder, usage, vb_dots )
 % contributors "AS IS" and WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES, including but not limited to
 % the implied warranties of merchantability and fitness for a particular purpose.
 %
-% You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for 
+% You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
-% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
+% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 if ~exist('usage','var') || isempty(usage)
     usage = 4;
@@ -76,7 +83,7 @@ if exist('vb_dots','var') && vb_dots == 0
 end
 
 if verbose && nargin < 3
-    fprintf('SSF Corr.    [');
+    fprintf('Parameters   [');
     vb_dots = 50;
     tStart = clock;
 end
@@ -167,36 +174,40 @@ else
         switch usage
             case 2
                 names = { 'taus','pow','AoD','AoA','EoD','EoA','gamma','pin','kappa',...
-                    'gr_epsilon_r','fbs_pos','lbs_pos'};
+                    'gr_epsilon_r','fbs_pos','lbs_pos' };
                 
             case 3
                 names = { 'pin','fbs_pos','lbs_pos' };
                 
+            case 5
+                names = {}; % Keep all
+                
             otherwise % case 1 or 4
                 names = {'ds','kf','sf','asD','asA','esD','esA','xpr',...
                     'taus','pow','AoD','AoA','EoD','EoA','gamma','pin','kappa',...
-                    'gr_epsilon_r','fbs_pos','lbs_pos'};
+                    'gr_epsilon_r','fbs_pos','lbs_pos','absTOA_offset' };
         end
         for n = 1 : numel( names )
-            if ~isempty( h_builder.( names{n} ) )
-                warning('QuaDRiGa:qd_builder:gen_ssf_parameters:exisitng',...
-                    ['Exisitng parameters "',names{n},'" were deleted when calling "gen_parameters".']);
-            end
             h_builder.(names{n}) = [];
         end
         
         % If there LSF parameters missing, generate them
-        if usage == 2 && ( isempty(h_builder.ds) || isempty(h_builder.kf) || isempty(h_builder.sf) || ...
-                isempty(h_builder.asD) || isempty(h_builder.asA) || isempty(h_builder.esD) || ...
-                isempty(h_builder.esA) || isempty(h_builder.xpr) )
-            h_builder.gen_parameters(1);
+        if ( usage == 2 || usage == 5 ) && ( isempty(h_builder.ds) || isempty(h_builder.kf) || ...
+                isempty(h_builder.sf) || isempty(h_builder.asD) || isempty(h_builder.asA) || ...
+                isempty(h_builder.esD) || isempty(h_builder.esA) || isempty(h_builder.xpr) )
+            h_builder.gen_parameters(1,0);
         end
         
         % If there SSF parameters missing, generate them
-        if usage == 3 && ( isempty(h_builder.taus) || isempty(h_builder.pow) || isempty(h_builder.AoD) || ...
-                isempty(h_builder.AoA) || isempty(h_builder.EoD) || isempty(h_builder.EoA) || ...
-                isempty(h_builder.gamma) || isempty(h_builder.kappa) )
-            h_builder.gen_parameters(2);
+        if ( usage == 3 || usage == 5 ) && ( isempty(h_builder.taus) || isempty(h_builder.pow) || ...
+                isempty(h_builder.AoD) || isempty(h_builder.AoA) || isempty(h_builder.EoD) || ...
+                isempty(h_builder.EoA) || isempty(h_builder.gamma) || isempty(h_builder.kappa) )
+            h_builder.gen_parameters(2,0);
+        end
+        
+        if usage == 5 && ( isempty( h_builder.pin ) || ...
+                ( ~h_builder.simpar.use_3GPP_baseline && ( isempty( h_builder.fbs_pos ) || isempty( h_builder.lbs_pos ) ) ) ) 
+            h_builder.gen_parameters(3,0);
         end
         
         % Set the number of clusters
@@ -231,8 +242,8 @@ else
             n_nlos_clusters = n_clusters-1;
             n_subpaths = [1,ones(1,n_nlos_clusters) * h_builder.scenpar.NumSubPaths];
         end
-        n_paths         = sum( n_subpaths );                                % Total number of paths
-        n_LnM           = n_nlos_clusters * h_builder.scenpar.NumSubPaths;  % Total number of NLOS paths
+        n_paths = sum( n_subpaths );                                % Total number of paths
+        n_LnM = n_nlos_clusters * h_builder.scenpar.NumSubPaths;    % Total number of NLOS closters
         
         if h_builder.dual_mobility
             tx_position = h_builder.tx_position;
@@ -240,16 +251,18 @@ else
             tx_position = h_builder.tx_position(:,1);
         end
         
-        if usage == 1 || usage == 4
-            % Generate LSF parameters
+        if usage == 1 || usage == 4  % Generate LSF parameters
+            
             if ~h_builder.lsp_xcorr_chk
                 error('QuaDRiGa:qd_builder:gen_parameters:lsp_xcorr_chk',...
                     ['LSP cross-correlation matix of "',h_builder.name,'" is not positive definite.']);
             end
+            
+            % Generate LSF Parameters
             [ ds, kf, sf, asD, asA, esD, esA, xpr ] = ...
                 generate_lsf( tx_position, h_builder.rx_positions, h_builder.lsp_vals,...
                 h_builder.lsp_xcorr, h_builder.sos,...
-                h_builder.scenpar.ES_D_mu_A, h_builder.scenpar.ES_D_mu_min);
+                h_builder.scenpar.ES_D_mu_A, h_builder.scenpar.ES_D_mu_min, h_builder.dual_mobility );
             
             % Save LSF parameters to builder object
             h_builder.ds  = ds;
@@ -260,6 +273,20 @@ else
             h_builder.esD = esD;
             h_builder.esA = esA;
             h_builder.xpr = xpr;
+            
+            % Absolute time-of-arrival offset
+            if h_builder.scenpar.absTOA_mu > -30
+                if isempty( h_builder.absTOA_sos )  % Random variable
+                    randC = randn( 1,n_mobiles );
+                elseif h_builder.dual_mobility      % Dual mobility variable
+                    randC = val( h_builder.absTOA_sos, h_builder.rx_positions, h_builder.tx_position );
+                else                                % Single mobility variable
+                    randC = val( h_builder.absTOA_sos, h_builder.rx_positions );
+                end
+                h_builder.absTOA_offset =...
+                    10.^( randC * h_builder.scenpar.absTOA_sigma + h_builder.scenpar.absTOA_mu );
+            end
+            
         else
             % Read LSF parameters from the builder object
             ds = h_builder.ds;
@@ -271,14 +298,14 @@ else
             xpr = h_builder.xpr;
         end
         
-        if usage == 2 || usage == 4
+        if usage == 2 || usage == 4  % Generate SSF parameters
             
             % Set the number of clusters
             h_builder.NumClusters = n_clusters;
             
             % Set the number of sub-paths per cluster
             h_builder.NumSubPaths = n_subpaths;
-         
+            
             % Create input variables for the path generation function
             spreads = [ ds; asD; asA; esD; esA; kf ];
             spreads = reshape( spreads , n_freq , 6 , [] );
@@ -303,7 +330,34 @@ else
                     tx_position, h_builder.rx_positions, spreads, h_builder.scenpar.r_DS, h_builder.scenpar.LNS_ksi, 1 );
             else
                 [ pow, taus, AoD, AoA, EoD, EoA ] = generate_paths( h_builder.scenpar.NumClusters,...
-                    tx_position, h_builder.rx_positions, spreads, gr_epsilon_r, h_builder.path_sos, h_builder.scenpar.r_DS );
+                    tx_position, h_builder.rx_positions, spreads, gr_epsilon_r, h_builder.path_sos,...
+                    h_builder.scenpar.r_DS, h_builder.dual_mobility );
+            end
+            
+            % Apply absolute time-of-arrival offset to NLOS delays
+            if ~isempty( h_builder.absTOA_offset )
+                taus( :, n_los_clusters+1:end ) =...
+                    taus( :, n_los_clusters+1:end ) + h_builder.absTOA_offset.' * ones(1,n_nlos_clusters );
+            end
+            
+            % If we do not use spatial consistency, we sort the clusters by powers in descending
+            % order. A subsequent call of "generate_subpaths" then splits only the first two
+            % clusters into sub-clusters. If spatial consistenncy is used, all clusters are split
+            % and no sorting operations are allowed.
+            if strcmp( h_builder.simpar.autocorrelation_function, 'Disable' ) || ...
+                    h_builder.scenpar.SC_lambda == 0 || h_builder.simpar.use_3GPP_baseline
+                
+                iNLOS =  n_los_clusters + 1 : n_clusters;
+                [ pow( :, iNLOS),iS ] = sort(  pow( :,iNLOS ), 2, 'descend' );
+                iS = [ ones(n_mobiles,1) * (1:n_los_clusters), iS + n_los_clusters  ];
+                
+                for n = 1 : n_mobiles
+                    taus( n,: ) = taus( n,iS(n,:) );
+                    AoD( n,: )  = AoD( n,iS(n,:) );
+                    AoA( n,: )  = AoA( n,iS(n,:) );
+                    EoD( n,: )  = EoD( n,iS(n,:) );
+                    EoA( n,: )  = EoA( n,iS(n,:) );
+                end
             end
             
             % Assign values to the builder
@@ -332,7 +386,8 @@ else
                 % Use spatially consistent polarization rotation
                 xpr_sigma = 0.1 * reshape( h_builder.lsp_vals(8,2,:), n_freq, 1 ) * ones(1,n_mobiles);
                 [ gamma, kappa ] = generate_pol_rot( n_nlos_clusters, h_builder.scenpar.NumSubPaths,...
-                    tx_position, h_builder.rx_positions, 10*log10(xpr), xpr_sigma, h_builder.xpr_sos );
+                    tx_position, h_builder.rx_positions, 10*log10(xpr), xpr_sigma, h_builder.xpr_sos,...
+                    h_builder.dual_mobility );
                 los_angle = zeros(n_mobiles,n_los_clusters,n_freq);
                 h_builder.gamma = cat( 2, los_angle, gamma );
                 h_builder.kappa = cat( 2, los_angle, kappa );
@@ -340,11 +395,11 @@ else
         end
         
         % Update progress bar (50% point)
-        if verbose; m1=ceil(1/2*vb_dots); if m1>m0;
-                for m2=1:m1-m0; fprintf('o'); end; m0=m1; end;
-        end;
+        if verbose; m1=ceil(1/2*vb_dots); if m1>m0
+                for m2=1:m1-m0; fprintf('o'); end; m0=m1; end
+        end
         
-        if usage == 3 || usage == 4
+        if usage == 3 || usage == 4  % Generate initial phases and scatterer positions
             
             % Generate random initial phases
             pin = zeros( n_mobiles,n_paths,n_freq );
@@ -356,7 +411,7 @@ else
                         randC = rand( n_mobiles,n_LnM );
                     else
                         if h_builder.dual_mobility
-                            randC = val( h_builder.pin_sos(:,:,iF), h_builder.rx_positions,tx_position ).';   % Uniform
+                            randC = val( h_builder.pin_sos(:,:,iF), h_builder.rx_positions, tx_position ).';   % Uniform
                         else
                             randC = val( h_builder.pin_sos(:,:,iF), h_builder.rx_positions ).';   % Uniform
                         end
@@ -389,9 +444,9 @@ else
     end
     
     % Update progress bar( 100% point )
-    if verbose; m1=ceil((2/2*vb_dots)); if m1>m0;
-            for m2=1:m1-m0; fprintf('o'); end; m0=m1; end;
-    end;
+    if verbose; m1=ceil((2/2*vb_dots)); if m1>m0
+            for m2=1:m1-m0; fprintf('o'); end; m0=m1; end
+    end
 end
 
 if verbose && nargin < 3

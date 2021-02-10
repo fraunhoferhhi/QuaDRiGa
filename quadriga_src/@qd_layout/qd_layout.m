@@ -68,6 +68,9 @@ properties(Dependent)
     % An index-list of links for which channel are created. The first
     % row corresponds to the Tx and the second row to the Rx.
     pairing
+    
+    % Indicator if the layout contains moving transmitters
+    dual_mobility
 end
 
 properties(Dependent,Hidden)
@@ -77,9 +80,6 @@ end
 properties(Dependent,SetAccess=protected)
     % Number of links for which channel coefficients are created (read only)
     no_links
-    
-    % Indicator if the layout contains moving transmitters
-    dual_mobility
 end
 
 properties(Access=private)
@@ -88,11 +88,16 @@ properties(Access=private)
     Prx_array       = qd_arrayant('omni');
     Prx_track       = qd_track([]);
     Ppairing        = [1;1];
+    Pdual_mobility  = false;
 end
 
 properties(Hidden)
     OctEq = false; % For qf.eq_octave
     ReferenceCoord = [];
+    h_qd_builder_init = [];
+    use_channel_interpolation = [];
+    builder_index = [];
+    track_checksum = [];
 end
 
 methods
@@ -103,9 +108,9 @@ methods
         % when constructing a new layout. We prevent this by assigning
         % the default settings here.
         h_layout.name = 'Layout';
-        h_layout.Prx_track = qd_track('linear',1,0);
+        h_layout.Prx_track = qd_track([]);
         h_layout.Prx_track.name = 'Rx0001';
-        h_layout.Ptx_track = qd_track('linear',0,0);        
+        h_layout.Ptx_track = qd_track([]);        
         h_layout.Ptx_track.initial_position = [0;0;25];
         h_layout.Ptx_track.name = 'Tx0001';
         h_layout.Ptx_array = qd_arrayant('omni');
@@ -159,7 +164,7 @@ methods
         out = size( h_layout.Ppairing , 2 );
     end
     function out = get.dual_mobility(h_layout)
-        out = any( cat(1,h_layout.tx_track(1,:).no_snapshots) > 1 );
+        out = any( cat(1,h_layout.tx_track(1,:).no_snapshots) > 1 ) | h_layout.Pdual_mobility;
     end
     
     % Set functions
@@ -201,6 +206,11 @@ methods
             h_layout.Ptx_track = Ntx_track;
         end
         h_layout.set_pairing('all');
+        if ~isempty( h_layout.h_qd_builder_init )
+            warning('QuaDRiGa:qd_layout:BuilderReset','Reset of pre-initialized "qd_builder" objects.');
+            h_layout.h_qd_builder_init = [];
+            h_layout.builder_index = [];
+        end
     end
     
     function set.no_rx(h_layout,value)
@@ -220,6 +230,11 @@ methods
             end
         end
         h_layout.set_pairing('all');
+        if ~isempty( h_layout.h_qd_builder_init )
+            warning('QuaDRiGa:qd_layout:BuilderReset','Reset of pre-initialized "qd_builder" objects.');
+            h_layout.h_qd_builder_init = [];
+            h_layout.builder_index = [];
+        end
     end
     
     function set.tx_name(h_layout,value)
@@ -273,6 +288,11 @@ methods
                 h_layout.tx_track(1,n) = trk;
             end
         end
+        if ~isempty( h_layout.h_qd_builder_init )
+            warning('QuaDRiGa:qd_layout:BuilderReset','Reset of pre-initialized "qd_builder" objects.');
+            h_layout.h_qd_builder_init = [];
+            h_layout.builder_index = [];
+        end
     end
     
     function set.tx_array(h_layout,value)
@@ -286,6 +306,11 @@ methods
             value( 1,2:h_layout.no_tx ) = value(1,1);
         end
         h_layout.Ptx_array = value;
+        if ~isempty( h_layout.h_qd_builder_init )
+            warning('QuaDRiGa:qd_layout:BuilderReset','Reset of pre-initialized "qd_builder" objects.');
+            h_layout.h_qd_builder_init = [];
+            h_layout.builder_index = [];
+        end
     end
     
     function set.tx_track(h_layout,value)
@@ -300,6 +325,11 @@ methods
             error('QuaDRiGa:qd_layout:WrongInput','??? Track name must be unique.')
         end
         h_layout.Ptx_track = value;
+        if ~isempty( h_layout.h_qd_builder_init )
+            warning('QuaDRiGa:qd_layout:BuilderReset','Reset of pre-initialized "qd_builder" objects.');
+            h_layout.h_qd_builder_init = [];
+            h_layout.builder_index = [];
+        end
     end
     
     function set.rx_name(h_layout,value)
@@ -353,6 +383,11 @@ methods
                 h_layout.rx_track(1,n) = trk;
             end
         end
+        if ~isempty( h_layout.h_qd_builder_init )
+            warning('QuaDRiGa:qd_layout:BuilderReset','Reset of pre-initialized "qd_builder" objects.');
+            h_layout.h_qd_builder_init = [];
+            h_layout.builder_index = [];
+        end
     end
     
     function set.rx_array(h_layout,value)
@@ -366,6 +401,11 @@ methods
             value( 1,2:h_layout.no_rx ) = value(1,1);
         end
         h_layout.Prx_array = value;
+        if ~isempty( h_layout.h_qd_builder_init )
+            warning('QuaDRiGa:qd_layout:BuilderReset','Reset of pre-initialized "qd_builder" objects.');
+            h_layout.h_qd_builder_init = [];
+            h_layout.builder_index = [];
+        end
     end
     
     function set.rx_track(h_layout,value)
@@ -380,6 +420,11 @@ methods
             error('QuaDRiGa:qd_layout:WrongInput','??? Track name must be unique.')
         end
         h_layout.Prx_track = value;
+        if ~isempty( h_layout.h_qd_builder_init )
+            warning('QuaDRiGa:qd_layout:BuilderReset','Reset of pre-initialized "qd_builder" objects.');
+            h_layout.h_qd_builder_init = [];
+            h_layout.builder_index = [];
+        end
     end
     
     function set.track(h_layout,value)
@@ -399,12 +444,21 @@ methods
         elseif any( value(2,:)>h_layout.no_rx )
             error('QuaDRiGa:qd_layout:WrongInput','??? "pairing" refers to non-existing Rx')
         end
-        value_new = unique( value(1,:) + 1j * value(2,:) );
+        value_new = unique( value(1,:) + size(value,2) * value(2,:) );
         if numel( value_new ) < size(value,2)
-            value = [ real( value_new ) ; imag( value_new ) ];
+            value = [ rem( value_new, size(value,2) ) ; fix(value_new./size(value,2)) ];
             warning('QuaDRiGa:qd_layout:WrongInput','removed multiple entires from "pairing".');
         end
         h_layout.Ppairing = value;
+    end
+    
+    function set.dual_mobility(h_layout,value)
+        h_layout.Pdual_mobility = logical(value(1));
+        if ~isempty( h_layout.h_qd_builder_init )
+            warning('QuaDRiGa:qd_layout:BuilderReset','Reset of pre-initialized "qd_builder" objects.');
+            h_layout.h_qd_builder_init = [];
+            h_layout.builder_index = [];
+        end
     end
     
     function names_are_unique = has_unique_track_names( h_layout )
@@ -429,7 +483,7 @@ methods
 end
 methods(Static)
     h_layout = generate( layout_type, no_sites, isd, h_array, no_sectors, sec_orientation )
-    [ h_layout, ReferenceCoord ] = kml2layout( fn, split_seg )
+    [ h_layout, ReferenceCoord ] = kml2layout( fn, split_seg, ForceRefCoord )
     varargout = call_private_fcn( functionName, varargin )
 end
 

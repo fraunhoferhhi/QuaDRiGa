@@ -44,11 +44,12 @@ properties
     rx_positions = [];
     
     sos = [];                  	% The large-scale parameter SOS generators
-    gr_sos = [];                % The SOS generator for the ground reflection coefficient
     path_sos = [];              % The SOS generators for the generation of MPCs
     xpr_sos = [];               % The SOS generators for the generation of the linear NLOS polarization
     pin_sos = [];               % The SOS generators for the generation of initial phases
     clst_dl_sos = [];           % The SOS generators for the generation per-cluster delay offsets
+    gr_sos = [];                % The SOS generator for the ground reflection coefficient
+    absTOA_sos = [];            % The SOS generator for the absolute time-of-arrival offset
     
     ds = [];                    % The RMS delay spread in [s] for each receiver position
     kf = [];                    % The Rician K-Factor [linear scale] for each receiver position
@@ -59,6 +60,7 @@ properties
     esA = [];                   % The elevation spread of arrival in [deg] for each receiver position
     xpr  = [];                  % The cross polarization ratio [linear scale] for each receiver position
     gr_epsilon_r = [];          % The relative permittivity for the ground reflection
+    absTOA_offset = [];         % The absolute time-of-arrival offset
     
     NumClusters                 % The number of clusters.
     NumSubPaths                 % The number of sub-paths per cluster
@@ -175,67 +177,67 @@ methods
             oF = ones( 1,numel( f_GHz ));
             o8 = ones( 8,1 );
             
-            scenpar = h_builder.Pscenpar;
+            scp = h_builder.Pscenpar;
             
             % Reference frequency offset (omega)
-            omega = [ scenpar.DS_omega; scenpar.KF_omega; scenpar.SF_omega; scenpar.AS_D_omega; ...
-                scenpar.AS_A_omega; scenpar.ES_D_omega; scenpar.ES_A_omega; scenpar.XPR_omega ];
+            omega = [ scp.DS_omega; scp.KF_omega; scp.SF_omega; scp.AS_D_omega; ...
+                scp.AS_A_omega; scp.ES_D_omega; scp.ES_A_omega; scp.XPR_omega ];
             
             % Reference values (mu) including the frequency scaling
-            mu = [ scenpar.DS_mu; scenpar.KF_mu; 0; scenpar.AS_D_mu; scenpar.AS_A_mu;...
-                scenpar.ES_D_mu; scenpar.ES_A_mu; scenpar.XPR_mu ];
-            gammap = [ scenpar.DS_gamma;scenpar.KF_gamma;0; scenpar.AS_D_gamma; ...
-                scenpar.AS_A_gamma ;scenpar.ES_D_gamma ;scenpar.ES_A_gamma; scenpar.XPR_gamma];
+            mu = [ scp.DS_mu; scp.KF_mu; 0; scp.AS_D_mu; scp.AS_A_mu;...
+                scp.ES_D_mu; scp.ES_A_mu; scp.XPR_mu ];
+            gammap = [ scp.DS_gamma;scp.KF_gamma;0; scp.AS_D_gamma; ...
+                scp.AS_A_gamma ;scp.ES_D_gamma ;scp.ES_A_gamma; scp.XPR_gamma];
             mu = mu( :,oF ) + gammap(:,oF) .* log10( omega(:,oF) + f_GHz(o8,:) );
             
             % STD of the LSPs (sigma) including the frequency scaling
-            sigma = [ scenpar.DS_sigma;scenpar.KF_sigma;scenpar.SF_sigma; scenpar.AS_D_sigma;...
-                scenpar.AS_A_sigma;scenpar.ES_D_sigma;scenpar.ES_A_sigma; scenpar.XPR_sigma ];
-            delta = [ scenpar.DS_delta;scenpar.KF_delta;scenpar.SF_delta; scenpar.AS_D_delta;...
-                scenpar.AS_A_delta;scenpar.ES_D_delta;scenpar.ES_A_delta; scenpar.XPR_delta ];
+            sigma = [ scp.DS_sigma;scp.KF_sigma;scp.SF_sigma; scp.AS_D_sigma;...
+                scp.AS_A_sigma;scp.ES_D_sigma;scp.ES_A_sigma; scp.XPR_sigma ];
+            delta = [ scp.DS_delta;scp.KF_delta;scp.SF_delta; scp.AS_D_delta;...
+                scp.AS_A_delta;scp.ES_D_delta;scp.ES_A_delta; scp.XPR_delta ];
             sigma = sigma( :,oF ) + delta(:,oF) .* log10( omega(:,oF) + f_GHz(o8,:) );
             sigma( sigma<0 ) = 0;
             
             % Decorr dist (lambda)
-            lambda = [ scenpar.DS_lambda;scenpar.KF_lambda;scenpar.SF_lambda;...
-                scenpar.AS_D_lambda;scenpar.AS_A_lambda;scenpar.ES_D_lambda;...
-                scenpar.ES_A_lambda; scenpar.XPR_lambda ];
+            lambda = [ scp.DS_lambda;scp.KF_lambda;scp.SF_lambda;...
+                scp.AS_D_lambda;scp.AS_A_lambda;scp.ES_D_lambda;...
+                scp.ES_A_lambda; scp.XPR_lambda ];
             lambda = lambda( :,oF );
             
             % Distance-dependence (epsilon) of the reference value
-            epsilon = [ scenpar.DS_epsilon; scenpar.KF_epsilon; 0;...
-                scenpar.AS_D_epsilon; scenpar.AS_A_epsilon; scenpar.ES_D_epsilon;...
-                scenpar.ES_A_epsilon; scenpar.XPR_epsilon ];
+            epsilon = [ scp.DS_epsilon; scp.KF_epsilon; 0;...
+                scp.AS_D_epsilon; scp.AS_A_epsilon; scp.ES_D_epsilon;...
+                scp.ES_A_epsilon; scp.XPR_epsilon ];
             epsilon = epsilon( :,oF );
             
             % Height-dependence (zeta) of the reference value
-            zeta = [ scenpar.DS_zeta; scenpar.KF_zeta; 0;...
-                scenpar.AS_D_zeta; scenpar.AS_A_zeta; scenpar.ES_D_zeta;...
-                scenpar.ES_A_zeta; scenpar.XPR_zeta ];
+            zeta = [ scp.DS_zeta; scp.KF_zeta; 0;...
+                scp.AS_D_zeta; scp.AS_A_zeta; scp.ES_D_zeta;...
+                scp.ES_A_zeta; scp.XPR_zeta ];
             zeta = zeta( :,oF );
             
             % Elevation-dependence (alpha) of the reference value
-            alpha = [ scenpar.DS_alpha; scenpar.KF_alpha; 0;...
-                scenpar.AS_D_alpha; scenpar.AS_A_alpha; scenpar.ES_D_alpha;...
-                scenpar.ES_A_alpha; scenpar.XPR_alpha ];
+            alpha = [ scp.DS_alpha; scp.KF_alpha; 0;...
+                scp.AS_D_alpha; scp.AS_A_alpha; scp.ES_D_alpha;...
+                scp.ES_A_alpha; scp.XPR_alpha ];
             alpha = alpha( :,oF );
             
             % Distance-dependence (kappa) of the reference STD
-            kappap = [ scenpar.DS_kappa; scenpar.KF_kappa; scenpar.SF_kappa;...
-                scenpar.AS_D_kappa; scenpar.AS_A_kappa; scenpar.ES_D_kappa;...
-                scenpar.ES_A_kappa; scenpar.XPR_kappa ];
+            kappap = [ scp.DS_kappa; scp.KF_kappa; scp.SF_kappa;...
+                scp.AS_D_kappa; scp.AS_A_kappa; scp.ES_D_kappa;...
+                scp.ES_A_kappa; scp.XPR_kappa ];
             kappap = kappap( :,oF );
             
             % Height-dependence (tau) of the reference STD
-            tau = [ scenpar.DS_tau; scenpar.KF_tau; scenpar.SF_tau;...
-                scenpar.AS_D_tau; scenpar.AS_A_tau; scenpar.ES_D_tau;...
-                scenpar.ES_A_tau; scenpar.XPR_tau ];
+            tau = [ scp.DS_tau; scp.KF_tau; scp.SF_tau;...
+                scp.AS_D_tau; scp.AS_A_tau; scp.ES_D_tau;...
+                scp.ES_A_tau; scp.XPR_tau ];
             tau = tau( :,oF );
             
             % Elevation-dependence (beta) of the reference STD
-            beta = [ scenpar.DS_beta; scenpar.KF_beta; scenpar.SF_beta;...
-                scenpar.AS_D_beta; scenpar.AS_A_beta; scenpar.ES_D_beta;...
-                scenpar.ES_A_beta; scenpar.XPR_beta ];
+            beta = [ scp.DS_beta; scp.KF_beta; scp.SF_beta;...
+                scp.AS_D_beta; scp.AS_A_beta; scp.ES_D_beta;...
+                scp.ES_A_beta; scp.XPR_beta ];
             beta = beta( :,oF );
             
             % Assemble output
@@ -357,6 +359,8 @@ end
 methods(Static)
     [ scenarios , config_folder , file_names ] = supported_scenarios( parse_shortnames )
     varargout = call_private_fcn( functionName, varargin )
+    h_builder = gen_cdl_model( cdl_model, center_frequency, mobile_speed, duration, ds, kf, asd, ...
+        asa, esd, esa, cas_factor, sample_density )
 end
 
 methods % Legacy parameter generation functions

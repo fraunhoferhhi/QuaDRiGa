@@ -128,9 +128,9 @@ for seg = 1 : numel(i_segment)
     % Create new track with the corresponding data
     tr = qd_track([]);
     if h_track.no_segments > 1
-        tr.Pname                = [h_track.name,'_seg',num2str(segment,'%04u') ];
+        tr.name                 = [h_track.name,'_seg',num2str(segment,'%04u') ];
     else
-        tr.Pname                = h_track.name;
+        tr.name                 = h_track.name;
     end
     tr.positions                = h_track.positions( :,ind );
     tr.segment_index            = seg_ind;

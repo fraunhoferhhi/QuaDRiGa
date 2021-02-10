@@ -79,7 +79,7 @@ function [ phi_d_lms, theta_d_lms, phi_a_lms, theta_a_lms, psi_lms, tau_ls, ...
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
-persistent i_mobile_p fbs_pos_p lbs_pos_p norm_b_tlms phi_d_lms_p theta_d_lms_p norm_c_lm e_ts e_ts0
+persistent i_mobile_p fbs_pos_p lbs_pos_p norm_b_tlms phi_d_lms_p theta_d_lms_p norm_c_lm e_ts e_ts0 NumSubPaths
 
 % If "i_mobile" is given as an input, we initialize all persistent variables. If it is not given, we
 % use the values from the last call to the method. This reduces computing time significantly.
@@ -97,6 +97,13 @@ if exist( 'i_mobile','var' )
     % The vector pointing from the FBS to the LBS
     c_lm       = -fbs_pos +lbs_pos;
     norm_c_lm  = sqrt( sum( c_lm.^2 ,1 ) );
+    
+    iClst = h_builder.pow(i_mobile,:) ~= 0;
+    iClst(1) = true;
+    if logical( h_builder.scenpar.GR_enabled )
+        iClst(2) = true;
+    end
+    NumSubPaths = h_builder.NumSubPaths( iClst );
 end
 
 % Read some common variables
@@ -244,7 +251,7 @@ end
 psi_lms     = 2*pi/lambda * mod(d_lms, lambda);
 
 % The average delay for each cluster
-tau_ls      = clst_avg( d_lms, h_builder.NumSubPaths ) ./ h_builder.simpar.speed_of_light;
+tau_ls      = clst_avg( d_lms, NumSubPaths ) ./ h_builder.simpar.speed_of_light;
 
 % When we use relative delays, we have to normalize the delays to the LOS tau_ls0 is the LOS delay
 % at the RX-position without antennas. It is needed when the coefficients are going to be normalized

@@ -57,9 +57,14 @@ for n = 1:numel(files_tmp)
 end
 
 % Parse files in config-folder
-information = what('quadriga_src');
-config_folder = [information.path,filesep,'config',filesep];
-files_tmp = dir([config_folder,'*.conf']);
+quadriga_path = path;
+if isempty( regexp( quadriga_path,';' ) )   % Linux separates path entries by ":"
+    quadriga_path = regexp(quadriga_path, ':?([^:]*quadriga_src)', 'tokens'); % Linux
+else % Windows separated path entries by ";"
+    quadriga_path = regexp(quadriga_path, ':?([^;]*quadriga_src)', 'tokens'); % Windows
+end
+config_folder = fullfile(quadriga_path{1}{1}, 'config');
+files_tmp = dir(fullfile(config_folder, '*.conf'));
 
 for n = 1:numel(files_tmp)
     files(m).name = files_tmp(n).name;
@@ -84,7 +89,7 @@ for n = 1 : nfiles
     
     if parse_shortnames
         % Read the file content to find short names for the scenario
-        file = fopen( [ files(n).dir , files(n).name ] ,'r');
+        file = fopen(fullfile(files(n).dir, files(n).name), 'r');
         lin = fgets(file);
         while ischar(lin)
             p1 = regexp(lin,'[ \t]*ShortName[ \t]*=[ \t]*[A-Za-z0-9_]+','match');

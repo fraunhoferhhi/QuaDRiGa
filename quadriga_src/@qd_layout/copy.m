@@ -73,9 +73,13 @@ else
     
     % Copy objects of other classes
     obj.simpar =  copy( in.simpar );
+    
+    obj.no_tx = in.no_tx;
     obj.tx_array = copy( in.tx_array );
-    obj.rx_array = copy( in.rx_array );
     obj.tx_track = copy( in.tx_track );
+    
+    obj.no_rx = in.no_rx;
+    obj.rx_array = copy( in.rx_array );
     obj.rx_track = copy( in.rx_track );
 end
 

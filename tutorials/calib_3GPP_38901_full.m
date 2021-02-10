@@ -179,7 +179,7 @@ set(0,'defaultAxesFontName','Times')                                    % Defaul
 set(0,'defaultTextFontName','Times')                                    % Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')                          % Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')                              % Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 6.6])                              % Default Paper Size
+set(0,'DefaultFigurePaperSize',[16.5 7.3])                              % Default Paper Size
 
 legend_names = { '6 GHz','30 GHz','60 GHz','70 GHz' };
 line_col = {'b','r','m','k'};                                           % Color of the lines
@@ -187,8 +187,8 @@ line_col = {'b','r','m','k'};                                           % Color 
 for il = select_scenario                                                % Scenario
     figure('Position',[ 50 , 550 , 1400 , 640]);                        % New figure
     pg_eff = []; cl = [];                                               % Clear variables
-    if il  < 3; xm = -210; wx = 150; tx = 0.01; ty = 97; end;           % UMa and UMi
-    if il == 3; xm = -105; wx =  70; tx = 0.01; ty = 97; end;           % InH
+    if il  < 3; xm = -210; wx = 150; tx = 0.01; ty = 97; end            % UMa and UMi
+    if il == 3; xm = -105; wx =  70; tx = 0.01; ty = 97; end            % InH
     for ic = 1:2                                                        % Configuration
         axes('position',[0.06+(ic-1)*0.48 0.12 0.44 0.81]); hold on;    % New sub-figure
         text( tx*wx+xm,ty,'QD.'); text( tx*wx+xm,ty-4,'3GP');           % Result text
@@ -209,7 +209,7 @@ for il = select_scenario                                                % Scenar
         hold off; grid on; box on; set(gca,'YTick',0:10:100);           % Decorations
         set(gca,'XTick',xm : wx/10 : xm+wx); axis([xm xm+wx 0 100]);
         xlabel('Coupling loss (dB)'); title([ l(1,il).name,' - Config ',num2str( ic ) ] );
-        if ic==1; ylabel('CDF [%]'); end;
+        if ic==1; ylabel('CDF [%]'); end 
         legend(ln,legend_names(select_fequency),'Location', 'SouthEast');
         text( 0.01*wx+xm, 3, ['v.',qd_simulation_parameters.version] );
     end
@@ -226,8 +226,8 @@ end
 for il = select_scenario                                                % Scenario
     figure('Position',[ 50 , 550 , 1400 , 640]);
     rsrp_p0 = []; cl = [];
-    if il==1 || il==2;  xm = -10; wx = 40; tx = 0.01; ty = 97; end;
-    if il==3;           xm = -10; wx = 25; tx = 0.01; ty = 97; end;
+    if il==1 || il==2;  xm = -10; wx = 40; tx = 0.01; ty = 97; end
+    if il==3;           xm = -10; wx = 25; tx = 0.01; ty = 97; end
     for ic = 1 : 2                                                      % Configuration
         axes('position',[0.06+(ic-1)*0.48 0.12 0.44 0.81]); hold on;
         text( tx*wx+xm,ty,'QD.'); text( tx*wx+xm,ty-4,'3GP');
@@ -249,7 +249,7 @@ for il = select_scenario                                                % Scenar
         hold off; grid on; box on; set(gca,'YTick',0:10:100);
         set(gca,'XTick',xm : wx/10 : xm+wx); axis([xm xm+wx 0 100]);
         xlabel('Wideband SINR (dB)'); title([ l(1,il).name,' - Config ',num2str( ic ) ] );
-        if ic==1; ylabel('CDF [%]'); end;
+        if ic==1; ylabel('CDF [%]'); end
         legend(ln,legend_names(select_fequency),'Location', 'SouthEast');
         text( 0.01*wx+xm, 3, ['v.',qd_simulation_parameters.version] );
     end
@@ -271,9 +271,9 @@ ref_InH = 10.^( 0.18*randn(no_freq,10000) + mu * ones(1,10000) )*1e9;
 for il = select_scenario                                                % Scenario
     pg_eff = []; ds = []; ds_tmp = [];
     if il == 1 || il == 3; figure('Position',[ 50 , 550 , 1400 , 640]); end; tx = 0.41; ty = 47;
-    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 1000; end;
-    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 1000; end;
-    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 80; end;
+    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 1000; end
+    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 1000; end
+    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 80; end
     text( tx*wx+xm,ty,'QD.'); text( tx*wx+xm,ty-4,'3GP');
     ln = []; bins = (-0.1:0.005:1.1)*wx+xm;
     for iF = 1 : no_freq                                                % Frequency
@@ -289,13 +289,13 @@ for il = select_scenario                                                % Scenar
         plot( ds38900(iFs,:,il), 5:5:95,['+--',line_col{iFs}],'Linewidth',1 )
         text( tX,ty,   num2str(median(ds)         ,'%1.1f'),'Color',line_col{iFs});
         text( tX,ty-4, num2str(ds38900(iFs,10,il) ,'%1.1f'),'Color',line_col{iFs});
-        if il==3;plot(bins,100*qf.acdf(ref_InH(iF,:),bins),'-.','Color',line_col{iFs});end;
+        if il==3;plot(bins,100*qf.acdf(ref_InH(iF,:),bins),'-.','Color',line_col{iFs});end
     end
-    if il<3; ln(end+1)=plot(bins,100*qf.acdf(ref_O2I,bins),'-.','Color',[0 .5 0],'Linewidth',2);end;
+    if il<3; ln(end+1)=plot(bins,100*qf.acdf(ref_O2I,bins),'-.','Color',[0 .5 0],'Linewidth',2);end
     hold off; grid on; box on; set(gca,'YTick',0:10:100);
     set(gca,'XTick',xm : wx/10 : xm+wx); axis([xm xm+wx 0 100]);
     xlabel('Delay Spread (nsec)'); title([ l(1,il).name ] );
-    if il==1 || il==3; ylabel('CDF [%]'); end;
+    if il==1 || il==3; ylabel('CDF [%]'); end
     legend(ln,{legend_names{select_fequency},legend_ref{il}},'Location', 'SouthEast');
     text( 0.01*wx+xm, 3, ['v.',qd_simulation_parameters.version] );
 end
@@ -322,9 +322,9 @@ ref_InH = 10.^( randn(1,10000)*0.18 +1.60 );
 for il = select_scenario                                                % Scenario
     pg_eff = []; asd = []; asd_tmp = [];
     if il == 1 || il == 3; figure('Position',[ 50 , 550 , 1400 , 640]); end; tx = 0.01; ty = 97;
-    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 80; end;
-    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 80; end;
-    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 80; end;
+    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 80; end
+    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 80; end
+    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 80; end
     text( tx*wx+xm,ty,'QD.'); text( tx*wx+xm,ty-4,'3GP');
     ln = []; bins = (-0.1:0.005:1.1)*wx+xm;
     for iF = 1 : no_freq                                                % Frequency
@@ -341,12 +341,12 @@ for il = select_scenario                                                % Scenar
         text( tX,ty,   num2str(median(asd)         ,'%1.1f'),'Color',line_col{iFs});
         text( tX,ty-4, num2str(asd38900(iFs,10,il) ,'%1.1f'),'Color',line_col{iFs});
     end
-    if il<3; ln(end+1)=plot(bins,100*qf.acdf(ref_O2I,bins),'-.','Color',[0 .5 0],'Linewidth',2);end;
-    if il==3;ln(end+1)=plot(bins,100*qf.acdf(ref_InH,bins),'-.','Color',[0 .5 0],'Linewidth',2);end;
+    if il<3; ln(end+1)=plot(bins,100*qf.acdf(ref_O2I,bins),'-.','Color',[0 .5 0],'Linewidth',2);end
+    if il==3;ln(end+1)=plot(bins,100*qf.acdf(ref_InH,bins),'-.','Color',[0 .5 0],'Linewidth',2);end
     hold off; grid on; box on; set(gca,'YTick',0:10:100);
     set(gca,'XTick',xm : wx/10 : xm+wx); axis([xm xm+wx 0 100]);
     xlabel('ASD (degrees)'); title([ l(1,il).name ] );
-    if il==1 || il==3; ylabel('CDF [%]'); end;
+    if il==1 || il==3; ylabel('CDF [%]'); end
     legend(ln,{legend_names{select_fequency},legend_ref{il}},'Location', 'SouthEast');
     text( 0.01*wx+xm, 3, ['v.',qd_simulation_parameters.version] );
 end
@@ -374,9 +374,9 @@ ref_InH = 10.^( sig * randn(1,10000) + mu * ones(1,10000) );
 for il = select_scenario                                                % Scenario
     pg_eff = []; esd = []; esd_tmp = [];
     if il == 1 || il == 3; figure('Position',[ 50 , 550 , 1400 , 640]); end; tx = 0.41; ty = 37;
-    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 6; end;
-    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 15; end;
-    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 30; end;
+    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 6; end
+    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 15; end
+    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 30; end
     text( tx*wx+xm,ty,'QD.'); text( tx*wx+xm,ty-4,'3GP');
     ln = []; bins = (-0.1:0.005:1.1)*wx+xm;
     for iF = 1 : no_freq                                                % Frequency
@@ -392,12 +392,12 @@ for il = select_scenario                                                % Scenar
         plot( zsd38900(iFs,:,il), 5:5:95,['+--',line_col{iFs}],'Linewidth',1 )
         text( tX,ty,   num2str(median(esd)         ,'%1.1f'),'Color',line_col{iFs});
         text( tX,ty-4, num2str(zsd38900(iFs,10,il) ,'%1.1f'),'Color',line_col{iFs});
-        if il==3;plot(bins,100*qf.acdf(ref_InH(iF,:),bins),'-.','Color',line_col{iFs});end;
+        if il==3;plot(bins,100*qf.acdf(ref_InH(iF,:),bins),'-.','Color',line_col{iFs});end
     end
     hold off; grid on; box on; set(gca,'YTick',0:10:100);
     set(gca,'XTick',xm : wx/10 : xm+wx); axis([xm xm+wx 0 100]);
     xlabel('ZSD (degrees)'); title([ l(1,il).name ] );
-    if il==1 || il==3; ylabel('CDF [%]'); end;
+    if il==1 || il==3; ylabel('CDF [%]'); end
     legend(ln,legend_names(select_fequency),'Location', 'SouthEast');
     text( 0.01*wx+xm, 3, ['v.',qd_simulation_parameters.version] );
 end
@@ -423,9 +423,9 @@ ref_InH = 10.^( sig * randn(1,10000) + mu * ones(1,10000) );
 for il = select_scenario                                                % Scenario
     pg_eff = []; asa = []; asa_tmp = [];
     if il == 1 || il == 3; figure('Position',[ 50 , 550 , 1400 , 640]); end; tx = 0.01; ty = 97;
-    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 100; end;
-    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 100; end;
-    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 80; end;
+    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 100; end
+    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 100; end
+    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 80; end
     text( tx*wx+xm,ty,'QD.'); text( tx*wx+xm,ty-4,'3GP');
     ln = []; bins = (-0.1:0.005:1.1)*wx+xm;
     for iF = 1 : no_freq                                                % Frequency
@@ -441,13 +441,13 @@ for il = select_scenario                                                % Scenar
         plot( asa38900(iFs,:,il), 5:5:95,['+--',line_col{iFs}],'Linewidth',1 )
         text( tX,ty,   num2str(median(asa)         ,'%1.1f'),'Color',line_col{iFs});
         text( tX,ty-4, num2str(asa38900(iFs,10,il) ,'%1.1f'),'Color',line_col{iFs});
-        if il==3;plot(bins,100*qf.acdf(ref_InH(iF,:),bins),'-.','Color',line_col{iFs});end;
+        if il==3;plot(bins,100*qf.acdf(ref_InH(iF,:),bins),'-.','Color',line_col{iFs});end
     end
-    if il<3; ln(end+1)=plot(bins,100*qf.acdf(ref_O2I,bins),'-.','Color',[0 .5 0],'Linewidth',2);end;
+    if il<3; ln(end+1)=plot(bins,100*qf.acdf(ref_O2I,bins),'-.','Color',[0 .5 0],'Linewidth',2);end
     hold off; grid on; box on; set(gca,'YTick',0:10:100);
     set(gca,'XTick',xm : wx/10 : xm+wx); axis([xm xm+wx 0 100]);
     xlabel('ASA (degrees)'); title([ l(1,il).name ] );
-    if il==1 || il==3; ylabel('CDF [%]'); end;
+    if il==1 || il==3; ylabel('CDF [%]'); end
     legend(ln,{legend_names{select_fequency},legend_ref{il}},'Location', 'SouthEast');
     text( 0.01*wx+xm, 3, ['v.',qd_simulation_parameters.version] );
 end
@@ -465,9 +465,9 @@ ref_InH = 10.^( sig * randn(1,10000) + mu * ones(1,10000) );
 for il = select_scenario                                                % Scenario
     pg_eff = []; esa = []; esa_tmp = [];
     if il == 1 || il == 3; figure('Position',[ 50 , 550 , 1400 , 640]); end; tx = 0.01; ty = 97;
-    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 50; end;
-    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 50; end;
-    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 25; end;
+    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 50; end
+    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 50; end
+    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 25; end
     text( tx*wx+xm,ty,'QD.'); text( tx*wx+xm,ty-4,'3GP');
     ln = []; bins = (-0.1:0.005:1.1)*wx+xm;
     for iF = 1 : no_freq                                                % Frequency
@@ -483,13 +483,13 @@ for il = select_scenario                                                % Scenar
         plot( zsa38900(iFs,:,il), 5:5:95,['+--',line_col{iFs}],'Linewidth',1 )
         text( tX,ty,   num2str(median(esa)         ,'%1.1f'),'Color',line_col{iFs});
         text( tX,ty-4, num2str(zsa38900(iFs,10,il) ,'%1.1f'),'Color',line_col{iFs});
-        if il==3;plot(bins,100*qf.acdf(ref_InH(iF,:),bins),'-.','Color',line_col{iFs});end;
+        if il==3;plot(bins,100*qf.acdf(ref_InH(iF,:),bins),'-.','Color',line_col{iFs});end
     end
-    if il<3; ln(end+1)=plot(bins,100*qf.acdf(ref_O2I,bins),'-.','Color',[0 .5 0],'Linewidth',2);end;
+    if il<3; ln(end+1)=plot(bins,100*qf.acdf(ref_O2I,bins),'-.','Color',[0 .5 0],'Linewidth',2);end
     hold off; grid on; box on; set(gca,'YTick',0:10:100);
     set(gca,'XTick',xm : wx/10 : xm+wx); axis([xm xm+wx 0 100]);
     xlabel('ZSA (degrees)'); title([ l(1,il).name ] );
-    if il==1 || il==3; ylabel('CDF [%]'); end;
+    if il==1 || il==3; ylabel('CDF [%]'); end
      legend(ln,{legend_names{select_fequency},legend_ref{il}},'Location', 'SouthEast');
     text( 0.01*wx+xm, 3, ['v.',qd_simulation_parameters.version] );
 end
@@ -538,9 +538,9 @@ end
 for il = select_scenario                                                % Scenario
     pg_eff = []; esa = []; esa_tmp = [];
     if il == 1 || il == 3; figure('Position',[ 50 , 550 , 1400 , 640]); end; tx = 0.01; ty = 97;
-    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = -10; wx = 30; end;
-    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = -10; wx = 30; end;
-    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = -10; wx = 30; end;
+    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = -10; wx = 30; end
+    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = -10; wx = 30; end
+    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = -10; wx = 30; end
     text( tx*wx+xm,ty,'QD.'); text( tx*wx+xm,ty-4,'3GP');
     ln = []; bins = (-0.1:0.005:1.1)*wx+xm;
     for iF = 1 : no_freq                                                % Frequency
@@ -554,7 +554,7 @@ for il = select_scenario                                                % Scenar
     hold off; grid on; box on; set(gca,'YTick',0:10:100);
     set(gca,'XTick',xm : wx/10 : xm+wx); axis([xm xm+wx 0 100]);
     xlabel('10log10( 1st singular value )'); title([ l(1,il).name ] );
-    if il==1 || il==3; ylabel('CDF [%]'); end;
+    if il==1 || il==3; ylabel('CDF [%]'); end
     legend(ln,legend_names(select_fequency),'Location', 'SouthEast');
     text( 0.01*wx+xm, 3, ['v.',qd_simulation_parameters.version] );
 end
@@ -569,9 +569,9 @@ end
 for il = select_scenario                                                % Scenario
     pg_eff = []; esa = []; esa_tmp = [];
     if il == 1 || il == 3; figure('Position',[ 50 , 550 , 1400 , 640]); end; tx = 0.01; ty = 97;
-    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = -30; wx = 40; end;
-    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = -30; wx = 40; end;
-    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = -50; wx = 50; end;
+    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = -30; wx = 40; end
+    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = -30; wx = 40; end
+    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = -50; wx = 50; end
     text( tx*wx+xm,ty,'QD.'); text( tx*wx+xm,ty-4,'3GP');
     ln = []; bins = (-0.1:0.005:1.1)*wx+xm;
     for iF = 1 : no_freq                                                % Frequency
@@ -585,7 +585,7 @@ for il = select_scenario                                                % Scenar
     hold off; grid on; box on; set(gca,'YTick',0:10:100);
     set(gca,'XTick',xm : wx/10 : xm+wx); axis([xm xm+wx 0 100]);
     xlabel('10log10( 2nd singular value )'); title([ l(1,il).name ] );
-    if il==1 || il==3; ylabel('CDF [%]'); end;
+    if il==1 || il==3; ylabel('CDF [%]'); end
     legend(ln,legend_names(select_fequency),'Location', 'SouthEast');
     text( 0.01*wx+xm, 3, ['v.',qd_simulation_parameters.version] );
 end
@@ -604,9 +604,9 @@ end
 for il = select_scenario                                                % Scenario
     pg_eff = []; esa = []; esa_tmp = [];
     if il == 1 || il == 3; figure('Position',[ 50 , 550 , 1400 , 640]); end; tx = 0.01; ty = 97;
-    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 40; end;
-    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 40; end;
-    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 60; end;
+    if il == 1; axes('position',[0.06 0.12 0.44 0.81]); hold on; xm = 0; wx = 40; end
+    if il == 2; axes('position',[0.54 0.12 0.44 0.81]); hold on; xm = 0; wx = 40; end
+    if il == 3; axes('position',[0.30 0.12 0.44 0.81]); hold on; xm = 0; wx = 60; end
     text( tx*wx+xm,ty,'QD.'); text( tx*wx+xm,ty-4,'3GP');
     ln = []; bins = (-0.1:0.005:1.1)*wx+xm;
     for iF = 1 : no_freq                                                % Frequency
@@ -620,7 +620,7 @@ for il = select_scenario                                                % Scenar
     hold off; grid on; box on; set(gca,'YTick',0:10:100);
     set(gca,'XTick',xm : wx/10 : xm+wx); axis([xm xm+wx 0 100]);
     xlabel('10log10( ratio singular values )'); title([ l(1,il).name ] );
-    if il==1 || il==3; ylabel('CDF [%]'); end;
+    if il==1 || il==3; ylabel('CDF [%]'); end
     legend(ln,legend_names(select_fequency),'Location', 'SouthEast');
     text( 0.01*wx+xm, 3, ['v.',qd_simulation_parameters.version] );
 end

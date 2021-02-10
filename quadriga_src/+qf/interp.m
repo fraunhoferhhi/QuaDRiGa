@@ -1,13 +1,14 @@
-function zi = interp( x, y, z, xc, yc )
+function zi = interp( x, y, z, xc, yc, use_double )
 %INTERP 2D linear interpolation optimized for performace
+%
+% Calling object:
+%   None (static method)
 %
 % Description:
 %   This function implements a 2D linear interpolation which is highly optimized for fast
 %   execution. All calculations are done in single-precision floating point (30% faster than double
-%   precision, but less accurate), and multiple data sets can be interpolated simultaneously.  One-
-%   dimensional linear interpolation can be done by using
-%
-%   zi = interp( x, 0, z, xc )
+%   precision, but less accurate), and multiple data sets can be interpolated simultaneously. One-
+%   dimensional linear interpolation can be done by usingzi = interp( x, 0, z, xc )
 %
 % Input:
 %   x
@@ -26,12 +27,15 @@ function zi = interp( x, y, z, xc, yc )
 %   xc
 %   Vector of y sample points after interpolation; size [ 1, nyi ] or [ nyi, 1 ]
 %
+%   use_double
+%   If set to true, double precision is used instead of single precision.
+%
 % Output:
 %   zi
 %   The interpolated data; size [ nyi, nxi, ne ]
 %
 %
-% QuaDRiGa Copyright (C) 2011-2019
+% QuaDRiGa Copyright (C) 2011-2020
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -44,23 +48,25 @@ function zi = interp( x, y, z, xc, yc )
 % contributors "AS IS" and WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES, including but not limited to
 % the implied warranties of merchantability and fitness for a particular purpose.
 %
-% You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for
+% You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for 
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
+
+use_single = true;
+if exist( 'use_double','var' ) && use_double
+   use_single = false;
+end
 
 if isempty( y )
     y = 0;
 end
 
-if isa(z,'double')
+if use_single && isa(z,'double')
     z = single( z );
     z_is_double = true;
 else
     z_is_double = false;
 end
-
-x = single( x(:).' );
-y = single( y(:).' );
 
 nx = numel(x);
 ny = numel(y);
@@ -77,16 +83,26 @@ if ny == 1
     z  = z(:);
 end
 
+if use_single
+    x  = single( x(:).' );
+    y  = single( y(:).' );
+    xc = single( xc );
+    yc = single( yc );
+else
+    x = x(:).';
+    y = y(:).';
+end
+
 nxc = numel(xc);
 nyc = numel(yc);
 oxc = ones(1,nxc,'uint8');
 oyc = ones(1,nyc,'uint8');
 
-xi = reshape( single(xc) , 1, [] );
+xi = reshape( xc , 1, [] );
 xi = xi( oyc,: );
 xi = xi(:).';
 
-yi = reshape( single(yc) , [] , 1 );
+yi = reshape( yc , [] , 1 );
 yi = yi( :,oxc );
 yi = yi(:).';
 
@@ -108,7 +124,6 @@ u       = (xi-x(ui))./( x(uin)-x(ui) );
 u(isnan(u)) = 0;
 u       = u';
 
-
 % Determine the nearest location of yi in y and the difference to
 % the next point
 if ny > 1
@@ -127,7 +142,11 @@ if ny > 1
 else
     vi  = uint32( 1 );
     vin = uint32( 1 );
-    v   = zeros( ni,1,'single' );
+    if use_single
+        v = zeros( ni,1,'single' );
+    else
+        v = zeros( ni,1 );
+    end
 end
 
 % Calculate the scaling coefficients
@@ -153,7 +172,11 @@ i3 = [fl;fl;tr;fl];
 i4 = [fl;fl;fl;tr];
 
 % Interpolate
-zi = zeros( ni, ne, 'single' );
+if use_single
+    zi = zeros( ni, ne, 'single' );
+else
+    zi = zeros( ni, ne );
+end
 for n = 1 : ne
     ndx = pY(n) + pX;
     a = z( ndx );

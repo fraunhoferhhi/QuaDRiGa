@@ -239,6 +239,6 @@ switch method
         pairs = pairs(:,1:i_end);
 end
 
-h_layout.pairing = pairs;
+h_layout.Ppairing = pairs;
 
 end

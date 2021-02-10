@@ -12,12 +12,15 @@ function mse = set_grid( h_qd_arrayant , azimuth_grid , elevation_grid, use_inte
 %   azimuth_grid
 %   Azimuth angles in [rad] were samples of the field patterns are provided The field patterns are
 %   given in spherical coordinates. This variable provides the azimuth sampling angles in radians
-%   ranging from -π to π.
+%   ranging from -pi to piπ.
 %
 %   elevation_grid
 %   Elevation angles in [rad] were samples of the field patterns are provided The field patterns
 %   are given in spherical coordinates. This variable provides the elevation sampling angles in
-%   radians ranging from -π/2 (downwards) to π/2 (upwards).
+%   radians ranging from -πpi/2 (downwards) to πpi/2 (upwards).
+%
+%   use_interpolate
+%   Switch to enable (1, default) or disable (0) the antenna pattern interpolation.
 %
 %
 % QuaDRiGa Copyright (C) 2011-2019
@@ -87,19 +90,16 @@ if numel(h_qd_arrayant) > 1
 else
     h_qd_arrayant = h_qd_arrayant(1,1);
     
-    if use_interpolate
+    % Make sure we use the correct precision
+    if isa( h_qd_arrayant.PFa,'single') && isa( h_qd_arrayant.PFb,'single')
+        elevation_grid = single( elevation_grid );
+        azimuth_grid = single( azimuth_grid );
+    end
     
-        iEl = elevation_grid < max(h_qd_arrayant.elevation_grid) + 1e-7 & ...
-            elevation_grid > min(h_qd_arrayant.elevation_grid) - 1e-7;
-        
-        iAz = azimuth_grid < max(h_qd_arrayant.azimuth_grid) + 1e-7 & ...
-            azimuth_grid > min(h_qd_arrayant.azimuth_grid) - 1e-7;
-        
+    if use_interpolate
         el = repmat( elevation_grid' , 1 , numel(azimuth_grid) );
         az = repmat( azimuth_grid , numel(elevation_grid) , 1 );
-        
-        [V,H] = h_qd_arrayant.interpolate( az(iEl,iAz) , el(iEl,iAz),...
-            1:h_qd_arrayant.no_elements  );
+        [V,H] = h_qd_arrayant.interpolate( az , el, 1:h_qd_arrayant.no_elements  );
         
     else
         no_elements = h_qd_arrayant.no_elements;
@@ -109,9 +109,6 @@ else
         
         Az_old = size(h_qd_arrayant.Fa,2);
         Az_new = numel(azimuth_grid);
-        
-        iEl = true(1,El_new);
-        iAz = true(1,Az_new);
         
         V = zeros(El_new,Az_new,no_elements);
         H = zeros(El_new,Az_new,no_elements);
@@ -139,22 +136,21 @@ else
     % Calculate the MSE of the grid reduction
     if nargout > 0 && use_interpolate
         
-        % Interpolate the reduced patter to the original grid
+        % Interpolate the reduced pattern to the original grid
         a = copy( h_qd_arrayant );
-        a.elevation_grid = elevation_grid(iEl);
-        a.azimuth_grid = azimuth_grid(iAz);
+        a.elevation_grid = elevation_grid;
+        a.azimuth_grid = azimuth_grid;
         a.Fa = V;
         a.Fb = H;
-        a.set_grid(h_qd_arrayant.azimuth_grid, h_qd_arrayant.elevation_grid);
+        set_grid( a, h_qd_arrayant.azimuth_grid, h_qd_arrayant.elevation_grid, true );
         
         % Compare interpolated and original pattern
         mse = sum( abs(a.Fa - h_qd_arrayant.Fa).^2 + abs(a.Fb - h_qd_arrayant.Fb).^2,3);
         mse = -10*log10(max(mse(:)));
     end
 
-    h_qd_arrayant.elevation_grid = elevation_grid(iEl);
-    h_qd_arrayant.azimuth_grid = azimuth_grid(iAz);
-    
+    h_qd_arrayant.elevation_grid = elevation_grid;
+    h_qd_arrayant.azimuth_grid = azimuth_grid;
     h_qd_arrayant.Fa = V;
     h_qd_arrayant.Fb = H;
     

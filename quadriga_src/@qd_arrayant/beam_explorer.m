@@ -60,14 +60,20 @@ end
 
 tmp = h_arrayant.copy;
 tmp.combine_pattern;
+tmp.PFa = single( tmp.PFa );
+tmp.PFb = single( tmp.PFb );
+tmp.Pcoupling = single( tmp.Pcoupling );
+tmp.Pelement_position = single( tmp.Pelement_position );
+tmp.elevation_grid = single( tmp.elevation_grid );
+tmp.azimuth_grid = single( tmp.azimuth_grid );
 
-Wa = single( reshape( tmp.Fa, [], h_arrayant.no_elements ) );
-Wb = single( reshape( tmp.Fb, [], h_arrayant.no_elements ) );
+Wa = reshape( tmp.Fa, [], h_arrayant.no_elements );
+Wb = reshape( tmp.Fb, [], h_arrayant.no_elements );
 
 b = qd_builder('LOSonly');
 b.simpar.center_frequency = h_arrayant.center_frequency;
 b.simpar.show_progress_bars = 0;
-b.tx_array = h_arrayant;
+b.tx_array = tmp;
 b.rx_array = qd_arrayant('omni');
 b.rx_array.Fa(:) = Jp(1);
 b.rx_array.Fb(:) = Jp(2);
@@ -101,7 +107,7 @@ end
 
 function mouseMove(object, eventdata)
 
-global b Wa Wb im 
+global b Wa Wb im cf az el
 
 C = get(gca, 'CurrentPoint');
 az = C(1,1);
@@ -124,6 +130,8 @@ end
 
 function mouseClick(object, eventdata)
 
+global b cf az el
+
 persistent stp
 if isempty( stp )
    stp = false;
@@ -135,6 +143,24 @@ if stp
 else
     set(gcf,'WindowButtonMotionFcn', '');
     stp = ~stp;
+    
+    tmp = copy( b.tx_array );
+    tmp.coupling = conj(cf);
+    tmp.combine_pattern;
+    [ gain_dBi, nomalied_power ] = calc_gain( tmp );
+    [ beamwidth_az, beamwidth_el, az_point_ang, el_point_ang ] = calc_beamwidth( tmp );
+        
+    disp(['Azimuth target angle:      ',num2str(az),' deg']);
+    disp(['Azimuth beam direction:    ',num2str(az_point_ang),' deg']);
+    disp(['Azimuth FWHM beam width:   ',num2str(beamwidth_az),' deg']);
+    disp(' ');
+    disp(['Elevation target angle:    ',num2str(el),' deg']);
+    disp(['Elevation beam direction:  ',num2str(el_point_ang),' deg']);
+    disp(['Elevation FWHM beam width: ',num2str(beamwidth_el),' deg']);
+    disp(' ');
+    disp(['Main beam power:           ',num2str(nomalied_power),' dBi']);
+    disp(['Normalized gain:           ',num2str(gain_dBi),' dBi']);
+    disp(' ');
 end
 
 end

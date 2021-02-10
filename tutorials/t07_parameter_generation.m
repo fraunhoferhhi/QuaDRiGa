@@ -75,7 +75,7 @@ l.tx_array.Fa(:,:,2) = 1/sqrt(2);                       % Send additional LHCP s
 l.tx_array.Fb(:,:,2) = 1j/sqrt(2);
 l.rx_array = a;                                         % Omni-directional MT antenna
 
-set(0,'DefaultFigurePaperSize',[14.5 7.3])              % Adjust paper size for plot
+set(0,'DefaultFigurePaperSize',[14.5 7.7])              % Adjust paper size for plot
 l.visualize([],[],0);                                   % Plot the layout
 view(-33, 60);                                          % Enable 3D view
 
@@ -124,7 +124,7 @@ cf = reshape( coeff(:,1,:,:,:), a.no_elements, 1, [] ); % Format input for angle
 sf = mean(sum(sum(abs(coeff(1:29,1,:,:,:)).^2,3),1),4);    % Calculate shadow fading
 sf = sf(:);
 
-set(0,'DefaultFigurePaperSize',[14.5 4.5])              % Change Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 4.7])              % Change Paper Size
 figure('Position',[ 100 , 100 , 760 , 400]);            % New figure
 
 plot(-35:35,-35:35,'k')

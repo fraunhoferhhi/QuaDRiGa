@@ -54,20 +54,11 @@ elseif any( size(cb) ~= size(ca) )
     error('QuaDRiGa:qd_sos:val','Size of "cb" mut match the size of "ca".' );
 end
 
-% Internal calculation are single-precision due to sprred improvements
-if isa( ca, 'double' )
-    input_is_double = true;
-else
-    input_is_double = false;
-end
-ca = single( ca );
-cb = single( cb );
-
 if numel( h_sos ) > 1
     
     % Recursive call for all objects in the array
     sic = size( h_sos );
-    s = zeros( numel( h_sos ), no_val, 'single' );
+    s = zeros( numel( h_sos ), no_val );
     for i_sos = 1 : numel( h_sos )
         [ i1,i2,i3,i4 ] = qf.qind2sub( sic, i_sos );
         s(i_sos,:) = val( h_sos( i1,i2,i3,i4 ), ca, cb );
@@ -79,32 +70,38 @@ else
     h_sos = h_sos(1,1);
     
     % Read local variables to increase speed
-    al = h_sos.sos_amp;
-    ph = h_sos.sos_phase;
-    fr = 2*pi*h_sos.sos_freq;
+    al = double( h_sos.sos_amp );
+    ph = double( h_sos.sos_phase );
+    fr = 2*pi*double( h_sos.sos_freq );
     L  = size(fr,1);
     dims = size(fr,2);
     
     if size( ca, 1 ) > dims
         error('QuaDRiGa:qd_sos:val','Number of requested dimensions is not supported.' );
     end
-    ca = single( ca );
     
     if size( ca, 1 ) < dims
-        ca = [ ca; zeros( dims - size(ca,1), no_val,'single' ) ];
+        ca = [ ca; zeros( dims - size(ca,1), no_val ) ];
     end
     
     if ~isempty(cb) && size( cb, 1 ) < dims
-        cb = [ cb; zeros( dims - size(cb,1), no_val,'single' ) ];
+        cb = [ cb; zeros( dims - size(cb,1), no_val ) ];
     end
     
     % Calculate the random variables for the first input coordinate
     if no_val < 1e4
-        sa = al .* sum( cos( mod( fr * ca + ph(:,ones(1,no_val,'uint8')) , 2*pi )),1);
-    else
-        sa = zeros( 1,no_val,'single' );
+%         A = fr * ca;
+%         B = A + ph(:,ones(1,no_val,'uint8'));
+%         %C = mod( B , 2*pi );
+%         D = cos( B );
+%         E = sum( D,1 );
+%         sa = al .* E;
+        
+        sa = al .* sum( cos( fr * ca + ph(:,ones(1,no_val,'uint8') ) ),1);
+    else % Better memory-efficiency, but slower
+        sa = zeros( 1,no_val );
         for l = 1:L
-            sa = sa + cos( mod( fr(l,:) * ca  + ph(l,1) , 2*pi ));
+            sa = sa + cos( fr(l,:) * ca  + ph(l,1) );
         end
         sa = sa .* al;
     end
@@ -117,16 +114,16 @@ else
         
         % Calculate the random variables for the second input coordinate
         if no_val < 1e4
-            sb = al .* sum( cos( mod( fr * cb + ph(:,ones(1,no_val,'uint8')*2) , 2*pi )),1);
-        else
-            sb = zeros( 1,no_val,'single' );
+            sb = al .* sum( cos( fr * cb + ph(:,ones(1,no_val,'uint8')*2) ),1);
+        else % Better memory-efficiency, but slower
+            sb = zeros( 1,no_val );
             for l = 1:L
-                sb = sb + cos( mod( fr(l,:) * cb  + ph(l,2) , 2*pi ));
+                sb = sb + cos( fr(l,:) * cb  + ph(l,2) );
             end
             sb = sb .* al;
         end
         
-        % If the same phases are used for both terminals, they are place on the same radio map.
+        % If the same phases are used for both terminals, they are placed on the same radio map.
         % In this case, closely spaces terminals have correlated values which changes the variance of
         % the distributions. This is fixed here.
         
@@ -176,11 +173,6 @@ else
                 s = qf.interp( bins, [], cdf.', s );
             end
     end
-end
-
-% Match output to input precision
-if input_is_double
-   s = double( s ); 
 end
 
 end

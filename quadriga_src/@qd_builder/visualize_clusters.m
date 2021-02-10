@@ -218,7 +218,7 @@ else
         fbs_pos_cl = clst_extract( fbs_pos, NumSubPaths, i_cl );
         lbs_pos_cl = clst_extract( lbs_pos, NumSubPaths, i_cl );
 
-        for i_sub = 1:NumSubPaths( i_cl );
+        for i_sub = 1:NumSubPaths( i_cl )
             
             % Plot First LBS and FBS position
             plot3( fbs_pos_cl(1,i_sub),fbs_pos_cl(2,i_sub),fbs_pos_cl(3,i_sub) ,...
@@ -258,7 +258,7 @@ hold off
 grid on
 box on
 
-view(0, 90);
+
 
 xlabel('x-coords in [m]');
 ylabel('y-coords in [m]');
@@ -276,16 +276,32 @@ else
         'Location','NorthEastOutside')
 end
 
+clmix = min([fbs_center(1,2:end),lbs_center(1,2:end)])*1.1;
+clmax = max([fbs_center(1,2:end),lbs_center(1,2:end)])*1.1;
+clmiy = min([fbs_center(2,2:end),lbs_center(2,2:end)])*1.1;
+clmay = max([fbs_center(2,2:end),lbs_center(2,2:end)])*1.1;
+clmiz = min([fbs_center(3,2:end),lbs_center(3,2:end)])*1.1;
+clmaz = max([fbs_center(3,2:end),lbs_center(3,2:end)])*1.1;
+
 a = axis;
+if a(1)/clmix > 20; a(1)=clmix; end
+if a(2)/clmax > 20; a(2)=clmax; end
+if a(3)/clmiy > 20; a(3)=clmiy; end
+if a(4)/clmay > 20; a(4)=clmay; end
+if a(5)/clmiz > 20; a(5)=clmiz; end
+if a(6)/clmaz > 20; a(6)=clmaz; end
+
 dx = a(2)-a(1);
 mx = a(1)+0.5*dx;
 dy = a(4)-a(3);
 my = a(3)+0.5*dy;
 
 if dx > dy
-    axis([a(1) a(2) my-0.5*dx my+0.5*dx]);
+    axis([a(1) a(2) my-0.5*dx my+0.5*dx a(5) a(6)]);
 else
-    axis([mx-0.5*dy mx+0.5*dy a(3) a(4)]);
+    axis([mx-0.5*dy mx+0.5*dy a(3) a(4) a(5) a(6)]);
 end
+
+view(0, 90);
 
 end

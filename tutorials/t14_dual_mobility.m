@@ -34,7 +34,7 @@ set(0,'defaultAxesFontName','Times')                    % Default Font Type
 set(0,'defaultTextFontName','Times')                    % Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')          % Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')              % Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 7.3])            	% Default Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 7.7])            	% Default Paper Size
 
 s = qd_simulation_parameters;                           % New simulation parameters
 s.center_frequency = 2.4e9;                             % 2.4 GHz center frequency
@@ -146,8 +146,8 @@ title('BS1 Path Gain (LOS) [dB]')
 % * Interpolation of channel coefficients to match the sample rate. This generates 9001 snapshots at
 %   the output. 
 
-update_rate = 1e-3;
-c = l.get_channels( update_rate );
+l.update_rate = 1e-3;
+c = l.get_channels;
 
 %% Path gain
 % Now we plot the path-gain for the 3 generated channels. As Car1 moves away from the BS, its PG
@@ -155,10 +155,10 @@ c = l.get_channels( update_rate );
 % Car1-Car2 channel starts at a low vale and increases until the cars pass each other at about 4.8
 % seconds simulation time. Then, the PG decreases again.
 
-time = ( 0 : c(1,1).no_snap-1 ) * update_rate;          % Time axis in seconds
+time = ( 0 : c(1,1).no_snap-1 ) * l.update_rate;        % Time axis in seconds
 pg = [ c(1,1).par.pg ; c(1,2).par.pg ; c(1,3).par.pg ]; % The path-gain values
 
-set(0,'DefaultFigurePaperSize',[14.5 4.5])              % Change paper Size
+set(0,'DefaultFigurePaperSize',[14.5 4.7])              % Change paper Size
 figure('Position',[ 100 , 100 , 760 , 400]);            % New figure
 plot(time,pg','-','Linewidth',2)                        % Plot target PG
 title('Path Gain vs. Time'); 
@@ -169,16 +169,16 @@ legend('BS - Car1','BS - Car2','Car1 - Car2')
 
 %% Doppler Spectrum
 % The next three plots show the Doppler spectrum of the three channels. For the BS-Car1 link, the
-% expected Doppler shift (car moving away from BS) is -445 Hz (2*v*fc/c). For BS-Car2, it is 355 Hz
-% and for Car1-Car2 if goes from 800 to -800 Hz when the cars pass each other. Due to the multipath
+% expected Doppler shift (car moving away from BS) is -220 Hz (v*fc/c). For BS-Car2, it is 180 Hz
+% and for Car1-Car2 if goes from 400 to -400 Hz when the cars pass each other. Due to the multipath
 % propagation, additional Doppler components occur.
 
-w = 100;                                                % Doppler analysis windows size (100 ms)
+w  = 100;                                               % Doppler analysis windows size (100 ms)
 BW = 100e6;                                             % Channel bandwidth (100 MHz)
-N = 128;                                                % Number of carriers
+N  = 128;                                               % Number of carriers
 
-Doppler_axis = -2*( (0:w-1)/(w-1)-0.5)/update_rate;     % The Doppler axis in Hz
-time = ( 0 : c(1,1).no_snap-1 ) * update_rate; 
+Doppler_axis = -( (0:w-1)/(w-1)-0.5)/l.update_rate;     % The Doppler axis in Hz
+time = ( 0 : c(1,1).no_snap-1 ) * l.update_rate; 
 Time_axis = time( 1:w:end );                            % Time axis in seconds
 
 no_Doppler = floor( numel(time) ./ w );                 % Number of Doppler samples

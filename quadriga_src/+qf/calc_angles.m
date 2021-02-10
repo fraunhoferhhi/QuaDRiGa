@@ -161,16 +161,20 @@ for l = 1 : L
         % First, use the initial Jones vector to calculate an initial estimate of the angles, then
         % estimate the correct Jones vector from the pattern and repeat the angle estimation.
         for iJ = 1:2
-            % Calculate combined pattern using channel coefficients as
-            % beamforming weights
+            % Calculate combined pattern using channel coefficients as beamforming weights
             conjG      = conj( Gtilde ); % Saves time
             Fhat_theta = F_theta_vec * conjG;
             Fhat_phi   = F_phi_vec * conjG;
             
             % Estimate angles
-            Fhat_sq = abs( Fhat_theta ).^2 * abs(Js(1,:).').^2 + abs( Fhat_phi ).^2 * abs(Js(2,:).').^2;
+            Fhat_sq = ( real(Fhat_theta).^2 + imag(Fhat_theta).^2 ) * abs(Js(1,:).').^2 +...
+                ( real(Fhat_phi).^2 + imag(Fhat_phi).^2 ) * abs(Js(2,:).').^2;
+            
             Fhat_sq = Fhat_sq - min(Fhat_sq);
-            Fhat_sq = Fhat_sq./max(Fhat_sq);
+            max_Fhat_sq = max(Fhat_sq);
+            if max_Fhat_sq ~= 0
+                Fhat_sq = Fhat_sq./max_Fhat_sq;
+            end
             Fhat_sq = reshape( Fhat_sq , no_el , no_az , [] );
             
             [ xEl, xAz ] = maxi( Fhat_sq, elevation_grid, azimuth_grid, 0.01 );
@@ -205,8 +209,14 @@ for l = 1 : L
         Ghat(:,:,m) = ones(no_rx,1)*sqrt(Pmpc) .* (F * Js);
         
         tmp = abs( G-sum(Ghat,3) ).^2;
-        MSE = sum(tmp(:)) / sum(abs(G(:)).^2);
-        resolved_tmp = sum(abs(Ghat(:)).^2) / sum(abs(G(:)).^2);
+        sum_abs_G_sq = sum(abs(G(:)).^2);
+        if sum_abs_G_sq ~= 0
+            MSE = sum(tmp(:)) / sum_abs_G_sq;
+            resolved_tmp = sum(abs(Ghat(:)).^2) / sum_abs_G_sq;
+        else
+            MSE = 0;
+            resolved_tmp = 1;
+        end
         
         % Multiple detections
         if m==1 || ( MSE < accuracy( l ) && MSE > 0)

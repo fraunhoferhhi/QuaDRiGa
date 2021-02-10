@@ -288,7 +288,7 @@ if ( h_builder.scenpar.NumClusters == 1 || ...
     % Don't write
 else
     write_par_line( fid, 'NumSubPaths', 'number of paths per (NLOS) cluster', h_builder.scenpar.NumSubPaths, write_defaults );
-    write_par_line( fid, 'SubpathMethod', 'subpath mapping method (legacy or mmMAGIC)', h_builder.scenpar.SubpathMethod, write_defaults );
+    write_par_line( fid, 'SubpathMethod', 'subpath mapping method (legacy, Laplacian or mmMAGIC)', h_builder.scenpar.SubpathMethod, write_defaults );
     write_par_line( fid, 'LOS_scatter_radius', 'not used', h_builder.scenpar.LOS_scatter_radius, write_defaults );
     
     fprintf(fid,'\n');
@@ -308,6 +308,16 @@ else
     write_par_line( fid, 'PerClusterES_A', 'cluster elevation of arrival angle spread [deg]', h_builder.scenpar.PerClusterES_A, write_defaults );
 end
 
+if h_builder.scenpar.absTOA_mu > -99
+    fprintf(fid,'\n%% ==================================================================================================\n');
+    fprintf(fid,'%% Absolute time of arrival model parameters (optional feature)\n');
+    fprintf(fid,'%% See: 3GPP TR 38.901 Section 7.6.9\n');
+    fprintf(fid,'%% ==================================================================================================\n\n');
+    
+    write_par_line( fid, 'absTOA_mu', 'absolute time of arrival offset reference value [log10(s)]', h_builder.scenpar.absTOA_mu, write_defaults );
+    write_par_line( fid, 'absTOA_sigma', 'absolute time of arrival offset referenece STD [log10(s)]', h_builder.scenpar.absTOA_sigma, write_defaults );
+    write_par_line( fid, 'absTOA_lambda', 'absolute time of arrival offset decorrelation distance [m]', h_builder.scenpar.absTOA_lambda, write_defaults );
+end
 
 if ( h_builder.scenpar.NumClusters == 1 || ...
         ( h_builder.scenpar.NumClusters == 2 && h_builder.scenpar.GR_enabled == 1 ) ) && write_defaults == 0
@@ -480,6 +490,8 @@ if ~isempty( h_builder.plpar )
         elseif strcmp( names{n},'D' )
             if strcmp( pl.model , 'nlos' )
                 write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of LOS-PL [dB/m]', pl.(names{n}), Inf ); 
+            elseif strcmp( pl.model , 'satellite' )
+                write_par_line( fid, ['PL_',names{n}], 'Elevaion angle dep. of PL [dB/rad]', pl.(names{n}), Inf ); 
             else
                 write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of PL [dB/m]', pl.(names{n}), Inf );
             end
@@ -522,6 +534,9 @@ if ~isempty( h_builder.plpar )
             
         elseif strcmp( names{n},'sig2' )
             write_par_line( fid, ['PL_',names{n}], 'Shadow Fading STD after breakpoint [dB]', pl.(names{n}), Inf );
+            
+        elseif strcmp( names{n},'usePLa' )
+            write_par_line( fid, ['PL_',names{n}], 'Enable/disable attenuation by atmospheric gases', pl.(names{n}), Inf );
             
         else
             write_par_line( fid, ['PL_',names{n}], '', pl.(names{n}), Inf );

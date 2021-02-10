@@ -134,10 +134,8 @@ if ~exist( 'v_name','var' ) || isempty( v_name )
     v_name = 'v';
 end
 
-if ~exist( 'round_digits','var' ) || isempty( round_digits )
-    num_format = '%g';
-else
-    num_format = ['%1.',num2str(round_digits),'f'];
+if ~exist( 'round_digits','var' )
+    round_digits = [];
 end
 
 if ~exist( 'show_plot','var' ) || isempty( show_plot )
@@ -149,6 +147,7 @@ if nargout > 5 && use_ai
     calc_kappa = true;
 else
     calc_kappa = false;
+    kappa = 0;
 end
 
 % Check if "delta" is requested
@@ -156,223 +155,44 @@ if nargout > 6 && use_bi
     calc_delta = true;
 else
     calc_delta = false;
+    delta = 0;
 end
 
-no_vals = numel( vi );
+if a_linear && b_linear
+    X = [ ai;bi ];
+    Xname = {a_name,b_name};
+elseif a_linear
+    bi( bi <= 0 ) = 1e-99;
+    X = [ ai;log10(bi) ];
+    Xname = {a_name,['log10( ',b_name,' )']};
+elseif b_linear
+    ai( ai <= 0 ) = 1e-99;
+    X = [ log10(ai);bi ];
+    Xname = {['log10( ',a_name,' )'],b_name};
+else
+    ai( ai <= 0 ) = 1e-99;
+    bi( bi <= 0 ) = 1e-99;
+    X = [ log10(ai);log10(bi) ];
+    Xname = {['log10( ',a_name,' )'],['log10( ',b_name,' )']};
+end
 
-vi = reshape( vi , no_vals, 1 );
-ai = reshape( ai , no_vals, 1 );
-bi = reshape( bi , no_vals, 1 );
-
-% Sort out errors
-ii = ~isinf(vi) & ~isnan(vi) & ~isinf(ai) & ~isnan(ai) & ~isinf(bi) & ~isnan(bi);
-vi = vi(ii);
-ai = ai(ii);
-bi = bi(ii);
+[ mu, sigma, Ri, str ] = qf.regression( vi, X, [], round_digits, Xname, [calc_kappa,calc_delta] );
+epsilon = mu(2); gamma = mu(3); mu = mu(1);
+kappa = sigma(2); delta = sigma(3); sigma = sigma(1);
 
 % Logarithmic variables
 if a_linear
     lai = ai;
 else
+    ai( ai < 0 ) = 1e-99;
     lai = log10( ai );
 end
 if b_linear
     lbi = bi;
 else
+    bi( bi < 0 ) = 1e-99;
     lbi = log10( bi );
 end
-
-if use_bi && use_ai
-    %cst = [];
-    
-    % Low-Res Global search
-    gamma = -50:5:50;
-    xn = zeros(numel(gamma),1);
-    for iC = 1 : numel(gamma)
-        tmp = polyfit( lai, vi-gamma(iC)*log10( bi ) ,1);
-        epsilon = tmp(1);
-        mu = tmp(2);
-        v = vi - epsilon*lai - mu - gamma(iC)*lbi;
-        xn(iC) = sum( abs( v ).^2 );
-        %cst(end+1) = xn(iC);
-    end
-    [x,iC] = min(xn);
-    gamma = gamma(iC);
-    
-    % Use the SAGE algorithm fo fit the exponential function to the data
-    a   = gamma;    % Initial value
-    dm  = 1;    % Step size
-    delta = Inf; ddir = +1; lp = 2;
-    while lp<100 && delta > 1e-9
-        if lp>1; an = a + ddir * dm; delta = abs(a-an); else an = a; end
-        
-        tmp = polyfit( lai, vi-an*log10( bi ) ,1);
-        epsilon = tmp(1);
-        mu = tmp(2);
-        v = vi - epsilon*lai - mu - an*lbi;
-        
-        xn = sum( abs( v ).^2 );
-        %cst(end+1) = xn;
-        
-        if xn < x; a = an; x = xn; else ddir = -ddir; dm = 0.2 * dm; end
-        lp = lp + 1;
-    end
-    gamma = an;
-    
-    %plot(10*log10(cst - cst(end) + 1e-9))
-    
-elseif use_ai
-    tmp = polyfit( lai, vi ,1);
-    epsilon = tmp(1);
-    mu = tmp(2);
-    gamma = 0;
-    
-elseif use_bi
-    tmp = polyfit( lbi, vi ,1);
-    epsilon = 0;
-    mu = tmp(2);
-    gamma = tmp(1);
-    
-else
-    epsilon = 0;
-    mu = mean(vi);
-    gamma = 0;
-    
-end
-
-if a_linear && b_linear
-    Ri = mu + epsilon * ai  + gamma *  bi;
-elseif a_linear
-    Ri = mu + epsilon * ai + gamma * log10( bi );
-elseif b_linear
-    Ri = mu + epsilon * log10( ai ) + gamma * bi;
-else
-    Ri = mu + epsilon * log10( ai ) + gamma * log10( bi );
-end
-
-di = abs(vi-Ri).^2;  % Variance
-if calc_kappa && calc_delta
-    
-    % Fit the variance
-    [ sigma, kappa, delta ] = qf.log2dfit( di, ai, bi, [], 0, a_linear, b_linear );
-    
-    x = rand(1,10000)*(max(ai)-min(ai)) + min(ai);
-    y = rand(1,10000)*(max(bi)-min(bi)) + min(bi);
-    if a_linear && b_linear
-        z = sigma + kappa.*x + delta.*y;
-    elseif a_linear
-        z = sigma + kappa.*x + delta.*log10(y);
-    elseif b_linear
-        z = sigma + kappa.*log10(x) + delta.*y;
-    else
-        z = sigma + kappa.*log10(x) + delta.*log10(y);
-    end
-    z(z<0) = 0;
-    z = sqrt(z);
-    
-    % Fit the STD
-    [ sigma, kappa, delta ] = qf.log2dfit( z, x, y, [], 0, a_linear, b_linear );  
-    
-elseif calc_kappa
-    
-    % Fit the variance
-    [ sigma, kappa ] = qf.log2dfit( di, ai, [], [], 0, a_linear );
-    
-    % Transform variance to STD
-    x = (0:0.0001:1)*(max(ai)-min(ai)) + min(ai);
-    if a_linear
-        z = sigma + kappa.*x;
-    else
-        z = sigma + kappa.*log10(x);
-    end
-    z(z<0) = 0;
-    z = sqrt(z); 
-    
-    % Fit the STD
-    [ sigma, kappa ] = qf.log2dfit( z, x, [], [], 0, a_linear );
-    delta = 0;
-    
-elseif calc_delta 
-    
-    % Fit the variance
-    [ sigma, delta ] = qf.log2dfit( di, bi, [], [], 0, b_linear );  
-    
-    % Transform variance to STD
-    x = (0:0.0001:1)*(max(bi)-min(bi)) + min(bi);
-    if b_linear
-        z = sigma + delta.*x;
-    else
-        z = sigma + delta.*log10(x);
-    end
-    z(z<0) = 0;
-    z = sqrt(z); 
-    
-    % Fit the STD
-    [ sigma, delta ] = qf.log2dfit( z, x, [], [], 0, b_linear );
-    kappa = 0;
-    
-else
-    sigma = std( vi-Ri );
-    delta = 0;
-    kappa = 0;
-end
-
-if exist( 'round_digits','var' ) && ~isempty( round_digits )
-    mu = round( mu * 10^round_digits )/10^round_digits;
-    epsilon = round( epsilon * 10^round_digits )/10^round_digits;
-    gamma = round( gamma * 10^round_digits )/10^round_digits;
-    sigma = round( sigma * 10^round_digits )/10^round_digits;
-    kappa = round( kappa * 10^round_digits )/10^round_digits;
-    delta = round( delta * 10^round_digits )/10^round_digits;
-end
-
-str ={};
-str{1} = ['avg = ',num2str(mu,num_format),' '];
-if epsilon > 0.001
-    str{1} = [str{1},'+ ',num2str(epsilon,num_format)];
-elseif epsilon < -0.001
-    str{1} = [str{1},'- ',num2str(-epsilon,num_format)];
-end
-if a_linear && abs( epsilon ) > 0.001
-    str{1} = [str{1},' * ',a_name,' '];
-elseif ~a_linear && abs( epsilon ) > 0.001
-    str{1} = [str{1},' * log10( ',a_name,' ) '];
-end
-if gamma > 0.001
-    str{1} = [str{1},'+ ',num2str(gamma,num_format)];
-elseif gamma < -0.001
-    str{1} = [str{1},'- ',num2str(-gamma,num_format)];
-end
-if b_linear && abs( gamma ) > 0.001
-    str{1} = [str{1},' * ',b_name,' '];
-elseif ~b_linear && abs( gamma ) > 0.001
-    str{1} = [str{1},' * log10( ',b_name,' ) '];
-end
-str{1} = str{1}(1:end-1);
-
-str{2} = ['std = ',num2str(sigma,num_format),' '];
-if kappa > 0.001
-    str{2} = [str{2},'+ ',num2str(kappa,num_format)];
-elseif kappa < -0.001
-    str{2} = [str{2},'- ',num2str(-kappa,num_format)];
-end
-if a_linear && abs( kappa ) > 0.001
-    str{2} = [str{2},' * ',a_name,' '];
-elseif ~a_linear && abs( kappa ) > 0.001
-    str{2} = [str{2},' * log10( ',a_name,' ) '];
-end
-if delta > 0.001
-    str{2} = [str{2},'+ ',num2str(delta,num_format)];
-elseif delta < -0.001
-    str{2} = [str{2},'- ',num2str(-delta,num_format)];
-end
-if b_linear && abs( delta ) > 0.001
-    str{2} = [str{2},' * ',b_name,' '];
-elseif ~b_linear && abs( delta ) > 0.001
-    str{2} = [str{2},' * log10( ',b_name,' ) '];
-end
-str{2} = str{2}(1:end-1);
-
 
 if show_plot
     

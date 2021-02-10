@@ -11,8 +11,8 @@
 % * Generating channel coefficients
 % * Analyzing the received power and the cross-polarization ratio
 %
-% A figure showing illustrating the scenario can be found in the documentation in Section 1.6. There
-% are 12 significant points along the track that describe an event.
+% A figure illustrating the scenario can be found in the documentation in Section 1.6. There are 12
+% significant points along the track that describe an event. 
 % 
 % # Start environment: Urban, LOS reception of satellite signal
 % # LOS to NLOS transition
@@ -77,7 +77,7 @@ set(0,'defaultAxesFontName','Times')               	    % Default Font Type
 set(0,'defaultTextFontName','Times')                 	% Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')       	% Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')             	% Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 7.3])            	% Default Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 7.7])            	% Default Paper Size
 
 l = qd_layout;                                          % New layout
 [~,l.rx_track] = interpolate( t.copy,'distance',0.1 );  % Interpolate and assign track to layout
@@ -93,15 +93,15 @@ title('Track layout');                                  % Set plot title
 % scenarios are provided by 3GPP TR 38.811. The propagation parameters are stored in configuration
 % files in the QuaDRiGa source folder. Here, we only need the scenario name.
 
-t.scenario{1} = '3GPP_38.881_Urban_LOS';                % P1: Start scenario: Urban LOS
-t.add_segment ([64;64;2],'3GPP_38.881_Urban_NLOS',2);   % P2: LOS to NLOS change
-t.add_segment ([84;84;2],'3GPP_38.881_Urban_LOS',2);    % P3: NLOS to LOS change
-t.add_segment ([233;68;2],'3GPP_38.881_Urban_NLOS',2);  % P6: LOS to NLOS change
-t.add_segment ([272;103;2],'3GPP_38.881_Urban_LOS',2);  % P7: NLOS to LOS change
-t.add_segment ([283;114;2],'3GPP_38.881_Urban_NLOS',2); % P7: LOS to NLOS change
-t.add_segment ([324;153;2],'3GPP_38.881_DenseUrban_NLOS',2);% P8: Higher density of buildings
-t.add_segment ([420;250;2],'3GPP_38.881_Urban_NLOS',2); % P10: Lower density of buildings
-t.add_segment ([490;320;2],'3GPP_38.881_Rural_NLOS',2); % P11: Urban to Rural
+t.scenario{1} = 'QuaDRiGa_NTN_Urban_LOS';                % P1: Start scenario: Urban LOS
+t.add_segment ([64;64;2],'QuaDRiGa_NTN_Urban_NLOS',2);   % P2: LOS to NLOS change
+t.add_segment ([84;84;2],'QuaDRiGa_NTN_Urban_LOS',2);    % P3: NLOS to LOS change
+t.add_segment ([233;68;2],'QuaDRiGa_NTN_Urban_NLOS',2);  % P6: LOS to NLOS change
+t.add_segment ([272;103;2],'QuaDRiGa_NTN_Urban_LOS',2);  % P7: NLOS to LOS change
+t.add_segment ([283;114;2],'QuaDRiGa_NTN_Urban_NLOS',2); % P7: LOS to NLOS change
+t.add_segment ([324;153;2],'QuaDRiGa_NTN_DenseUrban_NLOS',2);% P8: Higher density of buildings
+t.add_segment ([420;250;2],'QuaDRiGa_NTN_Urban_NLOS',2); % P10: Lower density of buildings
+t.add_segment ([490;320;2],'QuaDRiGa_NTN_Rural_NLOS',2); % P11: Urban to Rural
 
 %% Modeling stops at traffic lights
 % This section provides a simple way to model the movement of the car along the track. A movement
@@ -116,12 +116,11 @@ t.add_segment ([490;320;2],'3GPP_38.881_Rural_NLOS',2); % P11: Urban to Rural
 
 t.movement_profile = [ 0, 20, 30, 40, 66.5, 73, 100;... % Time points in seconds vs.
     0, 200, 265, 265, 530, 530, 800 ];                  %    distance in meters
-
 dist  = t.interpolate('time',0.1);                      % Calculate travelled distance vs. time
 time  = ( 0:numel(dist) - 2 )*0.1;                      % Calculate time sample points
 speed = diff( dist ) * 10;                              % Calculate the speed
 
-set(0,'DefaultFigurePaperSize',[14.5 4.5])              % Change Plot Size
+set(0,'DefaultFigurePaperSize',[14.5 4.7])              % Change Plot Size
 figure('Position',[ 100 , 100 , 760 , 400]);            % New figure
 
 plot( time,speed,'Linewidth',2 );                       % Plot speed vs. time
@@ -159,8 +158,8 @@ l.rx_array.combine_pattern;                           	% Merge polarized pattern
 l.rx_array.rotate_pattern(-90,'y');                    	% Point skywards
 
 % Calculate the beam footprint
-set(0,'DefaultFigurePaperSize',[14.5 7.3])              % Adjust paper size for plot
-[map,x_coords,y_coords]=l.power_map('3GPP_38.881_Urban_LOS','quick',2e4,-6e6,6e6,-5e6,5e6);
+set(0,'DefaultFigurePaperSize',[14.5 7.7])              % Adjust paper size for plot
+[map,x_coords,y_coords]=l.power_map('5G-ALLSTAR_Urban_LOS','quick',2e4,-6e6,6e6,-5e6,5e6);
 P = 10*log10( map{:}(:,:,1) ) + 50;                     % RX copolar power @ 50 dBm TX power
 l.visualize([],[],0);                                   % Plot layout
 axis([-5e6,5e6,-5e6,5e6]);                              % Axis
@@ -182,7 +181,8 @@ title('Beam footprint in dBm');                         % Set plot title
 % Now we generate the channel coefficients and plot the power in both polarizations over time. The
 % plot is annotated to show the events that happen during the simulation.
 
-c = l.get_channels(0.01);                               % Generate channels
+l.update_rate = 0.01;                                   % Set channel update rate to 100 Hz
+c = l.get_channels;                                     % Generate channels
 
 pow  = 10*log10( reshape( sum(abs(c.coeff(:,:,:,:)).^2,3) ,2,[] ) );    % Calculate the power
 time = (0:c.no_snap-1)*0.01;                            % Vector with time samples
@@ -195,16 +195,14 @@ ar(5300:5800) = -200;                                   % NLOS from P6 to P7
 ar(6650:7300) = -200;                                   % Stop at P9
 ar(7800:8900) = -200;                                   % Stop at P9
 
-set(0,'DefaultFigurePaperSize',[14.5 4.5])              % Change Plot Size
+set(0,'DefaultFigurePaperSize',[14.5 4.7])              % Change Plot Size
 figure('Position',[ 100 , 100 , 1200 , 400]);           % New figure
 a = area(time,ar,'FaceColor',[0.7 0.9 0.7],'LineStyle','none'); % Area shading
 hold on; plot(time,pow'+50); hold off;
 xlabel('Simulation Time (s)'); ylabel('RX power (dBm)'); grid on; axis([0,100,[-150,-80]]);
 legend('Event','RX LHCP','RX RHCP'); set(gca,'layer','top')  
 
-text( 7,-85,'P2' ); text( 11,-85,'P3' ); text( 8,-145,'NLOS' );
-text( 20,-85,'P4' ); text( 33,-85,'P5' ); text( 32,-145, 'Stop' );
-text( 45.5,-85,'P6' ); text( 50.5,-85,'P7' ); text( 44,-145,'NLOS' );
-text( 57,-85,'P8' ); text( 53,-145,'NLOS' );
-text( 69,-85,'P9' ); text( 68,-145, 'Stop' );
-text( 77,-85,'P10' ); text( 80,-145, 'Urban' );text( 92,-145, 'Rural' );
+text( 7,-85,'P2' ); text( 11,-85,'P3' ); text( 8,-145,'NLOS' ); text( 20,-85,'P4' ); 
+text( 33,-85,'P5' ); text( 32,-145, 'Stop' ); text( 45.5,-85,'P6' ); text( 50.5,-85,'P7' ); 
+text( 44,-145,'NLOS' ); text( 57,-85,'P8' ); text( 53,-145,'NLOS' ); text( 69,-85,'P9' ); 
+text( 68,-145, 'Stop' ); text( 77,-85,'P10' ); text( 80,-145, 'Urban' );text( 92,-145, 'Rural' );

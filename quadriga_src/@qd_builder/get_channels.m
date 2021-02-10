@@ -92,10 +92,6 @@ else
     end
     
     % Set initial parameters
-    n_clusters      = h_builder.NumClusters;
-    o_clusters      = ones(1,n_clusters,'uint8');
-    n_paths         = sum(h_builder.NumSubPaths);
-    n_subpaths      = h_builder.NumSubPaths;
     n_mobiles       = h_builder.no_rx_positions;
     o4              = ones(1,4);
     t2              = 2*ones(1,2);
@@ -111,14 +107,60 @@ else
     end
     wave_no = 2*pi/h_builder.simpar.wavelength;
     
+    % If Laplacian PAS is used, the intra-cluster angles are increased by a factor of sqrt(2). To
+    % compensate, the intra-cluster powers must be adjusted. This is done by a weighting the path
+    % amplitudes, depending on the number of subpath per cluster. The weigths are set here.
+    if strcmp( h_builder.scenpar.SubpathMethod, 'Laplacian' )
+        use_laplacian_pas = true;
+        laplacian_weights = {1, [1.18 0.78], ...
+            [0.60 1.05 1.24], ...
+            [0.86 0.40 1.71 0.42], ...
+            [1.05 0.45 0.85 0.85 1.50], ...
+            [0.65 0.59 1.87 0.39 1.17 0.46], ...
+            [0.77 0.75 1.06 0.61 1.02 0.53 1.74], ...
+            [0.74 0.79 1.07 0.51 0.94 0.57 1.52 1.38], ...
+            [0.96 0.62 0.92 0.75 1.08 0.51 1.71 1.24 0.63], ...
+            [0.90 0.71 0.96 0.78 1.04 0.51 1.52 1.14 0.57 1.37], ...
+            [0.92 0.66 0.89 0.79 1.03 0.52 1.47 1.13 0.60 1.36 1.15], ...
+            [0.84 0.71 0.91 0.69 1.03 0.54 1.53 1.17 0.50 1.37 1.13 1.01], ...
+            [0.79 0.67 1.01 0.61 0.96 0.49 1.61 1.24 0.54 1.33 1.08 1.13 0.86], ...
+            [0.98 0.71 0.91 0.84 1.15 0.53 1.45 1.12 0.71 1.43 1.25 1.01 0.83 0.47], ...
+            [0.99 0.70 0.89 0.83 1.09 0.57 1.32 1.11 0.64 1.37 1.16 1.01 0.80 0.53 1.41], ...
+            [0.96 0.75 0.93 0.82 1.02 0.59 1.35 1.07 0.70 1.30 1.16 0.99 0.82 0.45 1.36 1.18], ...
+            [0.95 0.70 0.92 0.80 1.04 0.58 1.28 1.07 0.71 1.28 1.10 1.01 0.79 0.50 1.32 1.17 1.25], ...
+            [0.89 0.83 0.97 0.82 1.02 0.67 1.30 1.16 0.69 1.17 1.05 1.10 0.89 0.58 1.26 1.25 1.29 0.53], ...
+            [0.91 0.79 1.01 0.85 0.99 0.66 1.29 1.14 0.70 1.20 1.04 1.03 0.92 0.56 1.23 1.21 1.27 0.53 1.15], ...
+            [0.89 0.79 0.98 0.83 0.97 0.71 1.27 1.11 0.67 1.15 1.08 1.05 0.89 0.50 1.21 1.24 1.27 0.59 1.13 1.15]};
+    else
+        use_laplacian_pas = false;
+    end
+    
     % Create new channel object
     h_channel = qd_channel;
     
     % The loop for each user position
     for i_mobile = 1 : n_mobiles
-        if verbose; m1=ceil(i_mobile/n_mobiles*vb_dots); if m1>m0;
-                for m2=1:m1-m0; fprintf('o'); end; m0=m1; end;
-        end;
+        if verbose
+            m1=ceil(i_mobile/n_mobiles*vb_dots); 
+            if m1>m0
+                for m2=1:m1-m0
+                    fprintf('o'); 
+                end
+                m0=m1; 
+            end
+        end
+        
+        % Get the lst of zero-power paths - we do not return paths with zero-power
+        iClst       = h_builder.pow(i_mobile,:) ~= 0;
+        iClst(1)    = true;
+        if use_ground_reflection
+            iClst(2) = true;
+        end
+        iPath       = clst_expand( iClst, h_builder.NumSubPaths );
+        n_clusters  = sum( iClst );
+        o_clusters  = ones(1,n_clusters,'uint8');
+        n_paths     = sum( iPath );
+        n_subpaths  = h_builder.NumSubPaths( iClst );
         
         % Check if the positions are correct
         if any( abs( h_builder.rx_track(1,i_mobile).initial_position - h_builder.rx_positions(:,i_mobile) ) > 1e-5 )
@@ -138,7 +180,7 @@ else
         
         % The array antenna interpolation is the most time intense operation in the channel builder.
         % We save some computing time by reading the array antennas here and passing them as
-        % variables to the interpolate function later on.
+        % variables to the interpolate function later.
         
         % Update Tx-array data
         if i_mobile == 1 || ~qf.eqo( h_builder.tx_array(1,i_mobile), h_builder.tx_array(1,i_mobile-1) )
@@ -150,7 +192,7 @@ else
         end
         
         % Update Rx-array data
-        if i_mobile == 1 || ~qf.eqo( h_builder.rx_array(1,i_mobile), h_builder.tx_array(1,i_mobile-1) )
+        if i_mobile == 1 || ~qf.eqo( h_builder.rx_array(1,i_mobile), h_builder.rx_array(1,i_mobile-1) )
             n_rxant             = h_builder.rx_array(1,i_mobile).no_elements;
             [ rx_patV, rx_patH, rx_azimuth_grid, rx_elevation_grid, rx_element_pos ] = ...
                 wrap_grid( h_builder.rx_array(1,i_mobile) );
@@ -166,15 +208,20 @@ else
         initial_pos = h_builder.rx_track(1,i_mobile).segment_index( min( [h_builder.rx_track(1,i_mobile).no_segments,2] ));
         
         % Extract the random initial phases
-        pin = h_builder.pin(i_mobile,:); % double
+        pin = h_builder.pin(i_mobile,iPath); % double
         
         if use_3GPP_baseline
             % If we don't use drifting and have a linear track, then the Doppler component is only
             % dependent on the rotating phases of the taps. So, we don't recalculate the antenna
             % response for each snapshot.
             
-            % Get the angles of the 20 subpaths and perform random coupling.
-            [ aod,eod,aoa,eoa,delay ] = get_subpath_angles( h_builder, i_mobile );
+            % Get the angles of the subpaths and perform random coupling.
+            [ aod,eod,aoa,eoa,delay ] = get_subpath_angles( h_builder, i_mobile, use_laplacian_pas );
+            aod = aod(:,iPath);
+            eod = eod(:,iPath);
+            aoa = aoa(:,iPath);
+            eoa = eoa(:,iPath);
+            delay = delay(:,iClst);
             
             % Calculate the distance-dependent phases
             lambda  = h_builder.simpar.wavelength;
@@ -198,8 +245,8 @@ else
             
         else
             % Calculate the scatterer positions
-            lbs_pos = h_builder.lbs_pos(:,:,i_mobile);
-            fbs_pos = h_builder.fbs_pos(:,:,i_mobile);
+            lbs_pos = h_builder.lbs_pos(:,iPath,i_mobile);
+            fbs_pos = h_builder.fbs_pos(:,iPath,i_mobile);
             
             % Initialize the path delays
             delay = zeros( n_snapshots, n_clusters, n_rxant, n_txant );
@@ -219,7 +266,7 @@ else
             % by random phases which are scaled by the XPR. Polarization drifting is not supported.
             
             if size( h_builder.kappa,3 ) == 1
-                % Parameters were generated using the advances non-baseline model
+                % Parameters were generated using the advanced non-baseline model
                 % We need to update the polarization here to match the baseline model
                 
                 % Generate XPR, 3GPP TR 38.901, Step 9
@@ -231,8 +278,8 @@ else
                 kappa = 2*pi*rand( 1, n_paths, 4 ) - pi;
                 kappa(:,1,:) = 0;               % LOS
             else
-                gamma = h_builder.gamma(i_mobile,:);
-                kappa = h_builder.kappa(i_mobile,:,:);
+                gamma = h_builder.gamma(i_mobile,iPath);
+                kappa = h_builder.kappa(i_mobile,iPath,:);
             end
             
             % sqrt(1/XPR)-Values
@@ -255,8 +302,10 @@ else
 
         else
             % Conversion of the XPR into rotation angle for linear and circular polarization
-            gamma = h_builder.gamma(i_mobile,:);
-            kappa = exp(1j*h_builder.kappa(i_mobile,:));
+            gamma = h_builder.gamma(i_mobile,iPath);
+            kappa = exp(1j*h_builder.kappa(i_mobile,iPath));
+            xprmat_tx = zeros(2,n_paths,n_txant);
+            xprmat_rx = zeros(4,n_paths);
         end
         
         % Placeholder for the coefficient calculation
@@ -306,12 +355,21 @@ else
                 % Read the path power scaling that was used in "generate_initial_paths.m"
                 P_LOS = h_builder.pow(i_mobile,1);
                 P_GR  = h_builder.pow(i_mobile,2);
-                Rsq   = 2 * P_GR / (P_LOS + P_GR);
-                
-                % Compensate for the power scaling in "generate_initial_paths.m"
-                Sl = 1 / sqrt( 1-Rsq/2 );       % LOS path
-                Sv = sqrt(2/Rsq) * R_par;       % GR path vertical pol.
-                Sh = sqrt(2/Rsq) * R_per;       % GR path horizontal pol.
+                if P_GR == 0
+                    Sl = 1;
+                    Sv = 0;
+                    Sh = 0;
+                else
+                    % Compensate for the power scaling in "generate_initial_paths.m"
+                    Rsq   = 2 * P_GR / (P_LOS + P_GR);
+                    Sv = sqrt(2/Rsq) * R_par;       % GR path vertical pol.
+                    Sh = sqrt(2/Rsq) * R_per;       % GR path horizontal pol.
+                    if P_LOS == 0
+                        Sl = 0;
+                    else
+                        Sl = 1 / sqrt( 1-Rsq/2 );       % LOS path
+                    end
+                end
             end
             
             if use_3GPP_baseline % Planar waves
@@ -329,13 +387,6 @@ else
                 
                 % Calculate the Doppler profile.
                 doppler = reshape( cos(aoa_c+pi).*cos(eoa) ,1,n_paths );
-                
-                % Apply scaling for the GR path
-                if use_ground_reflection
-                    xprmat(:,1)     = Sl .* xprmat(:,1);
-                    xprmat([1,2],2) = Sv .* xprmat([1,2],2);
-                    xprmat([3,4],2) = Sh .* xprmat([3,4],2);
-                end
                 
             else % Spherical waves
                 % Interpolate the receive antenna patterns (NLOS)
@@ -401,10 +452,9 @@ else
             
             % Calculate the Tx polarization rotation matrix
             if update_tx_ant && ~use_3GPP_baseline
-                xprmat_tx = zeros(2,n_paths,n_txant);
                 for i_tx = 1 : n_txant
-                    xprmat_tx(1,:,i_tx) =  cos( deg_d(1,:,1,i_tx) );
-                    xprmat_tx(2,:,i_tx) =  sin( deg_d(1,:,1,i_tx) );
+                    xprmat_tx(1,:,i_tx) = cos( deg_d(1,:,1,i_tx) );
+                    xprmat_tx(2,:,i_tx) = sin( deg_d(1,:,1,i_tx) );
                 end
             end
             
@@ -487,13 +537,29 @@ else
                 end
             end
             
-            % There atr be random phases in the sub-paths of the antenna
-            % patterns. This changes the power when summing up the coefficients.
-            
             % Combine antenna patterns and phases
             ccp = c.*cp;
-            ppat(:,:,i_snapshot) = clst_sum( abs(ccp).^2 , n_subpaths );
-            cn(:,:,i_snapshot)   = clst_sum( ccp , n_subpaths );
+            
+            % Sum over the sub-paths in a cluster. This changes the cluster power due to the random
+            % phases. This is corrected later.
+            ls = 1;
+            for l = 1 : n_clusters
+                le = ls + n_subpaths(l) - 1;
+                if le ~= ls
+                    if use_laplacian_pas
+                        tmp = ccp(:,ls:le) .* (ones(n_rxant*n_txant,1) * laplacian_weights{n_subpaths(l)});
+                        ppat(:,l,i_snapshot) = sum( abs(tmp).^2,2 );
+                        cn(:,l,i_snapshot)   = sum( tmp,2 );
+                    else
+                        ppat(:,l,i_snapshot) = sum( abs(ccp(:,ls:le)).^2,2 );
+                        cn(:,l,i_snapshot)   = sum( ccp(:,ls:le),2 );
+                    end
+                else
+                    ppat(:,l,i_snapshot) = abs(ccp(:,ls)).^2;
+                    cn(:,l,i_snapshot)   = ccp(:,ls);
+                end
+                ls = le + 1;
+            end
         end
         
         if use_3GPP_baseline
@@ -510,19 +576,38 @@ else
                 
                 % Combine antenna patterns and phases
                 ccp = c.*cp;
-                ppat(:,:,i_snapshot) = clst_sum( abs(ccp).^2 , n_subpaths );
-                cn(:,:,i_snapshot)   = clst_sum( ccp , n_subpaths );
+                
+                % Sum over the sub-paths in a cluster. This changes the cluster power due to the random
+                % phases. This is corrected later.
+                ls = 1;
+                for l = 1 : n_clusters
+                    le = ls + n_subpaths(l) - 1;
+                    if le ~= ls
+                        if use_laplacian_pas
+                            tmp = ccp(:,ls:le) .* (ones(n_rxant*n_txant,1) * laplacian_weights{n_subpaths(l)});
+                            ppat(:,l,i_snapshot) = sum( abs(tmp).^2,2 );
+                            cn(:,l,i_snapshot)   = sum( tmp,2 );
+                        else
+                            ppat(:,l,i_snapshot) = sum( abs(ccp(:,ls:le)).^2,2 );
+                            cn(:,l,i_snapshot)   = sum( ccp(:,ls:le),2 );
+                        end
+                    else
+                        ppat(:,l,i_snapshot) = abs(ccp(:,ls)).^2;
+                        cn(:,l,i_snapshot)   = ccp(:,ls);
+                    end
+                    ls = le + 1;
+                end
             end
         end
         
         % The path powers
-        p_cl = h_builder.pow(i_mobile*ones(1,n_links),: );
-        
-        % The powers in the current channel coefficients (complex sum)
-        p_coeff = sum( abs(cn).^2, 3 ) ./ size(cn,3);
+        p_cl = h_builder.pow(i_mobile*ones(1,n_links),iClst );
         
         % The powers of the antenna patterns at the given angles (power-sum)
         p_pat = sum( ppat,3 ) ./ size(ppat,3);
+        
+        % The powers in the current channel coefficients (complex sum)
+        p_coeff = sum( abs(cn).^2, 3 ) ./ size(cn,3);
         
         % Correct the powers
         p_correct = sqrt( p_cl .* p_pat ./ p_coeff ./ n_subpaths(o_links,:) );
@@ -530,7 +615,7 @@ else
         cn = p_correct(:,:,ones(1,n_snapshots)) .* cn;
         
         % Now we apply the K-Factor and the shadowing profile
-        if use_3GPP_baseline
+        if use_3GPP_baseline || isempty( h_builder.sos )
             
             % Get the PL for the initial position only
             [ ~, ~, path_loss , scale_sf ] = h_builder.get_pl( h_builder.rx_track(1,i_mobile),...
@@ -657,6 +742,7 @@ else
             par_struct.pg_parset = 10*log10( mean(rx_power(:)).^2 ); % [db]
             par_struct.pg = 10*log10(abs( reshape( mean(mean(rx_power,1),2) , 1,[] ) ).^2);
         end
+        par_struct.sf_parset = 10*log10( h_builder.sf( i_mobile )); 
         par_struct.asD_parset = h_builder.asD( i_mobile ); % [deg]
         par_struct.asA_parset = h_builder.asA( i_mobile ); % [deg]
         par_struct.esD_parset = h_builder.esD( i_mobile ); % [deg]
@@ -664,31 +750,37 @@ else
         par_struct.XPR_parset = 10*log10( h_builder.xpr( i_mobile ) ); % [db]
         
         % Save the individual per-path values
-        par_struct.AoD_cb = h_builder.AoD( i_mobile,: ) * 180/pi; % [deg]
-        par_struct.AoA_cb = h_builder.AoA( i_mobile,: ) * 180/pi; % [deg]
-        par_struct.EoD_cb = h_builder.EoD( i_mobile,: ) * 180/pi; % [deg]
-        par_struct.EoA_cb = h_builder.EoA( i_mobile,: ) * 180/pi; % [deg]
-        par_struct.pow_cb = h_builder.pow( i_mobile,: );          % [W]
+        par_struct.AoD_cb = h_builder.AoD( i_mobile,iClst ) * 180/pi; % [deg]
+        par_struct.AoA_cb = h_builder.AoA( i_mobile,iClst ) * 180/pi; % [deg]
+        par_struct.EoD_cb = h_builder.EoD( i_mobile,iClst ) * 180/pi; % [deg]
+        par_struct.EoA_cb = h_builder.EoA( i_mobile,iClst ) * 180/pi; % [deg]
+        par_struct.pow_cb = h_builder.pow( i_mobile,iClst );          % [W]
         
         % Calculate the spreads at the output of the builder
-        par_struct.ds_cb  = qf.calc_delay_spread( h_builder.taus( i_mobile,: ), h_builder.pow( i_mobile, : ) );
-        par_struct.asD_cb = qf.calc_angular_spreads( h_builder.AoD( i_mobile,: ), h_builder.pow( i_mobile, : ) ) * 180/pi;
-        par_struct.asA_cb = qf.calc_angular_spreads( h_builder.AoA( i_mobile,: ), h_builder.pow( i_mobile, : ) ) * 180/pi;
-        par_struct.esD_cb = qf.calc_angular_spreads( h_builder.EoD( i_mobile,: ), h_builder.pow( i_mobile, : ) ) * 180/pi;
-        par_struct.esA_cb = qf.calc_angular_spreads( h_builder.EoA( i_mobile,: ), h_builder.pow( i_mobile, : ) ) * 180/pi;
+        par_struct.ds_cb  = qf.calc_delay_spread( h_builder.taus( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) );
+        par_struct.asD_cb = qf.calc_angular_spreads( h_builder.AoD( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
+        par_struct.asA_cb = qf.calc_angular_spreads( h_builder.AoA( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
+        par_struct.esD_cb = qf.calc_angular_spreads( h_builder.EoD( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
+        par_struct.esA_cb = qf.calc_angular_spreads( h_builder.EoA( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
         
         if ~use_3GPP_baseline
-            par_struct.NumSubPaths = h_builder.NumSubPaths;
+            par_struct.NumSubPaths = h_builder.NumSubPaths(1,iClst);
             par_struct.fbs_pos = fbs_pos;
             par_struct.lbs_pos = lbs_pos;
         end
         
+        % Save update rate
+        mp = h_builder.rx_track(1,i_mobile).movement_profile;
+        if n_snapshots > 1 && all(size(mp)==[2,2]) && mp(1,1)==0 && mp(2,1)==0 && ...
+                abs(mp(2,2)-h_builder.rx_track(1,i_mobile).get_length) < 1e-6
+            par_struct.update_rate = mp(1,2)/n_snapshots;
+        end
         h_channel(1,i_mobile).par = par_struct;
     end
 end
 
 % Fix for octave
-if numel( h_channel ) == 1;
+if numel( h_channel ) == 1
     h_channel = h_channel(1,1);
 end
 

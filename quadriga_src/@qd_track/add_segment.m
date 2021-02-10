@@ -27,9 +27,10 @@ function d_min = add_segment( h_track, pos, scenario, threshold )
 %   defined, no new points are added to the track, but the distances are calculated.
 %
 %   threshold
-%   A scalar value in meters describing the minimum distance to an existing point on a track at
-%   which no new point is created, but the scenario is assigned to the existing point (optional).
-%   The default value is 0.1 meters.
+%   A 2-element vector of real numbers. The first value is the minimum distance in meters to an
+%   existing point on a track at which no new point is created, but the scenario is assigned to the
+%   existing point (default = 0.1 m). The second value describes the maximum distance between "pos"
+%   and the track line (default = 2 m).
 %
 % Output:
 %   d_min
@@ -54,10 +55,16 @@ function d_min = add_segment( h_track, pos, scenario, threshold )
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
-
 if ~exist( 'threshold','var' ) || isempty( threshold )
-    threshold = 0.1;                                 % Add new point only if distance to threshold is > 10 cm
+    threshold = [ 0.1, 2 ];                         % Add new point only if distance to threshold is > 10 cm
+elseif numel( threshold ) == 1
+    threshold = threshold([1,1]);
 end
+
+if size( pos,1 ) ~= 3 || size( pos,2 ) ~= 1
+    error('QuaDRiGa:qd_track:add_segment','"pos" must be a 3 row vector.');
+end    
+    
 
 if numel(h_track) > 1                               % Array of qd_track objects
     
@@ -65,13 +72,13 @@ if numel(h_track) > 1                               % Array of qd_track objects
     d_min   = zeros( sic );
     for n = 1 : numel(h_track)
         [ i1,i2,i3,i4 ] = qf.qind2sub( sic, n );
-        d_min(i1,i2,i3,i4) = add_segment( h_track(i1,i2,i3,i4), pos, [], threshold );
+        d_min(i1,i2,i3,i4) = add_segment( h_track(i1,i2,i3,i4), pos, [], threshold );  % Create points
     end
     
     if exist( 'scenario','var' ) && ~isempty( scenario )
         [ ~,n ] = min( d_min(:) );                  % Find track with minimum distance
         [ i1,i2,i3,i4 ] = qf.qind2sub( sic, n );
-        add_segment( h_track(i1,i2,i3,i4), pos, scenario, threshold );   % Set scenario
+        add_segment( h_track(i1,i2,i3,i4), pos, scenario, threshold([2,2]) );   % Set scenario
     end
     
 else                                                % Single qd_track object
@@ -86,36 +93,44 @@ else                                                % Single qd_track object
     o3 = ones(1,3);
     
     d = sqrt(sum((PT - P(:,oP)).^2));               % Distances between given point and all points
-    if d(end) < threshold                           % The last point cannot start a segment
+    if d(end) < threshold(1)                        % The last point cannot start a segment
         d(end) = Inf;
     end
-    [ d_min , ii ] = min( d );                      % Minimum distance and nearest neighbor index
-    use_nearest = true;                             % Indicates that the nearest neighbor is the best point
+    [ d_min_nearest , ii ] = min( d );              % Minimum distance and nearest neighbor index
     
-    if d_min > threshold                            % Seach for projection
-        U = PT(:,2:end) - PT(:,1:end-1);           	% The vectors from LineSegment-start to the LineSegment-end
+    use_projection = false;                         % Indicates that the projected point is not used
+    if d_min_nearest <= threshold(1)                % Seach for projection
+        use_nearest = true;                         % Indicates that the nearest neighbor is the best point
+    else
+        use_nearest = false;                        % Indicates that the projected point is better
+        U = PT(:,2:end) - PT(:,1:end-1);            % Differential vectors from LineSegment-start to the LineSegment-end
         X = P(:,op) - PT(:,1:end-1);                % The vectors from P to LineSegment-start
         r = sum(X.*U) ./ sum(U.^2);                 % Orthogonal projection onto each LineSegment
-        ip = r > 0 & r < 1;                         % Proj. must be within a line segment
+        ip = r >= 0  & r < 1;                       % Proj. must be within a line segment
         
         if any( ip )
             UG = r(o3,ip) .* U(:,ip);               % The vectors from LineSegment-start to Projected point
             PG = PT(:,ip) + UG;                     % The vectors from origin to Projected point
             oG = ones(1,size(PG,2));                % Ones
             dG = sqrt(sum(( PG - P(:,oG) ).^2));    % Distances from P to Projected point
+            [ d_min_proj , ii ] = min( dG );        % Minimum distance of projection
             
-            if any( dG < d_min )
-                [ d_min , ii ] = min( dG );         % Minimum distance
-                PG = PG(:,ii);                      % Select the winner
-                ip = find( ip );
-                ii = ip( ii );                      % Index of the point before the projected point
-                use_nearest = false;                % Indicates that the projected point is better
+            if d_min_proj <= threshold(2)
+                if d_min_proj < d_min_nearest       % Projection is better that nearest-neigbor
+                    use_projection = true;
+                    PG = PG(:,ii);                  % Select the winner
+                    ip = find( ip );
+                    ii = ip( ii );                  % Index of the point before the projected point
+                else % d_min_proj >= d_min_nearest
+                    use_nearest = true;             % Indicates that the nearest neighbor is the best point
+                    [ ~ , ii ] = min( d );          % Minimum distance and nearest neighbor index
+                end
             end
         end
     end
     
     if use_nearest
-        PG = PT(:,ii);                              % Select the neares neighbor
+        PG = PT(:,ii);                              % Select the nearest neighbor
     end
     
     if exist( 'scenario','var' ) && ~isempty( scenario )
@@ -123,11 +138,9 @@ else                                                % Single qd_track object
         if ischar( scenario )                       % Check the format of the scenario
             scenario = {scenario};
         elseif ~iscell( scenario )
-            error('QuaDRiGa:qd_track:add_segment',...
-                'Scenario must be a string or cell array.');
+            error('QuaDRiGa:qd_track:add_segment','Scenario must be a string or cell array.');
         elseif size( scenario,2 ) > 1
-            error('QuaDRiGa:qd_track:add_segment',...
-                'The scenario cell array can only have one column.');
+            error('QuaDRiGa:qd_track:add_segment','The scenario cell array can only have one column.');
         end
         
     else
@@ -150,14 +163,18 @@ else                                                % Single qd_track object
     
     if use_nearest
         if ~any(si==ii)                         % Scenario does not exist
-            h_track.segment_index = [ si( si<ii ), ii, si( si>ii )+1 ];
+            h_track.segment_index = [ si( si<ii ), ii, si( si>ii ) ];
         end
         h_track.scenario = [ sc( :,si<ii ), scenario , sc( :,si>ii ) ];
-    else
+        d_min = d_min_nearest;
+    elseif use_projection
         h_track.positions = [ PT(:,1:ii), PG, PT(:,ii+1:end) ];
         h_track.orientation = [ or(:,[1:ii,ii]), or(:,ii+1:end) ];
         h_track.segment_index = [ si( si<=ii ), ii+1, si( si>ii )+1 ];
         h_track.scenario = [ sc( :,si<=ii ), scenario , sc( :,si>ii ) ];
+        d_min = d_min_proj;
+    else
+        d_min = Inf;
     end
     
 end

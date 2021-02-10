@@ -144,6 +144,80 @@ for ir = 1 : numel( i_rx )
 end
 no_seg = size( rx_ind, 2 );
 
+% Interpolate tx tracks that have more that 1 snapshot (dual-mobility)
+for t = 1 : numel( i_tx )
+    it  = i_tx( t );
+
+    % Length of the track
+    max_dist = txT(1,it).get_length;
+    
+    if txT(1,it).no_snapshots > 1 && ~isempty( h_layout.update_rate ) && ~isempty( txT(1,it).movement_profile )
+        
+        % Time-based interpolation
+        max_time = txT(1,it).movement_profile(1,end);
+        sample_rate = h_layout.update_rate;
+        no_snapshots_out = ceil((max_time-sample_rate/2) / sample_rate ) + 1;
+        
+        % Interpolate Tx track
+        if txT(1,it).no_snapshots ~= no_snapshots_out
+            txT(1,it) = copy( txT(1,it) );
+            interpolate( txT(1,it), 'time', sample_rate );
+        end
+        
+    elseif txT(1,it).no_snapshots > 1 && max_dist > 1e-6 && isempty( txT(1,it).movement_profile )
+        % If there is a movement profile, the tracks are interpolated in "qd_layout.get_channels"
+        % Without a movement profile, all tracks must have the same length. In this case, we
+        % interpolate them according to the sample density.
+        
+        % Distance-based interpolation
+        sample_rate = 1/h_layout.simpar.samples_per_meter;
+        
+        % Interpolate the tx track
+        no_snapshots_out = ceil((max_dist-sample_rate/2) / sample_rate ) + 1;
+        if txT(1,it).no_snapshots ~= no_snapshots_out
+            txT(1,it) = copy( txT(1,it) );
+            interpolate( txT(1,it), 'distance', sample_rate );
+        end
+    end
+    
+end
+
+% Interpolate rx tracks that have more that 1 snapshot (dual-mobility)
+for r = 1 : numel( rxT )
+    
+    % Length of the track
+    max_dist = rxT(1,r).get_length;
+    
+    if rxT(1,r).no_snapshots > 1 && ~isempty( h_layout.update_rate ) && ~isempty( rxT(1,r).movement_profile )
+        
+        % Time-based interpolation
+        max_time = rxT(1,r).movement_profile(1,end);
+        sample_rate = h_layout.update_rate;
+        no_snapshots_out = ceil((max_time-sample_rate/2) / sample_rate ) + 1;
+        
+        % Interpolate Tx track
+        if rxT(1,r).no_snapshots ~= no_snapshots_out
+            rxT(1,r) = copy( rxT(1,r) );
+            interpolate( rxT(1,r), 'time', sample_rate );
+        end
+        
+    elseif h_layout.dual_mobility && rxT(1,r).no_snapshots > 1 && max_dist > 1e-6 && isempty( rxT(1,r).movement_profile )
+        % If there is a movement profile, the tracks are interpolated in "qd_layout.get_channels"
+        % Without a movement profile, all tracks must have the same length. In this case, we
+        % interpolate them according to the sample density.
+           
+        % Distance-based interpolation
+        sample_rate = 1/h_layout.simpar.samples_per_meter;
+        
+        % Interpolate the tx track
+        no_snapshots_out = ceil((max_dist-sample_rate/2) / sample_rate ) + 1;
+        if rxT(1,r).no_snapshots ~= no_snapshots_out
+            rxT(1,r) = copy( rxT(1,r) );
+            interpolate( rxT(1,r), 'distance', sample_rate );
+        end
+    end
+end
+
 % Initialize track splitting
 if split_tracks
     rx_track = qd_track([]);
@@ -189,9 +263,7 @@ for r = 1 : no_seg
                     ['"',txT(1,it).name,'_',rxT(1,rx_ind(1,r)).name,...
                     '": Assigned tracks must have the same number of snapshots.']);
                 
-            else                                                        % Tx is mobile, Rx is mobile
-                % Get the Tx position relative to the tx initial position
-                track_position = txT(1,it).positions(:,segment_index );
+            else % Tx is mobile, Rx is mobile
                 
                 if split_tracks
                     % Initialize the temporary tracks with default variables 
@@ -222,11 +294,11 @@ for r = 1 : no_seg
                 end
             end
             
-        else                                                            % Tx is static
+        else % Tx is static
             if split_tracks
                 % Extract Rx track segment
                 trk = rxT(1,rx_ind(1,r));
-                if trk.no_segments == 1 && ~trk.closed && isempty( trk.par )
+                if trk.no_segments == 1 && isempty( trk.par )
                     rx_track(r,t) = qd_track([]);
                     copy( rx_track(r,t), trk );
                     rx_track(r,t).scenario = trk.scenario{t,1};

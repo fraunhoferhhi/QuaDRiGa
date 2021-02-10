@@ -1,4 +1,4 @@
-function layout2kml( h_layout , fn , reference_coord, embed_antennas, use_description, split_segments  )
+function layout2kml( h_layout , fn , reference_coord, embed_antennas, use_description, split_segments, absolute_altitude )
 %LAYOUT2KML Exports a layout object to a KML file 
 %
 % Calling object:
@@ -40,6 +40,8 @@ function layout2kml( h_layout , fn , reference_coord, embed_antennas, use_descri
 %   The effect will not be visible when viewing the KML file in Google earth. If SplitSegments is
 %   not defined, segment splitting is disabled.
 %
+%   absolute_altitude
+%   If set to true, heights are stored relative to sea level. 
 % 
 % QuaDRiGa Copyright (C) 2011-2019
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
@@ -83,12 +85,17 @@ if ~exist('use_description','var') || isempty( use_description )
     use_description = false;
 end
 
+if ~exist('absolute_altitude','var') || isempty( absolute_altitude )
+    absolute_altitude = false;
+end
+
 if ~exist('split_segments','var') || isempty( split_segments )
     split_segments = [];
 elseif size( split_segments,2 ) ~= 4
     error('QuaDRiGa:qd_layout:layout2kml',...
         '"split_segments" must have 4 elements.');
 end
+
 
 % Process antennas
 a = qd_arrayant([]);                                            % Empy array of qd_arrayant objects
@@ -393,8 +400,6 @@ for n = 1 : h_layout.no_tx
     coordinates = sprintf('%1.14g,%1.14g,%1.14g ',pos);
     if any(pos(3,:) > 1000)
         absolute_altitude = true;
-    else
-        absolute_altitude = false;
     end
     
     if h_layout.tx_track(1,n).no_snapshots == 1
@@ -472,8 +477,12 @@ for n = 1 : h_layout.no_rx
                 fprintf(f,'</value></Data>\n');
             end
         end
-        if any( abs( rx_track.orientation(1,:) ) > 1e-7 )
-            val = sprintf('%1.8g,',rx_track.orientation(1,:)*180/pi);
+        
+        % Save orientation only if it differs from the orientations calculated from the track
+        orientation = rx_track.orientation;
+        rx_track.calc_orientation;
+        if any( abs( rx_track.orientation(1,:) - orientation(1,:) ) > 1e-7 )
+            val = sprintf('%1.8g,',orientation(1,:)*180/pi);
             if use_description
                 fprintf(f,['Bank = ',val(1:end-1),'\n']);
             else
@@ -482,8 +491,8 @@ for n = 1 : h_layout.no_rx
                 fprintf(f,'</Data>\n');
             end
         end
-        if any( abs( rx_track.orientation(2,:) ) > 1e-7 )
-            val = sprintf('%1.8g,',rx_track.orientation(2,:)*180/pi);
+        if any( abs( rx_track.orientation(2,:) - orientation(2,:) ) > 1e-7 )
+            val = sprintf('%1.8g,',orientation(2,:)*180/pi);
             if use_description
                 fprintf(f,['Tilt = ',val(1:end-1),'\n']);
             else
@@ -492,16 +501,19 @@ for n = 1 : h_layout.no_rx
                 fprintf(f,'</Data>\n');
             end
         end
-        if any( abs( rx_track.orientation(3,:) ) > 1e-7 )
-            val = sprintf('%1.8g,',rx_track.orientation(3,:)*180/pi);
+        if any( abs( rx_track.orientation(3,:) - orientation(3,:) ) > 1e-7 )
+            val = sprintf('%1.8g,',orientation(3,:)*180/pi);
             if use_description
                 fprintf(f,['Heading = ',val(1:end-1),'\n']);
             else
                 fprintf(f,'\t\t\t<Data name="Heading">');
                 fprintf(f,['<value>',val(1:end-1),'</value>']);
+                
                 fprintf(f,'</Data>\n');
             end
         end
+        rx_track.orientation = orientation;
+        
         if ~isempty( rx_track.movement_profile )
             val = sprintf('%1.8g,',rx_track.movement_profile(1,:));
             if use_description
@@ -533,8 +545,6 @@ for n = 1 : h_layout.no_rx
     coordinates = sprintf('%1.12g,%1.12g,%1.12g ',pos);
     if any(pos(3,:) > 1000)
         absolute_altitude = true;
-    else
-        absolute_altitude = false;
     end
     
     if h_layout.rx_track(1,n).no_snapshots == 1
@@ -608,8 +618,6 @@ for n = 1 : h_layout.no_rx
         coordinates = sprintf('%1.14g,%1.14g,%1.14g ',pos);
         if any(pos(3,:) > 1000)
             absolute_altitude = true;
-        else
-            absolute_altitude = false;
         end
         
         fprintf(f,'\t\t<Point>\n');

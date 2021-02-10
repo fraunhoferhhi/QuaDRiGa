@@ -16,21 +16,24 @@ function rotate_pattern( h_qd_arrayant, deg, rotaxis, i_element, usage )
 %   The rotation angle in [degrees] ranging from -180° to 180°
 %
 %   rotaxis
-%   The rotation axis specified by the character 'x','y', or 'z'.
+%   The rotation axis specified by the string 'x','y', 'z', or 'xyz'. In case of 'xyz', three
+%   rotations are performed: one around the 'x' axis, followed by one around the 'y' axis and
+%   around the 'z' axis. In this case, the input 'deg' must be a 3-element vector containing the 3
+%   rotation angles.
 %
 %   i_element
 %   The element indices for which the rotation is done. If no element index is given, the rotation
 %   is done for all elements in the array.
 %
 %   usage
-%   The optional parameter 'usage' can limit the rotation procedure either  to the pattern or
+%   The optional parameter 'usage' can limit the rotation procedure either to the pattern or
 %   polarization. Possible values are:
 %      * 0: Rotate both (pattern+polarization) - default
 %      * 1: Rotate only pattern
 %      * 2: Rotate only polarization
+%      * 3: Same as (0), but without grid interpolation
 %
-%
-% QuaDRiGa Copyright (C) 2011-2019
+% QuaDRiGa Copyright (C) 2011-2020
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -45,7 +48,7 @@ function rotate_pattern( h_qd_arrayant, deg, rotaxis, i_element, usage )
 %
 % You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for 
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
-% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
+% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 if numel( h_qd_arrayant ) > 1 
    error('QuaDRiGa:qd_arrayant:rotate_pattern','calc_gain not definded for object arrays.');
@@ -54,22 +57,21 @@ else
 end
 
 % Parse input arguments
-if exist('deg','var')
-    if ~( all(size(deg) == [1 1]) && isnumeric(deg) ...
-            && isreal(deg) )
-        error('QuaDRiGa:qd_arrayant:rotate_pattern','??? "deg" must be integer and real')
-    end
-else
-    deg = 0;
-end
-
 if exist('rotaxis','var')
     if ~( ischar(rotaxis) && ...
-            (strcmp(rotaxis,'x') || strcmp(rotaxis,'y')  || strcmp(rotaxis,'z')) )
+            (strcmp(rotaxis,'x') || strcmp(rotaxis,'y') || strcmp(rotaxis,'z') || strcmp(rotaxis,'xyz') ) )
         error('QuaDRiGa:qd_arrayant:rotate_pattern','??? "rotaxis" can only be x,y or z.')
     end
 else
     rotaxis = 'y';
+end
+
+if exist('deg','var')
+    if ~( isnumeric(deg) && isreal(deg) )
+        error('QuaDRiGa:qd_arrayant:rotate_pattern','??? "deg" must be real-valued')
+    end
+else
+    deg = 0;
 end
 
 if exist('i_element','var') && ~isempty( i_element )
@@ -84,8 +86,8 @@ end
 
 if exist('usage','var')
     if ~( all(size(usage) == [1 1]) && isnumeric(usage) ...
-            && any(usage == [0,1,2]) )
-        error('QuaDRiGa:qd_arrayant:rotate_pattern','??? "usage" must be 0,1 or 2')
+            && any(usage == [0,1,2,3]) )
+        error('QuaDRiGa:qd_arrayant:rotate_pattern','??? "usage" must be 0,1,2 or 3')
     end
 else
     usage = 0;
@@ -110,6 +112,10 @@ switch rotaxis
         yrot = deg;
     case 'z'
         zrot = deg;
+    case 'xyz'
+        xrot = deg(1);
+        yrot = deg(2);
+        zrot = deg(3);
 end
 
 % Calculate the minimum grid resolution
@@ -123,7 +129,10 @@ dTheta_min = min( dTheta( dTheta>1e-7 ) );
 
 % Check if we need to interpolate the angular grid
 if usage == 2
-    interpolate_grid = false;  % Only polarization 
+    interpolate_grid = false;   % Only polarization 
+elseif usage == 3
+    interpolate_grid = false;   % Disable grid interpolation
+    usage = 0;                  % Interpolate pattern and polarization
 elseif isempty( yrot ) && isempty( xrot )
     % We have only a z-rotation
     if (dPhi_max - dPhi_min) < 1e-7   % Check if the azimuth grid is equaly sampled
@@ -131,7 +140,7 @@ elseif isempty( yrot ) && isempty( xrot )
     else
         interpolate_grid = true;
     end
-elseif abs( dPhi_max - dPhi_min ) > 1e-7 || (dTheta_max - dTheta_min) > 1e-7
+elseif abs( dPhi_max - dPhi_min ) > 1e-6 || abs( dTheta_max - dTheta_min ) > 1e-6
     interpolate_grid = true;
 else
     interpolate_grid = false;

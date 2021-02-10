@@ -1,4 +1,5 @@
-function [ trk_names, seg_ind, order, trk_has_gr, seg_has_gr, tx_ind, rx_ind, tx_names, rx_names ] = parse_channel_names( h_channel )
+function [ trk_names, seg_ind, order, trk_has_gr, seg_has_gr, tx_ind, rx_ind, tx_names, rx_names ] ...
+    = parse_channel_names( h_channel )
 %PARSE_CHANNEL_NAMES Parses the channel names
 %
 % The cannel names can have different formats:
@@ -14,11 +15,11 @@ function [ trk_names, seg_ind, order, trk_has_gr, seg_has_gr, tx_ind, rx_ind, tx
 %
 % Output:
 %   trk_names
-%   A { T x 1 } cell array containing the unique track names. "T" is th numer of tracks.
+%   A { T x 1 } cell array containing the unique track names. "T" is the numer of tracks.
 %   Thrack names are ordered alphapetically.
 %
 %   seg_ind
-%   A [ N x 1 ] uint16 array indicating which channel object links to which track.
+%   A [ N x 1 ] uint32 array indicating which channel object links to which track.
 %
 %   order
 %   A [ N x 1 ] index list containging correct order of the channel objects.
@@ -65,8 +66,18 @@ single_seg = false( n_channel, 1 );
 for i_channel = 1 : n_channel                   % Do for each channel
     name = h_channel(1,i_channel).name;         % read channel name
     tmp = regexp( name , '_' );                 % split "Scen_Tx_Rx_Seg"
-    
-    if numel( tmp ) == 1                        % We have already "Tx_Rx"
+
+    if isempty( tmp )                           % No underscore in name
+        if isempty( name )
+            tx = 'Tx';                          % default tx name
+            rx = 'Rx';                          % default rx name
+        else
+            tx = [name,'-Tx'];                  % default tx name
+            rx = [name,'-Rx'];                  % default rx name
+        end
+        seg = 'seg0001';                        % set segment number to 1
+        single_seg( i_channel ) = true;         % Indicate the track has only one segment
+    elseif numel( tmp ) == 1                    % We have already "Tx_Rx"
         tx = name(1:tmp(1)-1);                  % store tx name
         rx = name(tmp(1)+1:end);                % store rx name
         seg = 'seg0001';                        % set segment number to 1
@@ -160,9 +171,9 @@ for i_channel = 1 : n_channel
 end
 
 % Get the indices
-seg_ind = zeros( n_channel,1,'uint16');
-tx_ind  = zeros( n_channel,1,'uint16');
-rx_ind  = zeros( n_channel,1,'uint16');
+seg_ind = zeros( n_channel,1,'uint32');
+tx_ind  = zeros( n_channel,1,'uint32');
+rx_ind  = zeros( n_channel,1,'uint32');
 
 for i_trk = 1 : numel( trk_names )
     ind = regexp( trk_names{i_trk} , '_' );
@@ -174,9 +185,9 @@ for i_trk = 1 : numel( trk_names )
     else
         ind = strcmp( trk_names{i_trk} , seg_names );
     end
-    seg_ind(ind) = uint16( i_trk );
-    tx_ind(ind) = uint16( itx );
-    rx_ind(ind) = uint16( irx );
+    seg_ind(ind) = uint32( i_trk );
+    tx_ind(ind) = uint32( itx );
+    rx_ind(ind) = uint32( irx );
 end
     
 end

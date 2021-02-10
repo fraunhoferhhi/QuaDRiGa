@@ -77,13 +77,38 @@ if nargin < 5
         i_element = 1:h_qd_arrayant.no_elements;
     end
     
-    if use_single_precision
-        [ Fa, Fb, azimuth_grid, elevation_grid, element_position ] = h_qd_arrayant.wrap_grid( [], 'single' );
+    no_elements = h_qd_arrayant.no_elements;
+    if h_qd_arrayant.is_wrapped
+        if use_single_precision
+            if isa( h_qd_arrayant.PFa , 'single' )
+                Fa = reshape( h_qd_arrayant.PFa, [], no_elements );
+            else
+                Fa = reshape( single(h_qd_arrayant.PFa), [], no_elements );
+            end
+            if isa( h_qd_arrayant.PFb , 'single' )
+                Fb = reshape( h_qd_arrayant.PFb, [], no_elements );
+            else
+                Fb = reshape( single(h_qd_arrayant.PFb), [], no_elements );
+            end
+            azimuth_grid = single(h_qd_arrayant.azimuth_grid);
+            elevation_grid = single(h_qd_arrayant.elevation_grid);
+            element_position = single(h_qd_arrayant.Pelement_position);
+        else
+            Fa = reshape( h_qd_arrayant.PFa, [], no_elements );
+            Fb = reshape( h_qd_arrayant.PFb, [], no_elements );
+            azimuth_grid = h_qd_arrayant.azimuth_grid;
+            elevation_grid = h_qd_arrayant.elevation_grid;
+            element_position = h_qd_arrayant.element_position;
+        end
     else
-        [ Fa, Fb, azimuth_grid, elevation_grid, element_position ] = h_qd_arrayant.wrap_grid;
+        if use_single_precision
+            [ Fa, Fb, azimuth_grid, elevation_grid, element_position ] = h_qd_arrayant.wrap_grid( [], 'single' );
+        else
+            [ Fa, Fb, azimuth_grid, elevation_grid, element_position ] = h_qd_arrayant.wrap_grid;
+        end
+        Fa = reshape( Fa, [], no_elements );
+        Fb = reshape( Fb, [], no_elements );
     end
-    Fa = reshape( Fa, [], h_qd_arrayant.no_elements );
-    Fb = reshape( Fb, [], h_qd_arrayant.no_elements );
 end
 
 % Get initial values
@@ -176,16 +201,17 @@ pb = vi  + ( uin -1 )*no_el;
 pc = vin + ( ui  -1 )*no_el;
 pd = vin + ( uin -1 )*no_el;
 
-V = phase_interpolation_1d( Fa(pa,i_element), Fa(pb,i_element), u(:,ones(1,no_element)) ); % Point e
-if numel( elevation_grid ) > 1
-    f = phase_interpolation_1d( Fa(pc,i_element), Fa(pd,i_element), u(:,ones(1,no_element)) );
-    V = phase_interpolation_1d( V, f, v(:,ones(1,no_element)) );
-end
+o_element = ones(1,no_element,'uint8');
+uu = u(:,o_element);
 
-H = phase_interpolation_1d( Fb(pa,i_element), Fb(pb,i_element), u(:,ones(1,no_element)) ); % Point e
+V = phase_interpolation_1d( Fa(pa,i_element), Fa(pb,i_element), uu ); % Point e
+H = phase_interpolation_1d( Fb(pa,i_element), Fb(pb,i_element), uu ); % Point e
 if numel( elevation_grid ) > 1
-    f = phase_interpolation_1d( Fb(pc,i_element), Fb(pd,i_element), u(:,ones(1,no_element)) );
-    H = phase_interpolation_1d( H, f, v(:,ones(1,no_element)) );
+    vv = v(:,o_element);
+    f = phase_interpolation_1d( Fa(pc,i_element), Fa(pd,i_element), uu );
+    V = phase_interpolation_1d( V, f, vv );
+    f = phase_interpolation_1d( Fb(pc,i_element), Fb(pd,i_element), uu );
+    H = phase_interpolation_1d( H, f, vv );
 end
 
 % Remap output to match input dimensions

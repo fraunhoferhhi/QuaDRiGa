@@ -53,6 +53,7 @@ a_mt_2.Fb(:,:,2) = 1;
 % hexagonal grid with 19 sites and three sectors per site. This is implemented in
 % "qd_layout.generate", using the "regular" layout.
 
+tic
 no_rx = 2000;                               % Number of MTs (directly scales the simulation time)
 create_curves = 1:4;                        % The number of curves to create
 
@@ -85,14 +86,7 @@ l(1,4).name = '3D-UMa (K=M=10)';
 % Dorp users in each layout
 for il = create_curves
     l(1,il).no_rx = no_rx;                                      % Number of users
-    l(1,il).randomize_rx_positions( 0.93*isd(il),1.5,1.5,0 );   % Random positions in first ring
-    
-    % Keep no-go distance
-    ind = find(abs( l(1,il).rx_position(1,:) + 1j*l(1,il).rx_position(2,:) ) < no_go_dist(il));
-    while ~isempty( ind )
-        l(1,il).randomize_rx_positions( 0.93*isd(il), 1.5, 1.5, 0, ind );
-        ind = find( abs(l(1,il).rx_position(1,:) + 1j*l(1,il).rx_position(2,:) ) < no_go_dist(il));
-    end
+    l(1,il).randomize_rx_positions( 0.93*isd(il),1.5,1.5,0, [], no_go_dist(il) );
     
     % Set random height of the users
     floor = randi(5,1,l(1,il).no_rx) + 3;                       % Number of floors in the building
@@ -119,6 +113,7 @@ for il = create_curves
             l(1,il).rx_array = a_mt_2;
     end
 end
+toc
 
 %% Generate channels
 % Channels are now generated using the default QuaDRiGa method (phase 1 only used the LOS path).
@@ -153,7 +148,7 @@ set(0,'defaultAxesFontName','Times')                                    % Defaul
 set(0,'defaultTextFontName','Times')                                    % Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')                          % Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')                              % Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 6.6])                              % Default Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 6.9])                              % Default Paper Size
 
 pg_eff = zeros( no_rx, 19*3, 4 );       % Calculate the effective path gain from the channels
 for il = create_curves

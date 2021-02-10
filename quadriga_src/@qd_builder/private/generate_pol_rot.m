@@ -1,4 +1,4 @@
-function [ gamma, kappa ] = generate_pol_rot( Ln, M, tx_pos, rx_pos, xpr_mu, xpr_sigma, xpr_sos )
+function [ gamma, kappa ] = generate_pol_rot( Ln, M, tx_pos, rx_pos, xpr_mu, xpr_sigma, xpr_sos, dual_mobility )
 %GENERATE_XPR Generates the NLOS polarization rotation for the subpaths 
 %
 % Input:
@@ -57,13 +57,18 @@ end
 
 % Number of users
 N = size( rx_pos, 2 );
+oN = ones(1,N);
 
 if ~exist('tx_pos','var') || size( tx_pos,1) ~= 3
     error('QuaDRiGa:qd_builder:generate_pol_rot','Tx position is not given or has invalid format.')
 end
 
 if size( tx_pos,2 ) == 1
-    tx_pos_SOS = [];
+    if dual_mobility
+        tx_pos_SOS = tx_pos(:,oN);
+    else
+        tx_pos_SOS = [];
+    end
 elseif size( tx_pos,2 ) == N
     tx_pos_SOS = tx_pos;
 else

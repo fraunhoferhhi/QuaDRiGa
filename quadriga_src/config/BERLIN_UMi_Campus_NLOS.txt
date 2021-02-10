@@ -1,0 +1,106 @@
+% Config File for scenario "BERLIN_UMi_Campus_NLOS"
+% BERLIN Urban Micro-Cell Campus Non-Line Of Sight
+%
+% The channel model parameterization given below, is a result of a measurement campaign conducted at 3.675 GHz in Berlin, Germany. 
+% More details about the campaign were presented at the 50th Asilomar Conference on Signals, Systems and Computers in November 2016 and will be published in the conference proceedings.
+% Reference:
+% Leszek Raschkowski, Stephan Jaeckel, Fabian Undi, Lars Thiele, Wilhelm Keusgen, Boonsarn Pitakdumrongkija, Masayuki Ariyoshi, 
+% "Directional Propagation Measurements and Modeling in an Urban Environment at 3.7 GHz", 
+% 50th Asilomar Conference on Signals, Systems and Computers, Nov 2016
+%
+% ==================================================================================================
+% Channel model parameters
+% ==================================================================================================
+DS_mu = 			-7.03		% Delay Spread (DS) / [log10([s])]  mu
+DS_sigma = 			0.23			% Delay Spread (DS) / [log10([s])] sig
+
+AS_D_mu = 			1.84		% Azimuth Angle of Departure Spread (ASD) / [log10([degrees])] mu
+AS_D_sigma = 		0.11		% Azimuth Angle of Departure Spread (ASD) / [log10([degrees])] sig
+
+ES_D_mu = 			1.2			% Azimuth Angle of Departure Spread (ASD) / [log10([degrees])] mu
+ES_D_sigma = 		0.3			% Azimuth Angle of Departure Spread (ASD) / [log10([degrees])] sig
+
+AS_A_mu = 			1.9			% Azimuth Angle of Arrival Spread (ASA) / [log10([degrees])] mu
+AS_A_sigma = 		0.22		% Azimuth Angle of Arrival Spread (ASA) / [log10([degrees])] sig
+
+ES_A_mu = 			1.3			% Elevation Angle of Arrival Spread (ESA) / [log10([degrees])] mu
+ES_A_sigma = 		0.20		% Elevation Angle of Arrival Spread (ESA) / [log10([degrees])] sig
+% Assuming: ES_D / AS_D = ES_A / AS_A 
+
+SF_sigma =			4.5			% Shadow fading (SF) / [dB] sig
+
+KF_mu = 			-13.2		% K-factor (KF) / [dB] mu -> taken from Winner
+KF_sigma = 			4.7			% K-factor (KF) / [dB] sig -> taken from Winner
+
+% Cross-Correlations
+
+asD_ds = 			0.32		% ASD vs DS
+asA_ds = 			0.36		% ASA vs DS
+asA_sf = 			-0.3		% ASA vs SF
+asD_sf = 			-0.1		% ASD vs SF
+ds_sf = 			-0.61		% DS vs SF
+asD_asA = 			0.08		% ASD vs ASA
+asD_kf = 			-0.37		% ASD vs KF
+asA_kf = 			-0.35		% ASA vs KF
+ds_kf = 			-0.49		% DS vs KF
+sf_kf = 			0.62		% SF vs KF
+
+esD_sf = 			-0.4		% ESD vs SF
+esA_sf = 			-0.2		% ESA vs SF (Guessed from ASD-SF, ESD-SF, ASA-SF)
+esD_kf = 			-0.17		% ESD vs KF
+esA_kf = 			-0.15		% ESA vs KF (Guessed from ASD-KF, ESD-KF, ASA-KF)
+esD_ds = 			0.31		% ESD vs DS
+esA_ds = 			0.34		% ESA vs DS (Guessed from ASD-DS, ESD-DS, ASA-DS)
+esD_asD = 			0.25		% ESD vs ASD
+esA_asD = 			0			% ESA vs ASD
+esD_asA = 			0			% ESD vs ASA
+esA_asA = 			0.25		% ESA vs ASA (Same as ESD-ASD)
+esD_esA =			0			% ESD vs ESA
+
+% Delay distribution: exponential
+% AoD and AoA distribution: Scaled Random
+
+r_DS = 				2.85		% Delay scaling parameter rTau
+
+xpr_mu = 			8			% XPR / [dB] mu
+xpr_sigma = 		3			% XPR / [dB] sig
+
+NumClusters = 		20			% Number of clusters (1 extra for LOS path)
+
+PerClusterAS_D = 	10			% Cluster ASD / [deg]
+PerClusterES_D = 	3			% Cluster ESD / [deg] -> value taken from Winner+
+PerClusterAS_A = 	10			% Cluster ASA / [deg]
+PerClusterES_A = 	3			% Cluster ESA / [deg]
+
+LNS_ksi = 			3			% Per cluster shadowing std / [dB]
+
+% Correlation distance in the horizontal plane
+
+DS_lambda = 		45			% DS correlation distance / [m]
+AS_D_lambda = 		19			% ASD correlation distance / [m]
+AS_A_lambda = 		12			% ASA correlation distance / [m]
+SF_lambda = 		29			% SF correlation distance / [m]
+KF_lambda = 		15			% KF correlation distance / [m]
+ES_A_lambda = 		36			% ESA correlation distance / [m]
+ES_D_lambda = 		60			% ESD correlation distance / [m]
+
+% ==================================================================================================
+
+
+% ==================================================================================================
+% Path Loss Model
+% ==================================================================================================
+% valid frequency range:  		3.675 [GHz]
+% valid distance range: 		20 < d < 500 [m]
+% valid BS antenna height:		3 < hBS < 6 [m]
+% valid MS antenna height: 		1.5 m
+% valid mobility range: 		0-20 [km/h]
+%
+%	B = 0.5*(155.2+153.0)-53.5*log10(1000)
+
+PL_model = logdist_simple
+PL_A     = 53.5
+PL_B     = -1.8
+
+% ==================================================================================================
+

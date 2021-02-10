@@ -145,7 +145,7 @@ angles(3,:) = atan2( ( rx_pos(3,:) - tx_pos(3,:) ), d_2d );                     
 angles(4,:) = -angles(3,:);                                                     % Elevation at MT
 angles = angles.';
 
-% Deterimne the number if direct paths
+% Deterimne the number of direct paths
 if NumSubPaths(1) == 1 && ...
         all( abs( exp(1j*AoD(:,1)) - exp(1j*angles(:,1)) ) < 1e-12 ) && ...
         all( abs( EoD(:,1) - angles(:,3) ) < 1e-12 ) && ...
@@ -167,11 +167,12 @@ if Lf == 0 && any( abs(taus( :,1 )) < 1e-12 )
     error('QuaDRiGa:qd_builder:generate_fbs_lbs','No LOS paths are defined, but delays have a value of 0.')
 end
 
-% Generate NLOS sub-paths and apply sub-path coupling
-
-% The optimized order of the 20 sub-paths 
-offset = [-0.8844 1.1481 0.6797 -1.1481 -0.6797 1.5195 -0.0447 0.3715 -1.5195,...
-    -0.2492 -0.5129 0.5129 0.8844 -2.1551 -0.1413 0.1413 0.0447 2.1551 -0.3715 0.2492 ];
+% Scale angles for Laplacian angular power spectrum
+if strcmp(method,'Laplacian')
+    use_laplacian_pas = true;
+else
+    use_laplacian_pas = false;
+end
 
 % Combine cluster angles [ N x L x 4 ]
 Ac = cat(3,AoD,AoA,EoD,EoA);
@@ -196,12 +197,7 @@ for iF = 1 : F              % Frequency
             if NumSubPaths(iL) == 1
                 of = 0;
             else
-                of = offset( 1:NumSubPaths(iL) );
-                if NumSubPaths(iL) < 20
-                    of = (of-mean(of));
-                    of = of./sqrt(mean(of.^2));
-                end
-                of = of .* 0.017453292519943;  % deg to rad
+                of = get_subpath_angles( NumSubPaths(iL),[],use_laplacian_pas );
             end
             
             % Add subpath-angles to cluster angles

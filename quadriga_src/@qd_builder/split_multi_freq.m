@@ -94,7 +94,7 @@ elseif n_freq > 1
             h_builder_out(1,f) = qd_builder;
         end
         
-        % Ad the frequency information to the Tx name
+        % Add the frequency information to the Tx name
         % It will later be written to the channel objects
         ii = regexp( h_builder.name,'_' );
         if numel( ii ) ~= 1
@@ -107,6 +107,7 @@ elseif n_freq > 1
             
             % Copy data that is identical for all frequencies
             h_builder_out(1,f).scenpar_nocheck = h_builder.scenpar;
+            h_builder_out(1,f).Pscenario    = h_builder.Pscenario;
             h_builder_out(1,f).plpar        = h_builder.plpar;
             h_builder_out(1,f).tx_position  = h_builder.tx_position;
             h_builder_out(1,f).rx_positions = h_builder.rx_positions;
@@ -117,6 +118,7 @@ elseif n_freq > 1
             h_builder_out(1,f).AoA          = h_builder.AoA;
             h_builder_out(1,f).EoD          = h_builder.EoD;
             h_builder_out(1,f).EoA          = h_builder.EoA;
+            h_builder_out(1,f).absTOA_offset = h_builder.absTOA_offset;
             
             % Split SOS objects
             h_builder_out(1,f).sos          = h_builder.sos;
@@ -129,6 +131,7 @@ elseif n_freq > 1
             if ~isempty( h_builder.pin_sos )
                 h_builder_out(1,f).pin_sos  = h_builder.pin_sos(:,:,f);
             end
+            h_builder_out(1,f).absTOA_sos   = h_builder.absTOA_sos;
             
             % Split the LSF variables
             if split_lsf
@@ -141,6 +144,9 @@ elseif n_freq > 1
                 h_builder_out(1,f).esA      = h_builder.esA(f,:);
                 h_builder_out(1,f).xpr      = h_builder.xpr(f,:);
             end
+            if ~isempty( h_builder.gr_epsilon_r )
+                h_builder_out(1,f).gr_epsilon_r = h_builder.gr_epsilon_r(f,:);
+            end
             
             % Copy the frequency-dependent SSF variables
             if split_ssf
@@ -151,16 +157,12 @@ elseif n_freq > 1
                 end
                 h_builder_out(1,f).pow          = h_builder.pow(:,:,f);
                 h_builder_out(1,f).gamma        = h_builder.gamma(:,:,f);
-                h_builder_out(1,f).kappa        = h_builder.kappa(:,:,f);
                 h_builder_out(1,f).pin          = h_builder.pin(:,:,f);
                 h_builder_out(1,f).subpath_coupling = h_builder.subpath_coupling(:,:,f);
                 h_builder_out(1,f).fbs_pos      = h_builder.fbs_pos(:,:,:,f);
                 h_builder_out(1,f).lbs_pos      = h_builder.lbs_pos(:,:,:,f);
                 if ~isempty( h_builder.kappa )
                     h_builder_out(1,f).kappa    = h_builder.kappa(:,:,f);
-                end
-                if ~isempty( h_builder.gr_epsilon_r )
-                    h_builder_out(1,f).gr_epsilon_r = h_builder.gr_epsilon_r(f,:);
                 end
             end
             

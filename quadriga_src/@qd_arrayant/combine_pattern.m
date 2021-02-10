@@ -49,10 +49,6 @@ if ~exist('center_frequency','var')
     center_frequency = h_qd_arrayant.center_frequency;           
 end
 
-% Calculate the wavelength
-lambda = 299792458 / center_frequency;
-wave_no = 2*pi/lambda;
-
 % The receiver positions are placed in 1000 lambda distance in the same grid
 % given by the elevation and azimuth angles in the original qd_arrayant.
 
@@ -63,14 +59,23 @@ no_el = h_qd_arrayant.no_el;
 no_tx = h_qd_arrayant.no_elements; 
 no_positions = no_az * no_el;
 
-B = zeros( 3,no_el,no_az);
+precision = 'double';
+if isa(phi,'single') && isa(theta,'single')
+    precision = 'single';
+    lambda = 299792458 / single( center_frequency );
+else
+    lambda = 299792458 / center_frequency;
+end
+wave_no = 2*pi/lambda;
+
+B = zeros( 3,no_el,no_az,precision);
 B(1,:,:) = cos(theta)*cos(phi);
 B(2,:,:) = cos(theta)*sin(phi);
 B(3,:,:) = sin(theta)*ones(1,no_az);
 B = 1000*lambda*reshape(B, 3, no_positions);
 
 % Calculate the angles
-angles = zeros( 4,no_positions);
+angles = zeros( 4,no_positions,precision);
 angles(1,:) = atan2( B(2,:),  B(1,:) );     % ThetaBs 
 angles(2,:) = pi + angles(1,:);             % ThetaMs 
 angles(3,:) = atan( B(3,:) ./ sqrt( B(1,:).^2 + B(2,:).^2 ) );   % EaBs
@@ -83,27 +88,28 @@ angles(4,:) = -angles(3,:);     % EaMs
 % Interpolate the patterns
 [ Vt,Ht,Pt ] = h_qd_arrayant.interpolate( angles(1,:) , angles(3,:) );
 Ct = h_qd_arrayant.coupling;
+Pt = exp( -1j*(  wave_no*( Pt )));
 
 % Calculate the coefficients
-c = zeros( 2*no_tx , no_positions);
+c = zeros( 2*no_tx , no_positions, precision);
 for i_tx = 1 : no_tx
     PatTx = [ reshape( Vt(1,:,i_tx) , 1,no_positions ) ;...
         reshape( Ht(1,:,i_tx) , 1,no_positions ) ];
     
     % First component
     ind = (i_tx-1)*2 + 1;
-    c(ind,:) = PatTx(1,:) .* exp( -1j*(  wave_no*( Pt(1,:,i_tx)  )));
+    c(ind,:) = PatTx(1,:) .* Pt(1,:,i_tx);
     
     % Second component
     ind = ind + 1;
-    c(ind,:) = PatTx(2,:) .* exp( -1j*(  wave_no*( Pt(1,:,i_tx)  )));
+    c(ind,:) = PatTx(2,:) .* Pt(1,:,i_tx);
 end
 
 % Apply antenna coupling
 c = reshape( c , 2 , no_tx , no_positions );
 
 n_tx = size(Ct,2);
-coeff = zeros( 2 , n_tx , no_positions);
+coeff = zeros( 2 , n_tx , no_positions, precision);
 if all(size(Ct) == [ n_tx , n_tx ]) && ...
         all(all( abs( Ct - eye(n_tx)) < 1e-10 ))
     
@@ -131,9 +137,9 @@ pat = permute( coeff , [3,2,1] ); % Map, Tx, Rx
 
 % Write the output pattern
 h_qd_arrayant.no_elements = size( pat,2 );
-h_qd_arrayant.Fa = reshape( pat(:,:,1), no_el ,no_az , [] );
-h_qd_arrayant.Fb = reshape( pat(:,:,2), no_el ,no_az , [] );
-h_qd_arrayant.element_position = zeros(3,size( pat,2 ));
-h_qd_arrayant.coupling = eye( h_qd_arrayant.no_elements);
+h_qd_arrayant.PFa = reshape( pat(:,:,1), no_el ,no_az , [] );
+h_qd_arrayant.PFb = reshape( pat(:,:,2), no_el ,no_az , [] );
+h_qd_arrayant.Pelement_position = zeros(3,size( pat,2 ),precision);
+h_qd_arrayant.Pcoupling = eye( h_qd_arrayant.no_elements,precision);
 
 end

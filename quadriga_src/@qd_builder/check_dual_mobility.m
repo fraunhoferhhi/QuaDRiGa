@@ -101,6 +101,7 @@ else
             if isempty( h_builder.rx_track(1,1).orientation )                   % Add orientation information
                 h_builder.rx_track(1,1).calc_orientation;
             end
+            h_builder.rx_track(1,1).initial_position = h_builder.rx_positions(:,1);
             if n_mobiles > 1
                 h_builder.rx_track = h_builder.rx_track(1,o_mobiles);           % Copy handles to other Rx
             end
@@ -292,9 +293,13 @@ else
             end
             
             % Check if there are identical positions (causes NaNs in the coefficients)
-            if no_snapshots_tx == 1
+            if no_snapshots_tx == 1 && no_snapshots_rx == 1
+                dist = h_builder.rx_track(1,r).initial_position - h_builder.tx_track(1,r).initial_position;
+                
+            elseif no_snapshots_tx == 1
                 dist = h_builder.rx_track(1,r).positions_abs - ...
                     h_builder.tx_track(1,r).initial_position(:,ones(1,no_snapshots_rx));
+                
             else
                 dist = h_builder.tx_track(1,r).positions_abs - h_builder.rx_track(1,r).positions_abs;
             end

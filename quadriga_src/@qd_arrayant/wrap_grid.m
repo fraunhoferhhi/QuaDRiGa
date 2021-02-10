@@ -87,14 +87,14 @@ end
 if use_single_precision
     azimuth_grid = single( h_qd_arrayant.azimuth_grid );
     elevation_grid = single( h_qd_arrayant.elevation_grid );
-    Fa = single( h_qd_arrayant.Fa(:,:,i_element) );
-    Fb = single( h_qd_arrayant.Fb(:,:,i_element) );
+    Fa = single( h_qd_arrayant.PFa(:,:,i_element) );
+    Fb = single( h_qd_arrayant.PFb(:,:,i_element) );
     element_position = single( h_qd_arrayant.element_position(:,i_element) );
 else
     azimuth_grid = h_qd_arrayant.azimuth_grid;
     elevation_grid = h_qd_arrayant.elevation_grid;
-    Fa = h_qd_arrayant.Fa(:,:,i_element);
-    Fb = h_qd_arrayant.Fb(:,:,i_element);
+    Fa = h_qd_arrayant.PFa(:,:,i_element);
+    Fb = h_qd_arrayant.PFb(:,:,i_element);
     element_position = h_qd_arrayant.element_position(:,i_element);
 end
 
@@ -123,11 +123,24 @@ if elevation_grid(1) > -pi/2 + 1e-7
     Fb = cat( 1, Fb(1,:,:), Fb );
 end
 
-% First elevation value must be -pi/2
+% Last elevation value must be pi/2
 if elevation_grid(end) < pi/2 - 1e-7
     elevation_grid = [ elevation_grid, pi/2 ];
     Fa = cat( 1, Fa, Fa(end,:,:) );
     Fb = cat( 1, Fb, Fb(end,:,:) );
+end
+
+% Update the antenna object if there are no output arguments
+if nargout == 0
+    if azimuth_grid(1) < -pi
+        azimuth_grid(1) = -pi;
+    end
+    if azimuth_grid(end) > pi
+        azimuth_grid(end) = pi;
+    end
+    set_grid( h_qd_arrayant , azimuth_grid , elevation_grid, 0 );
+    h_qd_arrayant.PFa = Fa;
+    h_qd_arrayant.PFb = Fb;
 end
 
 end

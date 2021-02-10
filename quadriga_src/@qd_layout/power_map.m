@@ -1,14 +1,14 @@
 function [ map, x_coords, y_coords] = power_map( h_layout, scenario, usage, sample_distance, ...
     x_min, x_max, y_min, y_max, rx_height, tx_power, i_freq )
-%POWER_MAP Calculates a power-map for the given layout.
+%POWER_MAP Calculates a power-map for the given layout
 %
 % Calling object:
 %   Single object
 %
 % Description:
-%    This function calculates receive power values in [W] on a square lattice at a height of
-%    'rx_height' above the ground for the given layout. This helps to predict the performance for a
-%    given setup.
+%    This function calculates receive power values (linear scale relative to 'tx_power') on a
+%    square lattice at a height of 'rx_height' above the ground for the given layout. This helps to
+%    predict the performance for a given setup.
 %
 % Input:
 %   scenario
@@ -19,7 +19,7 @@ function [ map, x_coords, y_coords] = power_map( h_layout, scenario, usage, samp
 %      * A 'qd_builder' object. This method is useful if you need to edit the parameters first. For
 %        example: call 'p = qd_builder('UMal')' to load the parameters. Then edit 'p.scenpar' or
 %        'p.plpar' to adjust the settings.
-%      * Aa array of 'qd_builder' objects describing the scenario for each transmitter in the
+%      * An array of 'qd_builder' objects describing the scenario for each transmitter in the
 %        layout.
 %
 %
@@ -52,14 +52,16 @@ function [ map, x_coords, y_coords] = power_map( h_layout, scenario, usage, samp
 %   Height of the receiver points in [m] (default = 1.5 m)
 %
 %   tx_power
-%   A vector of tx-powers in [dBm] for each transmitter in the layout. This power is applied to
-%   each transmit antenna in the tx-array antenna. By default (if tx_power is not given), 0 dBm are
-%   assumed.
+%   A vector of tx-powers (logarithmic scale in [dBm] or [dBW]) for each transmitter in the layout.
+%   This power is applied to each transmit antenna in the tx-array antenna. By default (if
+%   'tx_power' is not given), 0 dBm are assumed.
 %
 % Output:
 %   map
-%   A cell array containing the power map for each tx array in the layout. The power maps are given
-%   in [W] and have the dimensions [ n_y_coords , n_x_coords , n_rx_elements , n_tx_elements ].
+%   A cell array containing the power map for each tx array in the layout. The power values are in
+%   linear scale relative 'tx_power' and have the dimensions [ n_y_coords , n_x_coords ,
+%   n_rx_elements , n_tx_elements ]. If tx-powers are given in [dBm], the power values in the map
+%   will be in [mW]. If tx-powers are given in [dBW], the power values in the map will be in [W].
 %
 %   x_coords
 %   Vector with the x-coordinates of the map in [m]
@@ -68,7 +70,7 @@ function [ map, x_coords, y_coords] = power_map( h_layout, scenario, usage, samp
 %   Vector with the y-coordinates of the map in [m]
 %
 % 
-% QuaDRiGa Copyright (C) 2011-2019
+% QuaDRiGa Copyright (C) 2011-2020
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -130,7 +132,7 @@ end
 
 % Check if rx_height is given
 if ~exist( 'rx_height' , 'var' ) || isempty( rx_height )
-    rx_height = 1.5;
+    rx_height = h_layout.rx_track(1,1).initial_position(3);
 end
 
 % Check if rx_height is given
@@ -210,13 +212,18 @@ for i_bs = 1 : n_bs
     
     h_builder(1,i_bs).name = h_layout.tx_name{i_bs};
     h_builder(1,i_bs).simpar = simpar;
-    h_builder(1,i_bs).tx_position = h_layout.tx_position(:,i_bs);
+    
+    % Set tx position and orientation
+    h_builder(1,i_bs).tx_track = qd_track('linear',0,0);
+    h_builder(1,i_bs).tx_track.orientation = h_layout.tx_track(1,i_bs).orientation(:,1);
+    h_builder(1,i_bs).tx_track.initial_position = h_layout.tx_position(:,i_bs);
+
+    % Set rx positions and use first rx orientation
+    h_builder(1,i_bs).rx_track = qd_track('linear',0,0);
+    h_builder(1,i_bs).rx_track.orientation = h_layout.rx_track(1,1).orientation(:,1);
     h_builder(1,i_bs).rx_positions = [repmat(x_coords, 1, n_y_coords); ...
         reshape(repmat(y_coords, n_x_coords, 1), 1, []); ...
         rx_height .* ones(1, n_x_coords * n_y_coords)];
-    
-    h_builder(1,i_bs).rx_track = qd_track('linear',0,0);
-    h_builder(1,i_bs).tx_track = h_layout.tx_track(1,i_bs);
     
     if size( h_layout.rx_array, 1 ) == 1
         h_builder(1,i_bs).rx_array = h_layout.rx_array(1,1);

@@ -158,6 +158,9 @@ if ischar(scenario)
         'PerClusterAS_A' , 0 , ...         % Per cluster MS azimuth spread [deg]
         'PerClusterES_D' , 0 , ...         % Per cluster BS elevation spread [deg]
         'PerClusterES_A' , 0 , ...         % Per cluster MS elevation spread [deg]
+        'absTOA_mu' , -100 , ...           % Absolute time of arrival offset reference value [log10(s)]
+        'absTOA_sigma' , 0 , ...           % Absolute time of arrival offset referenece STD [log10(s)]
+        'absTOA_lambda' , 0 , ...          % Absolute time of arrival offset decorrelation distance [m]
         'SubpathMethod', 'legacy', ...     % Subpath-generation method
         'LOS_scatter_radius', 0, ...       % Scattering around the LOS cluster
         'SC_lambda', 0 ,...                % Decorrelation distance [m] for spatial consistency
@@ -200,7 +203,7 @@ if ischar(scenario)
     file_name = file_names{ind};
     file_dir  = file_dirs{ind};
     
-    file = fopen([ file_dir , file_name ],'r');
+    file = fopen(fullfile(file_dir, file_name), 'r');
     
     % Read file line by line and parse the data of scenpar
     lin = fgetl(file);

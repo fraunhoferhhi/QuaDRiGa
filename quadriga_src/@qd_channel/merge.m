@@ -76,6 +76,9 @@ end
 
 % Get the number of channels
 n_channel = numel(h_channel);
+if size( h_channel,2 ) ~= n_channel
+    h_channel = qf.reshapeo( h_channel, [1,n_channel] );
+end
 
 % Show a progress bar if there are more than 10 segments
 if n_channel < 3
@@ -133,8 +136,8 @@ for i_trk = 1 : numel( trk_names )          % Do for each track
         
         % Update progress bar
         i_bar = i_bar + 1;
-        if verbose; m1=ceil(i_bar/n_channel*vb_dots); if m1>m0;
-                for m2=1:m1-m0; fprintf('o'); end; m0=m1; end; end;
+        if verbose; m1=ceil(i_bar/n_channel*vb_dots); if m1>m0
+                for m2=1:m1-m0; fprintf('o'); end; m0=m1; end; end
     else
         % Calculate the dimensions of the output channel
         no_txant = h_channel(1, seg_ind(1) ).no_txant;
@@ -144,8 +147,14 @@ for i_trk = 1 : numel( trk_names )          % Do for each track
         else
             no_path = max( cat( 1 , h_channel(1, seg_ind ).no_path) ) + 1;
         end
-        no_snap = sum( cat( 1 , h_channel(1, seg_ind ).no_snap) -...
-            cat( 1 , h_channel(1, seg_ind ).initial_position) + 1 );
+        initial_position = cat( 1 , h_channel(1, seg_ind ).initial_position);
+        no_snap = sum( cat( 1 , h_channel(1, seg_ind ).no_snap) - initial_position + 1 );
+        if all( initial_position > 1 )
+            no_snap = no_snap + 1;          % One extra snapshot for the end-point of closed tracks
+            closed = true;
+        else
+            closed = false;
+        end
         
         % Initialize output variables and delays
         coeff = zeros( no_rxant , no_txant , no_path , no_snap );
@@ -166,8 +175,8 @@ for i_trk = 1 : numel( trk_names )          % Do for each track
 
             % Update progress bar
             i_bar = i_bar + 1;
-            if verbose; m1=ceil(i_bar/n_channel*vb_dots); if m1>m0;
-                    for m2=1:m1-m0; fprintf('o'); end; m0=m1; end; end;
+            if verbose; m1=ceil(i_bar/n_channel*vb_dots); if m1>m0
+                    for m2=1:m1-m0; fprintf('o'); end; m0=m1; end; end
             
             % Find the channel object that overlaps with the current one
             % "ic" stands for channel index (either channel 1 or 2)
@@ -225,6 +234,18 @@ for i_trk = 1 : numel( trk_names )          % Do for each track
                 pg1 = h_channel(1,ic1).par.pg(:,is1o);
                 pg2 = h_channel(1,ic2).par.pg(:,is2o);
                 pg( :,iso ) = pg1 .* (1-ramp) + pg2 .* ramp;
+            end
+        end
+        
+        % Copy the exclusive data from the next segment in case of closed tracks
+        if closed && ~isempty( ic2 )
+            is2n = h_channel( 1,ic2 ).initial_position;
+            coeff( :,:, ip, end ) = h_channel( 1,ic2 ).coeff( :,:,:, is2n );
+            delay( :,:, ip, end ) = h_channel( 1,ic2 ).delay( :,:,:, is2n );
+            rx_position( :,end ) = h_channel( 1,ic2 ).rx_position( :,is2n );
+            pg( :,end ) = h_channel( 1,ic2 ).par.pg( :,is2n );
+            if dual_mobility
+                tx_position( :,end ) = h_channel( 1,ic2 ).tx_position( :,is2n );
             end
         end
         

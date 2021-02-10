@@ -238,7 +238,7 @@ for n = 1 : a_cnt
             pe = p2 + npfx + 18;                                % End pointer
             
             val = l(p1+16:p2-1);
-            val = str2double( regexp( val, '[0-9.-]+', 'match' ) );
+            val = str2double( regexp( val, '[0-9e.-]+', 'match' ) );
             ElementPosition = reshape( val,3,[]);
             if size( ElementPosition,2 ) ~= NoElements
                 fclose(fid);
@@ -252,7 +252,7 @@ for n = 1 : a_cnt
             p2 = regexp(l,['</',pfx,'ElevationGrid>'],'once');
             pe = p2 + npfx + 16;                                % End pointer
             val = l(p1+14:p2-1);
-            val = str2double( regexp( val, '[0-9.-]+', 'match' ) );
+            val = str2double( regexp( val, '[0-9e.-]+', 'match' ) );
             ElevationGrid = val * pi/180;
             if ~c_ElevationGrid && ~c_AzimuthGrid               % Initialize the variables for the pattern data
                 size_read = size( ElevationGrid,2 ) * size( AzimuthGrid,2 );
@@ -266,7 +266,7 @@ for n = 1 : a_cnt
             p2 = regexp(l,['</',pfx,'AzimuthGrid>'],'once');
             pe = p2 + npfx + 14;                                % End pointer
             val = l(p1+12:p2-1);
-            val = str2double( regexp( val, '[0-9.-]+', 'match' ) );
+            val = str2double( regexp( val, '[0-9e.-]+', 'match' ) );
             AzimuthGrid = val * pi/180;
             if ~c_ElevationGrid && ~c_AzimuthGrid               % Initialize the variables for the pattern data
                 size_read = size( ElevationGrid,2 ) * size( AzimuthGrid,2 );
@@ -280,7 +280,7 @@ for n = 1 : a_cnt
             p2 = regexp(l,['</',pfx,'CouplingAbs>'],'once');
             pe = p2 + npfx + 14;                                % End pointer
             val = l(p1+12:p2-1);
-            val = str2double( regexp( val, '[0-9.-]+', 'match' ) );
+            val = str2double( regexp( val, '[0-9e.-]+', 'match' ) );
             if numel(val) ~= NoElements*NoElements
                 fclose(fid);
                 error('QuaDRiGa:qd_arrayant:xml_read:wrong_NoElements',...
@@ -299,7 +299,7 @@ for n = 1 : a_cnt
             p2 = regexp(l,['</',pfx,'CouplingPhase>'],'once');
             pe = p2 + npfx + 16;                                % End pointer
             val = l(p1+14:p2-1);
-            val = str2double( regexp( val, '[0-9.-]+', 'match' ) );
+            val = str2double( regexp( val, '[0-9e.-]+', 'match' ) );
             Coupling = Coupling .* exp( 1j * reshape( val, NoElements, NoElements )*pi/180 );
             
         elseif ~isempty( regexp(l,['<',pfx,'EthetaMag'], 'once') )

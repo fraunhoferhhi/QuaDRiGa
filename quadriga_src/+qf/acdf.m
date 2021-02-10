@@ -193,7 +193,7 @@ else
     if cdim == 0
         vals = 0.1:0.1:0.9;
         mu = zeros( 9 , size(Sh,2) );
-        for i_mu = 1:9;
+        for i_mu = 1:9
             for i_data  = 1:size(Sh,2)
                 mu( i_mu,i_data ) = bins( find( Sh(:,i_data) >= vals(i_mu) , 1) );
             end
@@ -216,8 +216,12 @@ else
         if isempty( ncdim )
             % Here, cdim is a singleton dimension
             Sc = Sh;
-            mu = [];
-            sig = [];
+            vals = 0.1:0.1:0.9;
+            for i_mu = 1:9
+                mu( i_mu,1 ) = bins( find( Sh(:,1) >= vals(i_mu) , 1) );
+            end
+            sig = zeros( size(mu) );
+            
         else
             ns = size(Sh);
             order = [ 1 , ncdim , setdiff( 2:numel(ns) , ncdim ) ];

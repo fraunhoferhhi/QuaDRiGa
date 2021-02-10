@@ -1,4 +1,4 @@
-function [ phiI, thetaI, pI ] = slerp( x, phi, theta, xi )
+function [ phiI, thetaI, pI ] = slerp( x, phi, theta, xi, use_double )
 %SLERP Spherical linear interpolation optimized for performace
 %
 % Description:
@@ -22,8 +22,11 @@ function [ phiI, thetaI, pI ] = slerp( x, phi, theta, xi )
 %   Vector of theta angles in [rad]; values from -pi/2 (down) to pi/2 (up); size [ nx, ne ]; the
 %   2nd dimension allows for interpolations of multiple data-sets
 %
-%   xc
+%   xi
 %   Vector of x sample points after interpolation; size [ 1, nxi ] or [ nxi , 1 ]
+%
+%   use_double
+%   If set to true, double precision is used instead of single precision.
 %
 % Output:
 %   phiI
@@ -37,7 +40,7 @@ function [ phiI, thetaI, pI ] = slerp( x, phi, theta, xi )
 %   Cartesian coordinates of the interpolated points on the unit-sphere; size [ 3, nxi, ne ]
 %
 %
-% QuaDRiGa Copyright (C) 2011-2019
+% QuaDRiGa Copyright (C) 2011-2020
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -54,15 +57,22 @@ function [ phiI, thetaI, pI ] = slerp( x, phi, theta, xi )
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
-if isa(phi,'double')
+use_single = true;
+if exist( 'use_double','var' ) && use_double
+   use_single = false;
+end
+
+if use_single && isa(phi,'double')
     phi = single( phi );
     phi_is_double = true;
 else
     phi_is_double = false;
 end
 
-x  = single( x(:).' );
-xi = single( xi(:).' );
+if use_single
+    x  = single( x(:).' );
+    xi = single( xi(:).' );
+end
 
 nx  = numel( x );
 ni  = numel( xi );
@@ -80,24 +90,36 @@ ne = size( phi,3 );
 oe = ones(1,ne,'uint8');
 
 nth = numel( theta );
-if nth == 1 % Option for circular interpolation
+if nth == 1 && use_single   % Option for circular interpolation
     theta = zeros(1,nx,ne,'single');
     sinth = theta;
     costh = ones(1,nx,ne,'single');
+elseif nth == 1
+    theta = zeros(1,nx,ne);
+    sinth = theta;
+    costh = ones(1,nx,ne);
 elseif size( theta,1 ) == 1 && size( theta,2 ) == nx
-    theta = single( theta );
+    if use_single
+        theta = single( theta );
+    end
     costh = cos(theta);
     sinth = sin(theta);
 elseif size( theta, 1 ) ~= nx || size( theta, 2 ) ~= ne || numel( size(theta) ) > 2
     error('QuaDRiGa:qf:slerp','Size of "theta" does not match size of "phi".');
 else
-    theta = single( permute( theta, [3,1,2] ) );
+    if use_single
+        theta = single( permute( theta, [3,1,2] ) );
+    end
     costh = cos(theta);
     sinth = sin(theta);
 end
 
 % Transform orientations to Cartesian coordinates
-p = zeros( 3,nx,ne,'single' );
+if use_single
+    p = zeros( 3,nx,ne,'single' );
+else
+    p = zeros( 3,nx,ne );
+end
 p(1,:,:) = costh .* cos(phi);
 p(2,:,:) = costh .* sin(phi);
 p(3,:,:) = sinth;
@@ -147,7 +169,7 @@ if nargout > 1
         if phi_is_double
             thetaI = double( thetaI );
         end
-    elseif phi_is_double
+    elseif phi_is_double || ~use_single
         thetaI  = zeros( ni,ne );
     else
         thetaI  = zeros( ni,ne,'single' );

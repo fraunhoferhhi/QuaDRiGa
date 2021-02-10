@@ -38,7 +38,7 @@ set(0,'defaultAxesFontName','Times')                    % Default Font Type
 set(0,'defaultTextFontName','Times')                    % Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')          % Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')              % Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 4.5])              % Change paper Size
+set(0,'DefaultFigurePaperSize',[14.5 4.7])              % Change paper Size
 
 l = qd_layout;                                          % Create new QuaDRIGa layout
 l.simpar.center_frequency = 2e9;                        % Set center frequency to 2 GHz
@@ -250,7 +250,7 @@ legend('Requested AS','Actual AS','LOS angle', 'NLOS angles')
 % consistency is needed to achieve realistic channels. (You need to run the code in the loop
 % manually) 
 
-set(0,'DefaultFigurePaperSize',[14.5 7.3])            	% Default Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 7.7])            	% Default Paper Size
 b.visualize_clusters;
 if 0
     for n = 1 : b.no_rx_positions

@@ -26,7 +26,7 @@ set(0,'defaultAxesFontName','Times')                    % Default Font Type
 set(0,'defaultTextFontName','Times')                    % Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')          % Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')              % Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 7.3])              % Default Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 7.7])              % Default Paper Size
 
 s = qd_simulation_parameters;                           % New simulation parameters
 s.center_frequency = 2.53e9;                            % 2.53 GHz carrier frequency
@@ -81,7 +81,7 @@ d = cb.get_channels;                                    % Generate channel coeff
 % When moving, the Rx first approaches the scatterer (delay gets a bit smaller) and then the
 % distance increases again.
 
-set(0,'DefaultFigurePaperSize',[14.5 4.5])              % Change Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 4.7])              % Change Paper Size
 figure('Position',[ 100 , 100 , 760 , 400]);            % New figure
 
 distance = c.rx_position(1,:);                          % 2D distance between Tx and Rx

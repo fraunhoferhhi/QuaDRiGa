@@ -61,7 +61,7 @@ if ~exist( 'in','var' )
 
 else
     % The list of properties that need to be copied
-    prop = {'Pname','Pno_snapshots','Pno_segments','Pinitial_position','Ppositions',...
+    prop = {'name','Pno_snapshots','Pno_segments','Pinitial_position','Ppositions',...
         'Pmovement_profile','Porientation','Psegment_index','Pscenario','par'};
 
     % Empty outout

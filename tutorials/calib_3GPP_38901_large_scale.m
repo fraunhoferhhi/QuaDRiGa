@@ -149,7 +149,7 @@ set(0,'defaultAxesFontName','Times')                                    % Defaul
 set(0,'defaultTextFontName','Times')                                    % Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')                          % Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')                              % Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 6.6])                              % Default Paper Size
+set(0,'DefaultFigurePaperSize',[16.5 7.3])                              % Default Paper Size
 
 legend_names = { '6 GHz','30 GHz','70 GHz' };
 line_col = {'b','r','k'};                                               % Color of the lines

@@ -59,7 +59,7 @@ l.rx_track(1,2).segment_index     = [1,40,90];             % Segments
 l.rx_track(1,2).scenario          = { UMal, UMal, UMan };  % Scenarios
 l.rx_track(1,2).name = 'Rx2';
 
-set(0,'DefaultFigurePaperSize',[14.5 7.3])                 % Adjust paper size for plot
+set(0,'DefaultFigurePaperSize',[14.5 7.7])                 % Adjust paper size for plot
 l.visualize;                                               % Plot the layout
 
 interpolate_positions( l.rx_track, s.samples_per_meter );  % Interpolate
@@ -93,7 +93,7 @@ degrees = (0:cn(1,1).no_snap-1)/cn(1).no_snap * 360;
 los_pwr_drift = 10*log10(squeeze(abs(cn(1).coeff(1,1,1,:))).^2);
 los_pwr_nodrift = 10*log10(squeeze(abs(dn(1).coeff(1,1,1,:))).^2);
 
-set(0,'DefaultFigurePaperSize',[14.5 4.5])              % Change Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 4.7])              % Change Paper Size
 figure('Position',[ 100 , 100 , 760 , 400]);            % New figure
 plot( degrees,los_pwr_drift )
 hold on

@@ -136,6 +136,7 @@ else
     if create_segments
                 
         [ trk_length , dist ] = h_track.get_length;
+        dist_offset = min(diff(dist))/2;
         no_snapshots = h_track.no_snapshots;
         
         pos = 0;
@@ -147,7 +148,7 @@ else
             while seg_length < seg_length_min
                 seg_length = randn*seg_length_std + seg_length_mu;
             end
-            ind = find( pos + seg_length < dist,1 );
+            ind = find( pos + seg_length - dist_offset < dist,1 );
             pos = dist( ind );
             
             if ind < no_snapshots     % Exception for the last segment

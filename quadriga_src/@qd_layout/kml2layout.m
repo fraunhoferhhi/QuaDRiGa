@@ -1,4 +1,4 @@
-function [ h_layout, ReferenceCoord ] = kml2layout( fn, split_seg )
+function [ h_layout, ReferenceCoord ] = kml2layout( fn, split_seg, ForceRefCoord )
 %KML2LAYOUT Imports a layout object from a KML file 
 %
 % Calling object:
@@ -30,6 +30,11 @@ function [ h_layout, ReferenceCoord ] = kml2layout( fn, split_seg )
 %   It set to true (1, default), tracks are split into segment as indicated by the parameter
 %   "SplitSegments" in the KML file. If set to false (0), "SplitSegments" is ignored. 
 %
+%   ForceRefCoord
+%   A tuple for longitude and latitude (WGS84) at which the origin (0,0,0) of the metric Cartesian
+%   coordinate system used by QuaDRiGa is placed. If this value is given, any value provided in the
+%   KML file is ignored.
+%
 % Output:
 %   h_layout
 %   The 'qd_layout' object
@@ -58,6 +63,10 @@ function [ h_layout, ReferenceCoord ] = kml2layout( fn, split_seg )
 
 if ~exist( 'split_seg', 'var' ) || isempty( split_seg )
    split_seg = true; 
+end
+
+if ~exist( 'ForceRefCoord', 'var' ) || isempty( ForceRefCoord )
+   ForceRefCoord = []; 
 end
 
 % Parse KML file
@@ -135,11 +144,11 @@ end
 tx_cnt = 0;
 rx_cnt = 0;
 seg_cnt = 0;
-clear Segment
 antenna_ind = [];       % Antenna index : [ file, file-id, tx, rx, freq, object-id ]
 antenna_file = {};      % List of QDANT filenames
 tx_track = qd_track([]);
 rx_track = qd_track([]);
+clear Segment
 for n = 1 : numel( p.Placemark )
     
     % Parse the Placemark name (tx_,rx_,seg_)
@@ -284,11 +293,13 @@ end
 if h_layout.simpar.show_progress_bars
     fprintf([num2str(h_layout.no_tx),' Tx, '])
     fprintf([num2str(h_layout.no_rx),' Rx, '])
-    fprintf([num2str(numel( Segment )),' Segments\n'])
+    fprintf([num2str(seg_cnt),' Segments\n'])
 end
 
 % Get the reference coordinate if it is not given in the extended data
-if ~exist('ReferenceCoord','var') || isempty( ReferenceCoord )
+if ~isempty( ForceRefCoord )
+    ReferenceCoord = ForceRefCoord;
+elseif ~exist('ReferenceCoord','var') || isempty( ReferenceCoord )
     coord = [];
     for n = 1 : h_layout.no_tx
         coord = [coord,h_layout.tx_track(1,n).positions(1:2,:)];
@@ -340,6 +351,15 @@ for n = 1 : numel( trk )
     % Overwrite the orientations from the track with the ones from the file (if specified)
     trk(1,n).orientation( ~isnan( orientation ) ) = orientation( ~isnan( orientation ) );
     
+    % Fix numeric precision issue with closed tracks
+    if trk(1,n).no_snapshots > 1 &&...
+            trk(1,n).get_length > 1e-6 &&...
+            all( abs(trk(1,n).positions(:,1) - trk(1,n).positions(:,end)) < 1e-6 ) &&...
+            all( abs(trk(1,n).orientation(:,1) - trk(1,n).orientation(:,end)) < 1e-6 )
+        trk(1,n).positions(:,end) = trk(1,n).positions(:,1);
+        trk(1,n).orientation(:,end) = trk(1,n).orientation(:,1);
+    end
+    
     if ~isempty( trk(1,n).movement_profile )
         len = trk(1,n).get_length;
         if size( trk(1,n).movement_profile,2 ) == 1      % Single time value from track
@@ -359,7 +379,7 @@ end
 
 % Process segments
 trk = h_layout.rx_track;
-for n = 1 : numel( Segment )
+for n = 1 : seg_cnt
     % Extract segment position in local coordinates
     pos = Segment(n).Coordinates;
     pos = trans_global2ue( pos(1), pos(2), pos(3), ReferenceCoord );
@@ -380,7 +400,7 @@ for n = 1 : numel( Segment )
     end
     
     % Find the track index
-    trk_ind = 1:numel( trk );
+    trk_ind = 1 : numel( trk );
     if ~isempty( trk_name )
          for iT = 1 : numel( trk )
             if strcmp( trk(1,iT).name, trk_name )
@@ -415,7 +435,7 @@ end
 for n = 1 : h_layout.no_rx
     if isempty( h_layout.rx_track(1,n).scenario{1,1} )
         if h_layout.rx_track(1,n).no_segments == 1
-            error('QuaDRiGa:qd_layout:kml2layout:no_Scenario_found',...
+            warning('QuaDRiGa:qd_layout:kml2layout:no_Scenario_found',...
                 ['Track "',trk(1,n).name,'" has no assigned Scenarios.']);
         else    % Fix first scenario issue
             sc = h_layout.rx_track(1,n).scenario(:,2:end);
@@ -511,7 +531,7 @@ if ~isempty( antenna_ind )
     for n = 1 : h_layout.no_tx
         % Duplicate handles in existeng rx_array to match the number of frequencies
         ii = find( antenna_ind(:,3) == n );
-        if numel( ii ) == n_freq && size( h_layout.tx_array,1 ) == 1
+        if n_freq > 1 && numel( ii ) == n_freq && size( h_layout.tx_array,1 ) == 1
             a_omni = qd_arrayant('omni');
             h_layout.tx_array(2:n_freq,:) = a_omni( 1,ones(1,h_layout.no_tx) );
         end
@@ -525,7 +545,7 @@ if ~isempty( antenna_ind )
     for n = 1 : h_layout.no_rx
         % Duplicate handles in existeng rx_array to match the number of frequencies
         ii = find( antenna_ind(:,4) == n );
-        if numel( ii ) == n_freq && size( h_layout.rx_array,1 ) == 1
+        if n_freq > 1 && numel( ii ) == n_freq && size( h_layout.rx_array,1 ) == 1
             a_omni = qd_arrayant('omni');
             h_layout.rx_array(2:n_freq,:) = a_omni( 1,ones(1,h_layout.no_rx) );
         end

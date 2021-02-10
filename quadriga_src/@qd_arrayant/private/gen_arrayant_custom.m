@@ -105,7 +105,7 @@ delta = Inf;
 ddir = +1;
 lp = 1;
 while lp < 5000 && delta > 1e-7
-    if lp > 1;
+    if lp > 1
         an = a + ddir * dm;
         delta = abs(a-an);
     else

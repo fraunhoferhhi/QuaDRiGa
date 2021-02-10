@@ -110,6 +110,7 @@ properties(Dependent)
     
     no_az                              % Number of azimuth values
     no_el                              % Number of elevation values
+    is_wrapped                         % Indicator if the array is wrapped
 end
 
 properties(Access=private)
@@ -177,6 +178,16 @@ methods
     function out = get.no_el(h_qd_arrayant)
         out = numel(h_qd_arrayant.elevation_grid);
     end
+    function out = get.is_wrapped(h_qd_arrayant)
+        if h_qd_arrayant.azimuth_grid(1) < -pi + 1e-7 && ...            % First azimuth value must be <= -pi
+                h_qd_arrayant.azimuth_grid(end) > pi - 1e-7 && ...      % Last azimuth value must be >= -pi
+                h_qd_arrayant.elevation_grid(1) < -pi/2 + 1e-7 && ...   % First elevation value must be -pi/2
+                h_qd_arrayant.elevation_grid(end) > pi/2 - 1e-7         % Last elevation value must be pi/2
+            out = true;
+        else
+            out = false;
+        end
+    end
     
     % Set functions
     function set.name(h_qd_arrayant,value)
@@ -214,7 +225,12 @@ methods
                 h_qd_arrayant.PFb(:,:,ones( 1,ne )));
             
             nc = size(h_qd_arrayant.Pcoupling);
-            C = zeros( nc(1)+ne , nc(2)+ne);
+            
+            if isa( h_qd_arrayant.Pcoupling,'single' )
+                C = zeros( nc(1)+ne , nc(2)+ne, 'single');
+            else
+                C = zeros( nc(1)+ne , nc(2)+ne );
+            end
             for n = 1:ne
                 C( nc(1)+n,nc(2)+n ) = 1;
             end
@@ -286,7 +302,7 @@ end
 
 methods(Static)
     [ h_qd_arrayant, par ] = generate( array_type, Ain, Bin, Cin, Din, Ein, Fin, Gin, Hin, Iin, Jin );
-    h_qd_arrayant = import_pattern( fVi, fHi );
+    h_array = import_pattern( fVi, fHi , azimuth_grid , elevation_grid )
     [ h_array, l ] = xml_read( fn, fid, pfx, l, ignore_layout );
 end
 end

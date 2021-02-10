@@ -22,7 +22,7 @@ function h_builder = init_builder( h_layout, check_parfiles, split_tx  )
 %   If set to true (1), each Tx gets assigned to a new builder object. Hence, all LSPs and SSF
 %   parameters will be independently generated for each Tx. If set to false (0), Txs belonging to
 %   the same scenario will be combined into one builder, enabling spatial consistency for the Txs.
-%   The default value is 1, if all Txs are static, and 0, if at least on Tx is mobile (dual-
+%   The default value is 1, if all Txs are static, and 0, if at least one Tx is mobile (dual-
 %   mobility feature).
 %
 % Output:

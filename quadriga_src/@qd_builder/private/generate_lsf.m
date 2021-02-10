@@ -1,5 +1,5 @@
 function [ ds, kf, sf, asD, asA, esD, esA, xpr ] =...
-    generate_lsf( tx_pos, rx_pos, lsp_vals, lsp_xcorr, lsf_sos, ES_D_mu_A, ES_D_mu_min )
+    generate_lsf( tx_pos, rx_pos, lsp_vals, lsp_xcorr, lsf_sos, ES_D_mu_A, ES_D_mu_min, dual_mobility )
 %GENERATE_LSF Calculates the spatially correlated values of LSPs
 %
 % Input:
@@ -82,7 +82,11 @@ end
 
 if size( tx_pos,2 ) == 1
     tx_pos = tx_pos(:,oN);
-    tx_pos_SOS = [];
+    if dual_mobility
+        tx_pos_SOS = tx_pos;
+    else
+        tx_pos_SOS = [];
+    end
 elseif size( tx_pos,2 ) == N
     tx_pos_SOS = tx_pos;
 else
@@ -91,13 +95,6 @@ end
 
 if ~exist('lsp_vals','var') || size( lsp_vals,1) ~= 8 || size( lsp_vals,2) ~= 9
     error('QuaDRiGa:qd_builder:generate_lsf','LSP values are not given or have invalid format.')
-end
-
-% Throw warning if there is elevation and distance/height dependence at the same time
-if ( any( lsp_vals(:,6) ~= 0 ) && ( any( lsp_vals(:,4) ~= 0 ) || any( lsp_vals(:,5) ~= 0 ) ) ) || ...
-        ( any( lsp_vals(:,9) ~= 0 ) && ( any( lsp_vals(:,7) ~= 0 ) || any( lsp_vals(:,8) ~= 0 ) ) )
-    warning('QuaDRiGa:qd_builder:generate_lsf',...
-        'Simultaneous height/distance AND elevation-dependence creates wrong results.');
 end
 
 % Number of frequencies
@@ -203,15 +200,15 @@ for n = 1 : 8
 end
 
 % In a dual-mobility scenario, ASD and ASA are correlated when the Tx and Rx are close. This
-% correlation hast to be included in the values.
+% correlation has to be included in the values.
 if ~isempty( tx_pos_SOS ) % Dual-mobility
     % The distance between Tx and Rx
     d = sqrt( sum(abs( rx_pos - tx_pos ).^2,1) );
     
-    % The distance-dependent correlations vor the four angles
-    corr_ASD_ASA = [ lsf_sos(1,4).acfi( d ) ; lsf_sos(1,5).acfi( d ) ];
+    % The distance-dependent correlations for the four angles
+    corr_ASD_ASA = double( [ lsf_sos(1,4).acfi( d ) ; lsf_sos(1,5).acfi( d ) ] );
     corr_ASD_ASA( corr_ASD_ASA > 1-1e-5 ) =  1-1e-5;
-    corr_ESD_ESA = [ lsf_sos(1,6).acfi( d ) ; lsf_sos(1,7).acfi( d ) ];
+    corr_ESD_ESA = double( [ lsf_sos(1,6).acfi( d ) ; lsf_sos(1,7).acfi( d ) ] );
     corr_ESD_ESA( corr_ESD_ESA > 1-1e-5 ) =  1-1e-5;
     
     % Apply the correlation to each user

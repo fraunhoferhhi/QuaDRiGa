@@ -1,4 +1,5 @@
-function [ dist, h_track_int ] = interpolate( h_track, method, sample_rate, movement_profile, algorithm, update_input )
+function [ dist, h_track_int ] = interpolate( h_track, method, sample_rate, movement_profile, ...
+    algorithm, update_input )
 %INTERPOLATE Interpolates the snapshot positions along the track
 %
 % Calling object:
@@ -116,7 +117,11 @@ else
 end
 
 if ~exist( 'update_input','var' ) || isempty( update_input )
-    update_input = false;
+    if nargout == 0
+        update_input = true;
+    else
+        update_input = false;
+    end
 end
 
 no_snapshots = h_track.no_snapshots;                                % Read number of snapshots
@@ -126,6 +131,7 @@ positions = h_track.positions;                                      % Read posit
 [ max_dist, dist_in ] = h_track.get_length;
 
 % Calculate interpolation target
+do_not_interpolate = false;
 switch method
     case 'distance'
         
@@ -134,15 +140,15 @@ switch method
                 'For "distance" interpolation, the number of input snapshots must be > 1.');
         end
         
-        no_snapshots_out = ceil( max_dist / sample_rate );        	% Number of snapshot in the output channel
+        no_snapshots_out = ceil((max_dist-sample_rate/2) / sample_rate ); % Number of snapshot in the output channel
         
-        if no_snapshots_out < 2                                    	% Check number of output snaps
-            error('QuaDRiGa:qd_track:interpolate:single_snapshot_in',...
-                'For "distance" interpolation, the number of output snapshots must be > 1 (check sample rate).');
+        if no_snapshots_out < 2                                         % Check number of output snaps
+            do_not_interpolate = true;
+            dist = dist_in;
+        else
+            sr = max_dist / no_snapshots_out;                           % Calculate the effective sample rate
+            dist = ( 0 : no_snapshots_out )*sr;                        	% The interpolation distances
         end
-        
-        sr = max_dist / no_snapshots_out;                           % Calculate the effective sample rate
-        dist = ( 0 : no_snapshots_out )*sr;                        	% The interpolation distances
         
     case 'time'
         
@@ -160,12 +166,16 @@ switch method
             max_dist = movement_profile(2,end);
         end
         
-        no_snapshots_out = ceil( max_time / sample_rate );        	% Number of snapshot in the output channel
+        if sample_rate > max_time                                   % Number of snapshot in the output channel
+            no_snapshots_out = 1;
+        else
+            no_snapshots_out = ceil((max_time-sample_rate/2) / sample_rate ); 
+        end
         sr = max_time / no_snapshots_out;                           % Calculate the effective sample rate
         time = ( 0 : no_snapshots_out )*sr;                       	% The snapshot times
         
         if use_linear_interpolation                                 % Interpolate the distances
-            dist = qf.interp( movement_profile(1,:), 0, movement_profile(2,:), time);
+            dist = qf.interp( movement_profile(1,:), 0, movement_profile(2,:), time, [], true );
         else
             dist = pchip( movement_profile(1,:), movement_profile(2,:), time );
         end
@@ -193,12 +203,12 @@ switch method
         max_time = movement_profile(1,end);                        	% Get the maximum time
         max_dist = no_snapshots-1;                                  % Get the maximum distance
         
-        no_snapshots_out = ceil( max_time / sample_rate );        	% Number of snapshot in the output channel
+        no_snapshots_out = ceil((max_time-sample_rate/2) / sample_rate ); % Number of snapshot in the output channel
         sr = max_time / no_snapshots_out;                           % Calculate the effective sample rate
         time = ( 0 : no_snapshots_out )*sr;                       	% The snapshot times
         
         if use_linear_interpolation                                 % Interpolate the distances
-            dist = qf.interp( movement_profile(1,:), 0, movement_profile(2,:), time) - 1;
+            dist = qf.interp( movement_profile(1,:), 0, movement_profile(2,:), time, [], true ) - 1;
         else
             dist = pchip( movement_profile(1,:), movement_profile(2,:), time );
         end
@@ -212,7 +222,10 @@ dist( dist<0 ) = 0;                                                 % Fix interp
 dist( dist>max_dist ) = max_dist;
 
 % Create interpolated track object
-if update_input || nargout > 1                                      % Only interpolate if required
+if do_not_interpolate
+    h_track_int = copy( h_track );
+    
+elseif update_input || nargout > 1                                      % Only interpolate if required
     no_snapshots_out = numel( dist );                               % Actual number of output snapshots
     if h_track.closed && dist_in(end) - dist(end) < 1e-6            % Check if output track is closed
         closed = true;
@@ -225,7 +238,7 @@ if update_input || nargout > 1                                      % Only inter
         pos_int = zeros( 3,no_snapshots_out );
         for n = 1 : 3                                               % Interpolate the positions
             if use_linear_interpolation
-                pos_int(n,:) = qf.interp( dist_in, 0, positions(n,:), dist);
+                pos_int(n,:) = qf.interp( dist_in, 0, positions(n,:), dist, [], true );
             else
                 pos_int(n,:) = pchip( dist_in, positions(n,:), dist );
             end
@@ -271,11 +284,11 @@ if update_input || nargout > 1                                      % Only inter
             
             % Roll (full circle)
             % We need "Spherical Linear Interpolation" here. This is not implemented in MATLAB.
-            orientation_int(1,:) = qf.slerp( dist_in, orientation(1,:), 0, dist );
+            orientation_int(1,:) = qf.slerp( dist_in, orientation(1,:), 0, dist, true );
             
             % Pitch and Yaw
             [ orientation_int(3,:), orientation_int(2,:) ] =...
-                qf.slerp( dist_in, orientation(3,:), orientation(2,:), dist  );
+                qf.slerp( dist_in, orientation(3,:), orientation(2,:), dist, true  );
         else
             orientation_int = [];
         end

@@ -5,7 +5,7 @@ classdef qd_simulation_parameters < handle
 % This class controls the simulation options and calculates constants for other classes.
 %
 % 
-% QuaDRiGa Copyright (C) 2011-2019
+% QuaDRiGa Copyright (C) 2011-2020
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -26,10 +26,10 @@ properties(Dependent)
     
     % The number of samples per half-wave length
     % 	Sampling density describes the number of samples per half-wave length. To fulfill the
-    % 	sampling theorem, the minimum sample density must be 2. For smaller values,
-    % 	interpolation of the  channel for variable speed is not  possible. On the other hand,
-    % 	high values significantly increase the computing time significantly. A good value is
-    % 	around 1.2 for single-mobility and 2.5 for dual-mobility.
+    % 	sampling theorem, the minimum sample density must be 1 (single mobility) or 2 (dual
+    % 	mobility). For smaller values, interpolation of the  channel for variable speed is not
+    % 	possible. On the other hand, high values significantly increase the computing time
+    % 	significantly. A good value is around 1.2 for single-mobility and 2.5 for dual-mobility.
     sample_density
     
     % Samples per one meter
@@ -72,18 +72,18 @@ properties
     %   By default, delays are calculated such that the LOS delay is normalized to 0. By setting
     %   use_absolute_delays to 1 or true, the absolute path delays are included in
     %   qd_channel.delays at the output of the model.
-    use_absolute_delays         = false;
+    use_absolute_delays = false;
     
     % Initializes each path with a random initial phase
     %   By default, each path is initialized with a random phase (except the LOS path and the
     %   optional ground reflection). Setting "use_random_initial_phase" to zeros disables this
     %   function. In this case, each path gets initialized with a zero-phase.
-    use_random_initial_phase    = true;
+    use_random_initial_phase = true;
     
     % Show a progress bar on the MATLAB prompt
     %   Show a progress bar on the MATLAB / Octave prompt. If this doesn't work correctly, you
     %   need to enable real-time output by calling "more off".
-    show_progress_bars       = true;
+    show_progress_bars = true;
     
     % The autocorrelation function for generating correlated model parameters.
     %   An autocorrelation function (ACF) is a description of the correlation vs. distance.
@@ -95,12 +95,13 @@ properties
     %   * Exponential ACF (Exp150, Exp300, Exp500, Exp1000 )
     %   * Gaussian ACF (Gauss150, Gauss300, Gauss500, Gauss1000 )
     %   * Combined Gaussian and Exponential ACF (Comb150, Comb300, Comb500, Comb1000)
+    %   * Disable Spatial Consistency for Small-Scale Fading (Disable)
     autocorrelation_function = 'Comb300';
 end
 
 properties(Constant)
     % Version number of the current QuaDRiGa release (constant)
-    version = '2.2.0-0';
+    version = '2.4.0-0';
 end
 
 properties(Constant)
@@ -207,4 +208,9 @@ methods
         obj.show_progress_bars = logical( value );
     end
 end
+
+methods(Static)
+    gpu = has_gpu;
+end
+
 end

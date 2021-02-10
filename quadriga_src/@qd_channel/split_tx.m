@@ -132,9 +132,12 @@ for i_mt = 1 : no_rx
                 chan_out(mt_cnt,sec_cnt) = qd_channel( [] );        % Create empty object
                 copy( chan_out(mt_cnt,sec_cnt), c_in( 1,i_c ) );    % Copy data
                 
-                chan_out(mt_cnt,sec_cnt).coeff = chan_out(mt_cnt,sec_cnt).coeff( :,tx_sec,:,: );
+                cf = chan_out(mt_cnt,sec_cnt).coeff( :,tx_sec,:,: );
+                ipath = find( ~all(all(all(cf == 0,1),2),4) );
+                
+                chan_out(mt_cnt,sec_cnt).coeff = cf( :,:,ipath,: );
                 if c_in( 1,i_c ).individual_delays
-                    chan_out(mt_cnt,sec_cnt).delay = chan_out(mt_cnt,sec_cnt).delay( :,tx_sec,:,: );
+                    chan_out(mt_cnt,sec_cnt).delay = chan_out(mt_cnt,sec_cnt).delay( :,tx_sec,ipath,: );
                 end
                 
                 % Set new channel name including the sector ID

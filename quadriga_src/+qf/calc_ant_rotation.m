@@ -11,12 +11,6 @@ function [ R, phiL, thetaL, gamma ] = calc_ant_rotation( zrot, yrot, xrot, phi, 
 %   angles "zrot", "yrot", and "xrot" can be empty, scalar, or match the size of "phi and "theta".
 %   This function is used by the classes "qd_arrayant", "qd_layout", and "qd_builder".
 %
-%   Note:
-%   In the "qd_track" objects, the property "height_direction" is defined as a NEGATIVE rotation
-%   around the y-axis (right-hand-rule), and the "ground_direction" is a positive rotation around
-%   the z-axis. Hence, you need to use the negative "height_direction" as "yrot" to get the correct
-%   antenna rotation!
-%
 %   See: Jaeckel, S.; "Quasi-deterministic channel modeling and experimental validation in
 %   cooperative and massive MIMO deployment topologies"; PHD thesis; TU Ilmenau, 2017
 %   Sec. 2.5.2, pp. 33
@@ -35,7 +29,7 @@ function [ R, phiL, thetaL, gamma ] = calc_ant_rotation( zrot, yrot, xrot, phi, 
 %       gamma   The polarization rotation angle in [rad]
 %
 %
-% QuaDRiGa Copyright (C) 2011-2019
+% QuaDRiGa Copyright (C) 2011-2020
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -53,24 +47,36 @@ function [ R, phiL, thetaL, gamma ] = calc_ant_rotation( zrot, yrot, xrot, phi, 
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 % Assign defaults
-if ~exist( 'zrot','var' ) || isempty( zrot )
-    zrot = 0;
-end
-if ~exist( 'yrot','var' ) || isempty( yrot )
-    yrot = 0;
-end
-if ~exist( 'xrot','var' ) || isempty( xrot )
-    xrot = 0;
-end
+precision = 'double';
+use_single_precision = false;
 if ~exist( 'phi','var' ) || isempty( phi )
     if ~exist( 'theta','var' ) || isempty( theta )
-        phi = 0;
         theta = 0;
-    else
-        phi = zeros( size( theta ));
+    elseif isa( theta , 'single' )
+        precision = 'single';
+        use_single_precision = true;
     end
+    phi = zeros( size( theta ), precision );
 elseif ~exist( 'theta','var' ) || isempty( theta )
-    theta =  zeros( size( phi ));
+    if isa( phi , 'single' ) 
+        precision = 'single';
+        use_single_precision = true;
+    end
+    theta =  zeros( size( phi ),precision);
+elseif isa( phi , 'single' )
+    precision = 'single';
+    use_single_precision = true;
+    theta = single( theta );
+end
+
+if ~exist( 'zrot','var' ) || isempty( zrot )
+    zrot = zeros(1,precision);
+end
+if ~exist( 'yrot','var' ) || isempty( yrot )
+    yrot = zeros(1,precision);
+end
+if ~exist( 'xrot','var' ) || isempty( xrot )
+    xrot = zeros(1,precision);
 end
 
 % Save dimensions of the angles
@@ -79,9 +85,15 @@ input_size = size( phi );
 % Put all angles in a vector
 phi   = phi(:);
 theta = theta(:);
-zrot  = zrot(:)';
-yrot  = yrot(:)';
-xrot  = xrot(:)';
+if use_single_precision
+    zrot  = single( zrot(:)' );
+    yrot  = single( yrot(:)' );
+    xrot  = single( xrot(:)' );
+else
+    zrot  = zrot(:)';
+    yrot  = yrot(:)';
+    xrot  = xrot(:)';
+end
 
 % Store the number of values
 no_angles = numel( phi );
@@ -91,12 +103,12 @@ if any( no_dir ~= no_angles & no_dir ~= 1 ) && nargout > 1
     error('Number of orientations must be empty, scalar, or match the number of angles.')
 end
 
-zd = zeros( 1, max(no_dir) );
-od = ones(  1, max(no_dir) );
+zd = zeros( 1, max(no_dir),precision);
+od = ones(  1, max(no_dir),precision);
 
 % Generate z-rotation matrix
 if all( zrot == 0 )
-    Rz = eye( 3 );
+    Rz = eye(3,precision);
     no_dir(1) = 0;
 else
     co = cos(zrot);
@@ -111,7 +123,7 @@ end
 
 % Generate y-rotation matrix
 if all( yrot == 0 )
-    Ry = eye( 3 );
+    Ry = eye(3,precision);
     no_dir(2) = 0;
 else
     co = cos(yrot);
@@ -126,7 +138,7 @@ end
 
 % Generate x-rotation matrix
 if all( xrot == 0 )
-    Rx = eye( 3 );
+    Rx = eye(3,precision);
     no_dir(3) = 0;
 else
     co = cos(xrot);
@@ -141,7 +153,7 @@ end
 
 % Generate combined rotation matrix
 if all( no_dir == 0 )
-    R = eye(3);
+    R = eye(3,precision);
 elseif all( no_dir([1,2]) == 0 )
     R = Rx;
 elseif all( no_dir([1,3]) == 0 )
@@ -149,7 +161,7 @@ elseif all( no_dir([1,3]) == 0 )
 elseif all( no_dir([2,3]) == 0 )
     R = Rz;
 else
-    R = zeros( 3,3,max(no_dir) );
+    R = zeros( 3,3,max(no_dir),precision );
     for n = 1 : max(no_dir)
         ii = uint16( no_dir>1 )*(n-1) + 1;
         R(:,:,n)  = Rz(:,:,ii(1)) * Ry(:,:,ii(2)) * Rx(:,:,ii(3)) ;
@@ -161,10 +173,15 @@ no_dir = max( no_dir );
 if nargout > 1
     
     % Transform input angles from geographic coordinates to Cartesian coordinates
-    C = zeros( no_angles,3 );
-    C(:,1) = cos( theta ) .* cos( phi );
-    C(:,2) = cos( theta ) .* sin( phi );
-    C(:,3) = sin( theta );
+    C = [ cos( phi ), cos( theta ), sin( theta ) ];
+    C(:,1) = C(:,1) .* C(:,2);
+    C(:,2) = C(:,2) .* sin( phi );
+
+    % Same as, but faster:
+    %   C = zeros( no_angles,3,precision );
+    %   C(:,1) = cos( theta ) .* cos( phi );
+    %   C(:,2) = cos( theta ) .* sin( phi );
+    %   C(:,3) = sin( theta );
     
     % Apply the rotation
     % Note: This is equal to: "R.' * C'", but avoids the trnspose operations to save time
@@ -177,6 +194,8 @@ if nargout > 1
     end
     
     % Transform back to spheric coordinates
+    C(C(:,3)> 1,3) = 1;         % Possible numeric instability
+    C(C(:,3)<-1,3) = -1;        % Possible numeric instability
     thetaL = asin( C(:,3) );
     phiL   = atan2( C(:,2),C(:,1) );
 end
@@ -184,14 +203,20 @@ end
 % Calculate the polarization rotation angle "gamma"
 if nargout > 3
     
+    % Avoid calculating sin and cos multiple times
+    Eth_o = sin(theta);
+    Eph_o = cos(phi);
+    Eth_n = sin(phi);
+    
     % Geographic basis vectors in theta direction (original angles)
-    Eth_o = [ sin(theta).*cos(phi) , sin(theta).*sin(phi), -cos(theta) ];
+    Eth_o = [ Eth_o.*Eph_o , Eth_o.*Eth_n, -cos(theta) ];
     
     % Spherical/geographical basis vector in phi direction (original angles)
-    Eph_o = [ -sin(phi) , cos(phi) , zeros(no_angles,1) ];
+    Eph_o = [ -Eth_n , Eph_o , zeros(no_angles,1,precision) ];
     
     % Geographic basis vector in theta direction (new angles)
-    Eth_n = [ sin(thetaL).*cos(phiL) , sin(thetaL).*sin(phiL), -cos(thetaL) ];
+    Eth_n = sin(thetaL);
+    Eth_n = [ Eth_n.*cos(phiL) , Eth_n.*sin(phiL), -cos(thetaL) ];
     
     % Apply rotation to new angles
     if no_dir == 1

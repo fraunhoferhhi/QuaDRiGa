@@ -203,10 +203,10 @@ methods
     function out = get.no_path(h_channel)
         s = size(h_channel.Pcoeff);
         if numel(s) < 3
-            if any(s)==0
+            if ~any(s)
                 out = 0;
             else
-                out=1;
+                out = 1;
             end
         else
             out = s(3);
@@ -215,10 +215,10 @@ methods
     function out = get.no_snap(h_channel)
         s = size(h_channel(1,1).Pcoeff);
         if numel(s) < 4
-            if any(s)==0
+            if ~any(s)
                 out = 0;
             else
-                out=1;
+                out = 1;
             end
         else
             out = s(4);
@@ -358,6 +358,8 @@ end
 methods(Static)
     [ h_channel, dims ] = hdf5_load( varargin )
     [ h_channel, snr, pdp ] = import_meas_data( Y, B, L_max, usage, noise_limit, delay_limit, pilot_grid, verbose, show_pdp )
+    h_channel = fr2cir( freq_response, bandwidth, no_path, min_pow, pilot_grid, use_gpu  )
+    varargout = call_private_fcn( functionName, varargin )
 end
 
 end

@@ -55,9 +55,6 @@ else
     % Fix for octave 4.0 (conversion from object-array to single object)
     h_builder = h_builder(1,1);
     
-    % ACF
-    acf = h_builder.simpar.autocorrelation_function;
-    
     % Set the number of clusters
     L = h_builder.scenpar.NumClusters;
     
@@ -66,6 +63,20 @@ else
     
     % Spatial consistency decorrelation distance in [m]
     SC_lambda = h_builder.scenpar.SC_lambda;
+    
+    if h_builder.scenpar.absTOA_mu > -30
+        absTOA_lambda = h_builder.scenpar.absTOA_lambda;
+    else
+        absTOA_lambda = 0;
+    end
+    
+    % ACF
+    acf = h_builder.simpar.autocorrelation_function;
+    if strcmp( acf, 'Disable' )     % Disable spatial consistency for SSF
+        acf = 'Comb300';
+        SC_lambda = 0;
+        absTOA_lambda = 0;
+    end
     
     use_ground_reflection = logical( h_builder.scenpar.GR_enabled );
     if h_builder.simpar.use_3GPP_baseline && use_ground_reflection
@@ -195,6 +206,13 @@ else
             end
         end
         h_builder.clst_dl_sos = clst_dl_sos;
+    end
+    
+    if ~h_builder.simpar.use_3GPP_baseline && absTOA_lambda > 0 && ( isempty( h_builder.absTOA_sos ) || force )
+        % Delay offsets (are identical if Tx and Rx positions are swapped)
+        absTOA_sos = qd_sos( acf, 'Normal', absTOA_lambda );
+        absTOA_sos.sos_phase(:,2) = absTOA_sos(1,1).sos_phase(:,1);
+        h_builder.absTOA_sos = absTOA_sos;
     end
     
     % Initialize subpath coupling

@@ -1,4 +1,4 @@
-function [ pow, taus, AoD, AoA, EoD, EoA ] = generate_paths( L, tx_pos, rx_pos, spreads, gr_epsilon_r, path_sos, r_DS )
+function [ pow, taus, AoD, AoA, EoD, EoA ] = generate_paths( L, tx_pos, rx_pos, spreads, gr_epsilon_r, path_sos, r_DS, dual_mobility )
 %GENERATE_PATHS Generate multipath components
 %
 % Input:
@@ -80,7 +80,11 @@ end
 
 if size( tx_pos,2 ) == 1
     tx_pos = tx_pos(:,oN);
-    tx_pos_SOS = [];
+    if dual_mobility
+        tx_pos_SOS = tx_pos;
+    else
+        tx_pos_SOS = [];
+    end
 elseif size( tx_pos,2 ) == N
     tx_pos_SOS = tx_pos;
 else
@@ -97,9 +101,9 @@ d_3d( d_3d<1e-5 ) = 1e-5;
 angles = zeros( 5,N );
 angles(1,:) = atan2( rx_pos(2,:) - tx_pos(2,:) , rx_pos(1,:) - tx_pos(1,:) );   % Azimuth at BS
 angles(2,:) = pi + angles(1,:);                                                 % Azimuth at MT
-angles(3,:) = atan2( ( rx_pos(3,:) - tx_pos(3,:) ), d_2d );                    % Elevation at BS
+angles(3,:) = atan2( ( rx_pos(3,:) - tx_pos(3,:) ), d_2d );                     % Elevation at BS
 angles(4,:) = -angles(3,:);                                                     % Elevation at MT
-angles(5,:) = -atan2( ( rx_pos(3,:) + tx_pos(3,:) ), d_2d );                   % Ground Reflection Elevation at BS and MT
+angles(5,:) = -atan2( ( rx_pos(3,:) + tx_pos(3,:) ), d_2d );                    % Ground Reflection Elevation at BS and MT
 angles = angles.';
 
 if ~exist('spreads','var') || size( spreads,1) ~= 6 || size( spreads,2) ~= N
@@ -119,6 +123,7 @@ ESD = spreadsP(:,:,4) * pi/180;
 ESA = spreadsP(:,:,5) * pi/180;
 KF  = spreadsP(:,:,6);
 
+% Test if we use the ground reflection
 if ~exist('gr_epsilon_r','var') || isempty( gr_epsilon_r )
     gr_enabled = false;
 elseif size( gr_epsilon_r,1) ~= F || size( gr_epsilon_r,2) ~= N
@@ -290,7 +295,7 @@ else % Additional NLOS componenets are present
     end
     
     % Generate angles for the average angular spreads
-    mu_fixed = zeros(N,4);  % The mean fixed angle for LOS and GR
+    mu_fixed = zeros(N,4);  % The fixed angle for LOS and GR
     path_angles = zeros( N,L,4 );
     for i_ang = 1 : 4
         
@@ -310,6 +315,29 @@ else % Additional NLOS componenets are present
             ang_fixed = angles( :,i_ang );
         end
         [ ~, mu_fixed(:,i_ang) ] = qf.calc_angular_spreads( ang_fixed, Pf, 0 );
+        
+        if i_ang == 4 && ~gr_enabled    % Do not apply NLOS EaA rotation (e.g. for satellites)
+            % We must maintain spatial consistency and channel reciprocity in dual-mobility
+            % scenarios. Hence, if Tx and Rx are at the same heigt, we must apply the elevation
+            % angle rotation. If the heigth difference is large (e.g. for a satellite in the sky),
+            % the elevation angle rotation can be disabled. However, we must avoiid decision
+            % boundaries to maintain spatial consistency. This is done by a smooth transition.
+            
+            i_kf = all(KF<1e-9,2);                      % KF must be < -90 dB (no LOS component)
+            d_height = tx_pos(3,:) - rx_pos(3,:);       % Height difference between Tx and Rx
+            
+            % Calculate the sacling weights
+            w_height = (abs(d_height.')-10)/10;         % Smooth transitions from 10 to 20 meters
+            w_height(w_height<0) = 0;                   % EoA rotaion from -10 to 10 meters
+            w_height(w_height>1) = 1;                   % No EoA rotation for more then 20 meters diffrence
+            w_height = cos(pi/2*w_height).^2;           % Continuous transition function
+            w_height(~i_kf) = 1;
+            
+            % Apply scaling
+            if any( i_kf )
+                mu_fixed( i_kf ,4 ) = w_height( i_kf ) .* mu_fixed( i_kf ,4 );
+            end
+        end
         
         % Scale angles within +/- pi
         if Ln == 1
@@ -470,7 +498,7 @@ else % Additional NLOS componenets are present
         end
         
         % The initial angles range from -pi/2 to pi/2, the initial angular spread is 30°
-        % Due to the wrapping of the angles, thy cannot exceed
+        % Due to the wrapping of the angles, they cannot exceed
         if i_ang < 2.5 % Azimuth angles
             s( s > 3 ) = 3;
         else % Elevation angles
