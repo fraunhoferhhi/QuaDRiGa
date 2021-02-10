@@ -35,20 +35,36 @@ end
 if numel(h_sos) > 1
     
     sic = size( h_sos );
-    prc = false( sic );
     for n = 1 : prod( sic )
-        if ~prc( n )
-            [ i1,i2,i3,i4 ] = qf.qind2sub( sic, n );
-            init( h_sos(i1,i2,i3,i4), use_same );
-            prc( qf.eqo( h_sos(i1,i2,i3,i4), h_track ) ) = true;
-        end
+        [ i1,i2,i3,i4 ] = qf.qind2sub( sic, n );
+        init( h_sos(i1,i2,i3,i4), use_same );
     end
     
 else
+    % Fix for Ocatave
+    h_sos = h_sos(1,1);
+    
     if use_same
-        h_sos(1,1).sos_phase = single( 2*pi*(rand(h_sos(1,1).no_coefficients,1)-0.5) ) * single([1,1]);
+        N = 1;
     else
-        h_sos(1,1).sos_phase = single( 2*pi*(rand(h_sos(1,1).no_coefficients,2)-0.5) );
+        N = 2;
+    end
+
+    for n = 1 : N
+        
+        % Generate random variables
+        r = rand(1,h_sos.no_coefficients);
+        
+        % Map to Interval [-pi , pi[
+        r = 2*pi*(r.'-0.5);
+       
+        % Set SOS phases
+        if use_same
+            h_sos.sos_phase = repmat( single(r),1,2);
+        else
+            h_sos.sos_phase(:,n) = single( r );
+        end
+        
     end
 end
 

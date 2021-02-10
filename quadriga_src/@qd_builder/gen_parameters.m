@@ -336,8 +336,10 @@ else
             
             % Apply absolute time-of-arrival offset to NLOS delays
             if ~isempty( h_builder.absTOA_offset )
-                taus( :, n_los_clusters+1:end ) =...
-                    taus( :, n_los_clusters+1:end ) + h_builder.absTOA_offset.' * ones(1,n_nlos_clusters );
+                min_nlos_delay = min( taus( :, n_los_clusters+1:end ),[],2);
+                taus( :, n_los_clusters+1:end ) = taus( :, n_los_clusters+1:end ) - ...
+                    repmat( min_nlos_delay, 1,n_nlos_clusters ) + ...
+                    repmat( h_builder.absTOA_offset.', 1, n_nlos_clusters );
             end
             
             % If we do not use spatial consistency, we sort the clusters by powers in descending

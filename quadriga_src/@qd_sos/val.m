@@ -1,4 +1,4 @@
-function s = val( h_sos, ca, cb )
+function s = val( h_sos, ca, cb, ph )
 %VAL Returns correlated values at given coordinates
 %
 % Calling object:
@@ -21,6 +21,9 @@ function s = val( h_sos, ca, cb )
 %   Coordinates for the corresponding second mobile device in [m] given as [3 x N] matrix. The rows
 %   correspond to the x,y and z coordinate. This variable must either be empty or have the same
 %   size as "ca".
+%
+%   ph
+%   Different phase offsets for the SOS generators (optional)
 %
 % Output:
 %   s
@@ -54,6 +57,13 @@ elseif any( size(cb) ~= size(ca) )
     error('QuaDRiGa:qd_sos:val','Size of "cb" mut match the size of "ca".' );
 end
 
+if ~exist( 'ph','var' ) || isempty( ph )
+    ph = [];
+else
+    ph = double( ph );
+end
+
+
 if numel( h_sos ) > 1
     
     % Recursive call for all objects in the array
@@ -61,17 +71,21 @@ if numel( h_sos ) > 1
     s = zeros( numel( h_sos ), no_val );
     for i_sos = 1 : numel( h_sos )
         [ i1,i2,i3,i4 ] = qf.qind2sub( sic, i_sos );
-        s(i_sos,:) = val( h_sos( i1,i2,i3,i4 ), ca, cb );
+        s(i_sos,:) = val( h_sos( i1,i2,i3,i4 ), ca, cb, ph );
     end
 
 else
     
     % Fix for octave 4.0 (conversion from object-array to single object)
     h_sos = h_sos(1,1);
-    
+
+    % Read phases from SOS object
+    if isempty( ph )
+        ph = double( h_sos.sos_phase );
+    end
+
     % Read local variables to increase speed
     al = double( h_sos.sos_amp );
-    ph = double( h_sos.sos_phase );
     fr = 2*pi*double( h_sos.sos_freq );
     L  = size(fr,1);
     dims = size(fr,2);
@@ -90,14 +104,7 @@ else
     
     % Calculate the random variables for the first input coordinate
     if no_val < 1e4
-%         A = fr * ca;
-%         B = A + ph(:,ones(1,no_val,'uint8'));
-%         %C = mod( B , 2*pi );
-%         D = cos( B );
-%         E = sum( D,1 );
-%         sa = al .* E;
-        
-        sa = al .* sum( cos( fr * ca + ph(:,ones(1,no_val,'uint8') ) ),1);
+        sa = al .* sum( cos( fr * ca + repmat( ph(:,1),1,no_val ) ),1);
     else % Better memory-efficiency, but slower
         sa = zeros( 1,no_val );
         for l = 1:L
@@ -114,7 +121,7 @@ else
         
         % Calculate the random variables for the second input coordinate
         if no_val < 1e4
-            sb = al .* sum( cos( fr * cb + ph(:,ones(1,no_val,'uint8')*2) ),1);
+            sb = al .* sum( cos( fr * cb + repmat( ph(:,2),1,no_val ) ),1);
         else % Better memory-efficiency, but slower
             sb = zeros( 1,no_val );
             for l = 1:L

@@ -64,6 +64,9 @@ else
     % Spatial consistency decorrelation distance in [m]
     SC_lambda = h_builder.scenpar.SC_lambda;
     
+    % Dual Mobility indicator
+    dual_mobility = h_builder.dual_mobility;
+    
     if h_builder.scenpar.absTOA_mu > -30
         absTOA_lambda = h_builder.scenpar.absTOA_lambda;
     else
@@ -100,35 +103,49 @@ else
     if isempty( h_builder.sos ) || force
         lsf_sos = qd_sos([]);
         
-        % Delays (are identical if Tx and Rx positions are swapped)
-        lsf_sos(1,1) = qd_sos( acf, 'Normal', lambda(1) );
-        lsf_sos(1,1).sos_phase(:,2) = lsf_sos(1,1).sos_phase(:,1);
+        lsf_sos(1,1) = qd_sos( acf, 'Normal', lambda(1) );  % DS
+        lsf_sos(1,2) = qd_sos( acf, 'Normal', lambda(2) );  % KF
+        lsf_sos(1,3) = qd_sos( acf, 'Normal', lambda(3) );  % SF
+        lsf_sos(1,4) = qd_sos( acf, 'Normal', lambda(4) );  % ASD
+        lsf_sos(1,5) = qd_sos( acf, 'Normal', lambda(5) );  % ASA
+        lsf_sos(1,6) = qd_sos( acf, 'Normal', lambda(6) );  % ESD
+        lsf_sos(1,7) = qd_sos( acf, 'Normal', lambda(7) );  % ESA
+        lsf_sos(1,8) = qd_sos( acf, 'Normal', lambda(8) );  % XPR
         
-        % K-Factor (is identical if Tx and Rx positions are swapped)
-        lsf_sos(1,2) = qd_sos( acf, 'Normal', lambda(2) );
-        lsf_sos(1,2).sos_phase(:,2) = lsf_sos(1,2).sos_phase(:,1);
+        if dual_mobility && h_builder.no_rx_positions > 2
+            remove_bias( lsf_sos, h_builder.rx_positions, h_builder.tx_position );
+        elseif h_builder.no_rx_positions > 2
+            remove_bias( lsf_sos, h_builder.rx_positions );
+        end
         
-        % Shadow-Fading (is identical if Tx and Rx positions are swapped)
-        lsf_sos(1,3) = qd_sos( acf, 'Normal', lambda(3) );
-        lsf_sos(1,3).sos_phase(:,2) = lsf_sos(1,3).sos_phase(:,1);
+        lsf_sos(1,1).sos_phase(:,2) = lsf_sos(1,1).sos_phase(:,1);  % Delays (are identical if Tx and Rx positions are swapped)
+        lsf_sos(1,2).sos_phase(:,2) = lsf_sos(1,2).sos_phase(:,1);  % K-Factor (is identical if Tx and Rx positions are swapped)
+        lsf_sos(1,3).sos_phase(:,2) = lsf_sos(1,3).sos_phase(:,1);  % Shadow-Fading (is identical if Tx and Rx positions are swapped)
+        lsf_sos(1,8).sos_phase(:,2) = lsf_sos(1,8).sos_phase(:,1);  % XPR (is identical if Tx and Rx positions are swapped)
         
-        % Azimuth angles (depature become arrival angles if positions are swapped)
-        lsf_sos(1,4) = qd_sos( acf, 'Normal', lambda(4) ); % ASD
-        lsf_sos(1,5) = qd_sos( acf, 'Normal', lambda(5) ); % ASA
-        lsf_sos(1,4).sos_phase(:,1) = lsf_sos(1,5).sos_phase(:,2);
-        lsf_sos(1,5).sos_phase(:,1) = lsf_sos(1,4).sos_phase(:,2);
+        lsf_sos(1,4).sos_phase(:,1) = lsf_sos(1,5).sos_phase(:,2);  % Azimuth angles 
+        lsf_sos(1,5).sos_phase(:,1) = lsf_sos(1,4).sos_phase(:,2);  % (depature become arrival angles if positions are swapped)
         
-        % Elevation angles (depature become arrival angles if positions are swapped)
-        lsf_sos(1,6) = qd_sos( acf, 'Normal', lambda(6) ); % ASD
-        lsf_sos(1,7) = qd_sos( acf, 'Normal', lambda(7) ); % ASA
-        lsf_sos(1,6).sos_phase(:,1) = lsf_sos(1,7).sos_phase(:,2);
-        lsf_sos(1,7).sos_phase(:,1) = lsf_sos(1,6).sos_phase(:,2);
-        
-        % XPR (is identical if Tx and Rx positions are swapped)
-        lsf_sos(1,8) = qd_sos( acf, 'Normal', lambda(8) );
-        lsf_sos(1,8).sos_phase(:,2) = lsf_sos(1,8).sos_phase(:,1);
+        lsf_sos(1,6).sos_phase(:,1) = lsf_sos(1,7).sos_phase(:,2);  % Elevation angles 
+        lsf_sos(1,7).sos_phase(:,1) = lsf_sos(1,6).sos_phase(:,2);  % (depature become arrival angles if positions are swapped)
         
         h_builder.sos = lsf_sos;
+    end
+    
+    % SOS geneator for spatially correlated absolute time-of-arrival
+    if ~h_builder.simpar.use_3GPP_baseline && absTOA_lambda > 0 && ( isempty( h_builder.absTOA_sos ) || force )
+        
+        % Delay offsets (are identical if Tx and Rx positions are swapped)
+        absTOA_sos = qd_sos( acf, 'Normal', absTOA_lambda );
+        absTOA_sos.sos_phase(:,2) = absTOA_sos(1,1).sos_phase(:,1);
+        
+        if dual_mobility && h_builder.no_rx_positions > 2
+            remove_bias( absTOA_sos, h_builder.rx_positions, h_builder.tx_position );
+        elseif h_builder.no_rx_positions > 2
+            remove_bias( absTOA_sos, h_builder.rx_positions );
+        end
+        
+        h_builder.absTOA_sos = absTOA_sos;
     end
     
     % Initialize the SOS generator for the ground reflection coefficient
@@ -206,13 +223,6 @@ else
             end
         end
         h_builder.clst_dl_sos = clst_dl_sos;
-    end
-    
-    if ~h_builder.simpar.use_3GPP_baseline && absTOA_lambda > 0 && ( isempty( h_builder.absTOA_sos ) || force )
-        % Delay offsets (are identical if Tx and Rx positions are swapped)
-        absTOA_sos = qd_sos( acf, 'Normal', absTOA_lambda );
-        absTOA_sos.sos_phase(:,2) = absTOA_sos(1,1).sos_phase(:,1);
-        h_builder.absTOA_sos = absTOA_sos;
     end
     
     % Initialize subpath coupling
