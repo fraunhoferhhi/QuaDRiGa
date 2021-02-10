@@ -282,7 +282,7 @@ if isfield( par , 'model' )
         case 'dual_slope'
             
             % Set defaults
-            if ~isfield( par,'A1' );    par.A2 = par.A;         end
+            if ~isfield( par,'A1' );    par.A1 = par.A;         end
             if ~isfield( par,'A2' );    par.A2 = par.A1;        end
             if ~isfield( par,'C' );     par.C = 0;              end
             if ~isfield( par,'D' );     par.D = 0;              end
@@ -293,7 +293,7 @@ if isfield( par , 'model' )
             hBS(hBS < 0.1) = 0.1;
             
             hMS = rxpos(3,:);           % MS height
-            hMS(hMS < par.hE) = 1.1*par.hE;
+            hMS(hMS < 1.1*par.hE) = 1.1*par.hE;
             hMS(hMS < 0.1) = 0.1;
             
             % Breakpoint Distance
@@ -315,9 +315,9 @@ if isfield( par , 'model' )
         case 'tripple_slope'
             
             % Set defaults
-            if ~isfield( par,'A1' );    par.A2 = par.A;         end
+            if ~isfield( par,'A1' );    par.A1 = par.A;         end
             if ~isfield( par,'A2' );    par.A2 = par.A1;        end
-            if ~isfield( par,'A3' );    par.A2 = par.A2;        end
+            if ~isfield( par,'A3' );    par.A3 = par.A2;        end
             if ~isfield( par,'C' );     par.C = 0;              end
             if ~isfield( par,'D' );     par.D = 0;              end
             if ~isfield( par,'D1' );    par.D1 = par.D;         end

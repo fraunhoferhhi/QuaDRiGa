@@ -288,8 +288,10 @@ if a(1)/clmix > 20; a(1)=clmix; end
 if a(2)/clmax > 20; a(2)=clmax; end
 if a(3)/clmiy > 20; a(3)=clmiy; end
 if a(4)/clmay > 20; a(4)=clmay; end
-if a(5)/clmiz > 20; a(5)=clmiz; end
-if a(6)/clmaz > 20; a(6)=clmaz; end
+if numel(a) > 4.5 
+    if a(5)/clmiz > 20; a(5)=clmiz; end
+    if a(6)/clmaz > 20; a(6)=clmaz; end
+end
 
 dx = a(2)-a(1);
 mx = a(1)+0.5*dx;
@@ -297,9 +299,17 @@ dy = a(4)-a(3);
 my = a(3)+0.5*dy;
 
 if dx > dy
-    axis([a(1) a(2) my-0.5*dx my+0.5*dx a(5) a(6)]);
+    if numel(a) > 4.5 
+        axis([a(1) a(2) my-0.5*dx my+0.5*dx a(5) a(6)]);
+    else
+        axis([a(1) a(2) my-0.5*dx my+0.5*dx]);
+    end
 else
-    axis([mx-0.5*dy mx+0.5*dy a(3) a(4) a(5) a(6)]);
+    if numel(a) > 4.5 
+        axis([mx-0.5*dy mx+0.5*dy a(3) a(4) a(5) a(6)]);
+    else
+        axis([mx-0.5*dy mx+0.5*dy a(3) a(4)]);
+    end
 end
 
 view(0, 90);
