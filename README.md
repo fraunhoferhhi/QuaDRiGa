@@ -9,7 +9,7 @@ QuaDRiGa contains a couple of new features and is furthermore calibrated against
 * Compatibility with 3GPP TR 38.901 v16.1.0
 * Compatibility with the mmMAGIC channel model (mmMAGIC D2.2)
 
-Software License for The QuaDRiGa Channel Model
+Software License for The QuaDRiGa Channel Model  
 © Copyright 2011 - 2021 Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V., All rights reserved.
 
 email: quadriga@hhi.fraunhofer.de
