@@ -117,7 +117,7 @@ for n = 1 : nS
     
     % Movement profile
     if h_qd_track(1,n).no_snapshots > 1
-        [~,dist] = h_qd_track(1,n).get_length;
+        [~,dist] = get_length( h_qd_track(1,n) );
         h_qd_track(1,n).movement_profile = [ t'-t(1); dist ];          
     end
 end

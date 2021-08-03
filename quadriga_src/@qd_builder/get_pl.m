@@ -69,15 +69,21 @@ else
 end
 
 % Get the number of frequencies
-CenterFrequency = h_builder.simpar.center_frequency' / 1e9;    % in GHz
+CenterFrequency = h_builder.simpar(1,1).center_frequency' / 1e9;    % in GHz
 nF = numel( CenterFrequency );
 oF = ones( nF,1 );
 
 % Get the rx positions (either from evaltrack of from the builder)
-if exist( 'evaltrack','var' ) && ~isempty(evaltrack)
-    if ~( isa(evaltrack, 'qd_track') )
-        error('??? "evaltrack" must be of class "track".')
-    end
+if ~exist( 'evaltrack','var' ) || isempty(evaltrack)
+    evaltrack = [];
+    rxpos = h_builder.rx_positions;
+    o2i_loss = zeros(nF,1);
+    d_3d_in = 0;
+    nP = size( rxpos, 2 );
+    oP = ones(1,nP);
+    use_track = false;
+    
+elseif isa(evaltrack, 'qd_track')
     
     % Calculate the rx-position for each snapshot on the evaltrack
     initial_position = evaltrack.initial_position;
@@ -114,9 +120,10 @@ if exist( 'evaltrack','var' ) && ~isempty(evaltrack)
     nP = size( rxpos,2 );
     oP = ones(1,nP);
     use_track = true;
-else
+  
+else % We a 3xN vector of positions
+    rxpos = evaltrack;
     evaltrack = [];
-    rxpos = h_builder.rx_positions;
     o2i_loss = zeros(nF,1);
     d_3d_in = 0;
     nP = size( rxpos, 2 );
@@ -133,7 +140,9 @@ end
 
 % Get the tx_position(s)
 if ~exist('txpos','var') || isempty( txpos )
-    if any( size( h_builder.tx_position ) ~= [3,nP] )
+    if all( size( h_builder.tx_position ) == [3,1] )
+        txpos = repmat( h_builder.tx_position,1,nP );
+    elseif any( size( h_builder.tx_position ) ~= [3,nP] )
         error('QuaDRiGa:qd_builder:get_pl','Tx-position is ambiguous');
     else
         txpos = h_builder.tx_position;
@@ -297,19 +306,20 @@ if isfield( par , 'model' )
             hMS(hMS < 0.1) = 0.1;
             
             % Breakpoint Distance
-            BP = par.E * CenterFrequency * ((hBS - par.hE) .* (hMS - par.hE));
+            dBP    = par.E * CenterFrequency * ((hBS - par.hE) .* (hMS - par.hE));
+            dBP_3D = sqrt( dBP.^2 + repmat( (hBS-hMS).^2, nF, 1 ) );
             
-            loss     = par.A1*log10( d_3d ) + par.B + par.C*log10( CenterFrequency )*oP + par.D*d_3d;
-            loss_dBP = par.A1*log10(   BP ) + par.B + par.C*log10( CenterFrequency )*oP + par.D*BP;
-            loss_2   = loss_dBP + par.A2*log10( d_3d ./ BP );
-            
-            loss( d_2d>BP ) = loss_2( d_2d>BP );
+            % Path loss
+            loss     = par.A1*log10( d_3d )   + par.B + par.C*log10( CenterFrequency )*oP + par.D*d_3d;
+            loss_dBP = par.A1*log10( dBP_3D ) + par.B + par.C*log10( CenterFrequency )*oP + par.D*dBP_3D;
+            loss_2   = loss_dBP + par.A2*log10( d_3d ./ dBP_3D );
+            loss( d_2d>dBP ) = loss_2( d_2d>dBP );
             
             if isfield( par,'sig1' )
-                sf_sigma( d_2d<=BP ) = par.sig1;
+                sf_sigma( d_2d<=dBP ) = par.sig1;
             end
             if isfield( par,'sig2' )
-                sf_sigma( d_2d>=BP ) = par.sig2;
+                sf_sigma( d_2d>dBP )  = par.sig2;
             end
             
         case 'tripple_slope'
@@ -320,59 +330,51 @@ if isfield( par , 'model' )
             if ~isfield( par,'A3' );    par.A3 = par.A2;        end
             if ~isfield( par,'C' );     par.C = 0;              end
             if ~isfield( par,'D' );     par.D = 0;              end
-            if ~isfield( par,'D1' );    par.D1 = par.D;         end
-            if ~isfield( par,'D2' );    par.D2 = par.D1;        end
+            if ~isfield( par,'E1' );    par.E1 = par.E;         end
+            if ~isfield( par,'E2' );    par.E2 = par.E1;        end
             if ~isfield( par,'hE1' );   par.hE1 = 0;            end
             if ~isfield( par,'hE2' );   par.hE2 = 0;            end
             
-            hE = max(par.hE1,par.hE2);
+            hBS = txpos(3,:);           % BS height
+            hBS(hBS < 1.1*par.hE1) = 1.1*par.hE1;
+            hBS(hBS < 1.1*par.hE2) = 1.1*par.hE2;
+            hBS(hBS < 0.1) = 0.1;
             
-            hBS = txpos(3,:);
-            hBS(hBS < hE) = 1.1*hE;
+            hMS = rxpos(3,:);           % MS height
+            hMS(hMS < 1.1*par.hE1) = 1.1*par.hE1;
+            hMS(hMS < 1.1*par.hE2) = 1.1*par.hE2;
+            hMS(hMS < 0.1) = 0.1;
             
-            hMS = rxpos(3,:);
-            hMS(hMS < hE) = 1.1*hE;
+            % Breakpoint Distance (2D)
+            dBP1 = par.E1 * CenterFrequency * ((hBS - par.hE1) .* (hMS - par.hE1));
+            dBP2 = par.E2 * CenterFrequency * ((hBS - par.hE2) .* (hMS - par.hE2));
+            dBP1( dBP2<dBP1 ) = dBP2( dBP2<dBP1 );
             
-            BP1 = par.E1 * CenterFrequency * ((hBS - par.hE1) .* (hMS - par.hE1));
-            BP2 = par.E2 * CenterFrequency * ((hBS - par.hE2) .* (hMS - par.hE2));
+            % Path length at BP distance (3D)
+            dBP1_3D = sqrt( dBP1.^2 + repmat( (hBS-hMS).^2, nF, 1 ) );
+            dBP2_3D = sqrt( dBP2.^2 + repmat( (hBS-hMS).^2, nF, 1 ) );
             
-            % Copy hMS for multiple frequencies
-            hMS = oF * hMS;
-            hBS = oF * hBS;
+            % Path Loss at BP distance (dB)
+            loss_dBP1 = par.A1*log10( dBP1_3D ) + par.B + par.C*log10( CenterFrequency )*oP + par.D*dBP1_3D;
+            loss_dBP2 = loss_dBP1 + par.A2*log10( dBP2_3D ./ dBP1_3D );
             
-            % First Slope
-            ind = d_2d <= BP1;
-            if any(ind(:)) % for users < break point
-                frq_dep = par.C*log10(CenterFrequency) * oP;
-                loss(ind) = par.A1*log10(d_3d(ind)) + par.B + frq_dep( ind );
-                if isfield( par,'sig1' )
-                    sf_sigma(ind) = par.sig1;
-                end
+            % Path loss
+            loss     = par.A1*log10( d_3d ) + par.B + par.C*log10( CenterFrequency )*oP + par.D*d_3d;
+            loss_2   = loss_dBP1 + par.A2*log10( d_3d ./ dBP1_3D );
+            loss_3   = loss_dBP2 + par.A3*log10( d_3d ./ dBP2_3D );
+            
+            loss( d_2d>dBP1 & d_2d<=dBP2 ) = loss_2( d_2d>dBP1 & d_2d<=dBP2 );
+            loss( d_2d>dBP2 ) = loss_3( d_2d>dBP2 );
+            
+            % Scaling of the SF
+            if isfield( par,'sig1' )
+                sf_sigma( d_2d<=dBP1 ) = par.sig1;
             end
-            
-            % Second Slope
-            ind = d_2d > BP1 & d_2d <= BP2;
-            if any(ind(:)) % for users in between break points
-                frq_dep = par.C*log10(CenterFrequency) * oP;
-                loss(ind) = par.A2*log10(d_3d(ind)) + ...
-                    par.B + frq_dep( ind ) + ...
-                    par.D1*log10(BP1(ind).^2 + (hBS(ind) - hMS(ind)).^2);
-                if isfield( par,'sig2' )
-                    sf_sigma(ind) = par.sig2;
-                end
+            if isfield( par,'sig2' )
+                sf_sigma( d_2d>dBP1 & d_2d<=dBP2 ) = par.sig2;
             end
-            
-            % Third Slope
-            ind = d_2d > BP2;
-            if any(ind(:)) % for users > break point 2
-                frq_dep = par.C*log10(CenterFrequency) * oP;
-                loss(ind) = par.A3*log10(d_3d(ind)) + ...
-                    par.B + frq_dep( ind ) + ...
-                    par.D1*log10(BP1(ind).^2 + (hBS(ind) - hMS(ind)).^2) + ...
-                    par.D2*log10(BP2(ind).^2 + (hBS(ind) - hMS(ind)).^2);
-                if isfield( par,'sig3' )
-                    sf_sigma(ind) = par.sig3;
-                end
+            if isfield( par,'sig3' )
+                sf_sigma( d_2d>dBP2 ) = par.sig3;
             end
             
         case 'nlos'

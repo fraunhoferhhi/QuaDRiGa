@@ -19,9 +19,57 @@ classdef qd_builder < handle
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
 properties
-    name = '';                  % Name of the parameter set object
+    name = '';                              % Name of the 'qd_builder' object
+    simpar = qd_simulation_parameters;    	% Object of class 'qd_simulation_parameters'
 end
 
+properties(Dependent,SetAccess=protected)
+    % Number of frequencies associated to the 'qd_builder' object (read-only property). 
+    %   Note that 'qd_builder.get_channels' can only process a single frequency. Use
+    %   'qd_builder.split_multi_freq'  to split the builder into multiple builders - one for each
+    %   frequency - after generating parameters.  
+    no_freq
+    
+    % Number of receiver positions associated to this 'qd_builder' object (read-only property).
+    %   Note that each segment in longer tracks is considered a new Rx position.
+    no_rx_positions
+end
+
+properties
+    % Indicates if the builder is a dual-mobility builder
+    dual_mobility = -1;
+    
+    % The 3D transmitter (TX) positions in metric Cartesian coordinates.
+    %   Dimensions: [ 1,1 ] or [ 3, no_rx_positions ] 
+    tx_position = [];
+
+    %  Handles of 'qd_track' objects for each TX.
+    %   This property is only required for dual-mobility simulations. For single-mobility, it can be
+    %   omitted. However, it is possible to change the TX antenna orientation by setting 
+    %   'tx_track.orientation' even for single-mobility scenarios.
+    %   Dimensions: [ ] or [ 1,1 ] or [ no_freq, no_rx_positions ] 
+    tx_track = [];
+    
+    % Transmit array antenna definitions. 
+    %   Handles of qd_arrayant objects for each TX-RX Link.
+    %   Dimensions: [ 1,1 ] or [ no_freq, no_rx_positions ]
+    tx_array = []; 
+    
+    % The 3D receiver (RX) positions in metric Cartesian coordinates. 
+    %   This variable is obtained from the properties 'qd_track.initial_position' or 
+    %   'qd_layout.rx_position'. Dimensions: [ 3, no_rx_positions ]
+    rx_positions = [];
+    
+    % Handles of 'qd_track' objects for each RX. 
+    %   Dimensions: [ ] or [ no_freq, no_rx_positions ]
+    rx_track = [];
+    
+    % Receive array antenna definitions. 
+    %   Handles of 'qd_arrayant ' objects for each TX-RX-link. 
+    %   Dimensions: [ no_freq, no_rx_positions ]
+    rx_array = [];
+end
+    
 properties(Dependent)
     scenario                    % The name of the scenario (text string)
     scenpar                     % The parameter table
@@ -29,20 +77,18 @@ end
 
 properties
     plpar = [];                 % Parameters for the path loss (scenario-dependent)
+end    
+
+properties(Dependent,SetAccess=protected)
+    lsp_vals                    % The distribution values of the LSPs
+    lsp_xcorr_chk               % Indicator if cross-correlation matrix is positive definite
+end
+
+properties(Dependent)
+    lsp_xcorr                   % The cross-correlation matrix for the LSPs
+end
     
-    simpar = qd_simulation_parameters;    	% Object of class qd_simulation_parameters
-    tx_array = [];              % Handles of qd_arrayant objects for each Tx
-    rx_array = [];              % Handles of qd_arrayant objects for each Rx
-    tx_track = [];              % Handles of Track objects for each Tx
-    rx_track = [];              % Handles of Track objects for each Rx
-    
-    % The transmitter position obtained from the corresponding 'layout.tx_position'
-    tx_position = [];
-    
-    % The list of initial positions for which LSPs are generated
-    %   This variable is obtained from 'track.initial_position' and 'layout.rx_position'
-    rx_positions = [];
-    
+properties
     sos = [];                  	% The large-scale parameter SOS generators
     path_sos = [];              % The SOS generators for the generation of MPCs
     xpr_sos = [];               % The SOS generators for the generation of the linear NLOS polarization
@@ -50,6 +96,11 @@ properties
     clst_dl_sos = [];           % The SOS generators for the generation per-cluster delay offsets
     gr_sos = [];                % The SOS generator for the ground reflection coefficient
     absTOA_sos = [];            % The SOS generator for the absolute time-of-arrival offset
+    
+    % A list of random number used to determine for the mutual coupling of subpaths at the Tx and Rx.
+    %   The dimensions correspond to the angle (AoD, AoA, EoD, EoA), the path index and the number
+    %   of frequencies.
+    subpath_coupling = [];
     
     ds = [];                    % The RMS delay spread in [s] for each receiver position
     kf = [];                    % The Rician K-Factor [linear scale] for each receiver position
@@ -60,59 +111,50 @@ properties
     esA = [];                   % The elevation spread of arrival in [deg] for each receiver position
     xpr  = [];                  % The cross polarization ratio [linear scale] for each receiver position
     gr_epsilon_r = [];          % The relative permittivity for the ground reflection
-    absTOA_offset = [];         % The absolute time-of-arrival offset
+    absTOA_offset = [];         % The absolute time-of-arrival offset in [s]
     
-    NumClusters                 % The number of clusters.
-    NumSubPaths                 % The number of sub-paths per cluster
+    NumClusters = [];           % The number of clusters, including LOS and ground-reflection (optional) paths.
     
-    % The initial delays for each path in [s]. Rows correspond to the
-    % MTs, columns to the paths.
-    taus
+    % The number of sub-paths for each cluster.
+    %   Note that the LOS path is always present in QuaDRiGa and it can only have one subpath.
+    %   Dimensions: [ 1, NumClusters ]
+    NumSubPaths = [];
     
-    % The normalized initial power (squared average amplitude) for each path. Rows correspond to the
-    % MT, columns to the paths. The sum over all columns must be 1.
-    pow
+    % The delays for each cluster in [s] relative to the LOS delay 
+    %   (i.e. the first delay is always zero. Dimensions: [ no_rx_positions, NumClusters ]. 
+    %   If the scenario parameters define a value for 'PerClusterDS_gamma', i.e. a
+    %   frequency-dependence for the cluster-DS, the dimensions are [ no_rx_positions, NumClusters, no_freq ] 
+    taus = [];
     
-    AoD                         % The initial azimuth of departure angles for each path in [rad].
-    AoA                         % The initial azimuth of arrival angles for each path in [rad].
-    EoD                         % The initial elevation of departure angles for each path in [rad].
-    EoA                         % The initial elevation of departure angles for each path in [rad].
-    
-    % The polarization rotation angle for the lineaar XPR in [rad]. 
-    % For 3GPP baseline simulations, this property stores the per-path XPR (linear units).
-    gamma
-    
-    % The phase offset angle for the circular XPR in [rad]. 
-    % For 3GPP baseline simulations, this property stores the initial random phases. The dimensions
-    % correspond to polarization matrix index  '[ 1 3 ; 2 4 ]', the subpath number and the MT.
-    kappa
-    
-    pin                         % The initial phases in [rad] for each sub-path.
-    
-    % A random index list for the mutual coupling of subpaths at the Tx
-    % and Rx. The dimensions correspond to the subpath index (1-20),
-    % the angle (AoD, AoA, EoD, EoA), the path number and the MT.
-    subpath_coupling
-    
-    fbs_pos = [];               % The positions of the first-bounce scatterers
-    lbs_pos = [];               % The positions of the last-bounce scatterers
-    
-    % Indicates if the builder is a dual-mobility builder
-    dual_mobility = -1;
+    % The absolute path-gain for each cluster (linear values).
+    %   This variable combines the normalized cluster-powers pow, the scenario-dependent total path
+    %   gain given by plpar and the shadow fading sf. Changes made to gain will simultaneously
+    %   adjust pow and sf. Dimensions: [ no_rx_positions, NumClusters, no_freq ]
+    gain = [];
 end
-
-properties(Dependent,SetAccess=protected)
-    % Number of receiver positions associated to this 'parameter_set' object
-    %   Note that each segment in longer tracks is considered a new Rx
-    %   position.
-    no_rx_positions
     
-    lsp_vals                    % The distribution values of the LSPs
-    lsp_xcorr_chk               % Indicator if cross-correlation matrix is positive definite
-end
-
 properties(Dependent)
-    lsp_xcorr                   % The cross-correlation matrix for the LSPs
+    % The normalized cluster-powers (squared average amplitude) for each cluster. 
+    %   The sum over all clusters is 1. Changes made to pow will simultaneously adjust the absolute
+    %   path-gain. Dimensions: [ no_rx_positions, NumClusters, no_freq ]
+    pow
+end
+
+properties
+    AoD = [];                  	% The initial azimuth of departure angles for each path in [rad].
+    AoA = [];                 	% The initial azimuth of arrival angles for each path in [rad].
+    EoD = [];                 	% The initial elevation of departure angles for each path in [rad].
+    EoA = [];                 	% The initial elevation of departure angles for each path in [rad].
+    
+    % The complex-valued polarization transfer matrix 
+    %   describing the polarization change during scattering. The dimensions correspond to
+    %   polarization matrix index  '[1 3 ; 2 4]' and the subpath number.  
+    xprmat = [];
+    
+    pin = [];                 	% The initial phases in [rad] for each sub-path.
+    
+    fbs_pos = [];               % The positions of the first-bounce scatterers in 3D Cartesian coordinates.
+    lbs_pos = [];               % The positions of the last-bounce scatterers in 3D Cartesian coordinates.
 end
 
 properties(Dependent,Hidden)
@@ -124,6 +166,7 @@ properties(Access=private)
     Pscenario               = '';
     Pscenpar                = [];
     pow_wo_kf
+    Ppow = [];
 end
 
 properties(Hidden)
@@ -156,6 +199,12 @@ methods
     end
     
     % Get functions
+    function out = get.no_freq(h_builder)
+        out = numel( h_builder.simpar(1,1).center_frequency );
+    end
+    function out = get.no_rx_positions(h_builder)
+        out = size( h_builder.rx_positions,2 );
+    end
     function out = get.scenario(h_builder)
         out = h_builder.Pscenario;
     end
@@ -165,15 +214,28 @@ methods
     function out = get.scenpar_nocheck(h_builder)
         out = h_builder.Pscenpar;
     end
-    function out = get.no_rx_positions(h_builder)
-        out = size( h_builder.rx_positions,2 );
+    function out = get.pow(h_builder)
+        no_rx = h_builder.no_rx_positions;
+        no_fr = h_builder.no_freq;
+        no_cl = size(h_builder.gain,2);
+        if h_builder.no_rx_positions == 0 || isempty( h_builder.gain )
+            out = [];
+        else
+            PL = h_builder.get_pl;
+            SF = h_builder.sf;
+            if isempty( SF )
+                out = h_builder.gain ./ repmat(reshape(10.^(-0.1*PL.'),no_rx,1,no_fr),[1,no_cl,1]);
+            else
+                out = h_builder.gain ./ repmat(reshape(10.^(-0.1*PL.').*SF.',no_rx,1,no_fr),[1,no_cl,1]);
+            end
+        end
     end
     function out = get.lsp_vals(h_builder)
         if isempty( h_builder.Pscenpar )
             out = [];
         else
             % Carrier frequency in GHz
-            f_GHz = h_builder.simpar.center_frequency / 1e9;
+            f_GHz = h_builder.simpar(1,1).center_frequency / 1e9;
             oF = ones( 1,numel( f_GHz ));
             o8 = ones( 8,1 );
             
@@ -319,6 +381,34 @@ methods
         h_builder.Pscenpar = value;
     end
     
+    function set.pow(h_builder,value)
+        if ~isempty( value )
+            no_rx = h_builder.no_rx_positions;
+            no_fr = h_builder.no_freq;
+            no_cl = size(value,2);
+            if size( value,1 ) == 1 && no_rx > 1
+                value = repmat( value, [no_rx,1,1] );
+            elseif size( value,1 ) ~= no_rx
+                error('QuaDRiGa:qd_builder:WrongInput','Number of rows in "pow" must match number of RX in builder.')
+            end
+            if size( value,3 ) == 1 && no_fr > 1
+                value = repmat( value, [1,1,no_fr] );
+            elseif size( value,3 ) ~= no_fr
+                error('QuaDRiGa:qd_builder:WrongInput',...
+                    'Number of 3rd-dimension elements in "pow" must match number of frequencies in builder.')
+            end
+            value = value ./ repmat( sum(value,2), [1,no_cl,1]);     % Normlaize to sum-power = 1
+            PL = h_builder.get_pl;
+            SF = h_builder.sf;
+            if isempty( SF )
+                value = value .* repmat(reshape(10.^(-0.1*PL.'),no_rx,1,no_fr),[1,no_cl,1]);
+            else
+                value = value .* repmat(reshape(10.^(-0.1*PL.').*SF.',no_rx,1,no_fr),[1,no_cl,1]);
+            end
+        end
+        h_builder.gain = value;
+    end
+    
     function set.lsp_xcorr(h_builder,value)
         if any( size( value ) ~= 8 )
             error('QuaDRiGa:qd_builder:WrongInput','??? "lsp_xcorr" must be a 8x8 matrix.')
@@ -363,15 +453,15 @@ methods(Static)
         asa, esd, esa, cas_factor, sample_density )
 end
 
-methods % Legacy parameter generation functions
-    function gen_lsf_parameters( h_builder , force )   % Legacy "gen_lsf_parameters"
-        if exist('force','var') && force(1)
-            gen_parameters( h_builder, 0 );  % Reset all
-        end
-        gen_parameters( h_builder, 1 );
-    end
-    function gen_ssf_parameters( h_builder )  % Legacy "gen_ssf_parameters"
-        gen_parameters( h_builder );
-    end
-end
+% methods % Legacy parameter generation functions
+%     function gen_lsf_parameters( h_builder , force )   % Legacy "gen_lsf_parameters"
+%         if exist('force','var') && force(1)
+%             gen_parameters( h_builder, 0 );  % Reset all
+%         end
+%         gen_parameters( h_builder, 1 );
+%     end
+%     function gen_ssf_parameters( h_builder )  % Legacy "gen_ssf_parameters"
+%         gen_parameters( h_builder );
+%     end
+% end
 end

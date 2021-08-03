@@ -90,10 +90,10 @@ for i_sp = 1:numel( splt )
         
         if isempty( h_channel(1,1).coeff ) && ~isfield( h_channel(1,1).par, 'cluster_ind' )
             tmp = fieldnames( h_channel(1,1).par );
-            tmp = size(h_channel(1,1).par.(tmp{1}),2);
+            tmp = size(h_channel(1,1).par(1).(tmp{1}),2);
             i_clst = 1:tmp;
         elseif isfield( h_channel(1,1).par, 'cluster_ind' )
-            i_clst = h_channel(1,1).par.cluster_ind;
+            i_clst = h_channel(1,1).par(1).cluster_ind;
         else
             i_clst = [];
         end
@@ -105,20 +105,22 @@ for i_sp = 1:numel( splt )
             
             % Reduced fields
             fields = fieldnames( h_channel(1,1).par );
-            for i_field = 1 : numel( fields )
-                dat = h_channel(1,1).par.( fields{ i_field } );
-                if size( dat,2 ) == n_snap
-                    chan_out( 1,i_sp ).par.( fields{ i_field } ) = dat( :,snap );
-                elseif size( dat,2 ) == n_clst
-                    clst = unique( i_clst( 1,snap ) );
-                    chan_out( 1,i_sp ).par.( fields{ i_field } ) = dat( :,clst );
+            if numel( fields ) > 0
+                chan_out_par = struct;
+                for i_field = 1 : numel( fields )
+                    dat = h_channel(1,1).par.( fields{ i_field } );
+                    if size( dat,2 ) == n_snap
+                        chan_out_par.( fields{ i_field } ) = dat( :,snap );
+                    elseif size( dat,2 ) == n_clst
+                        clst = unique( i_clst( 1,snap ) );
+                        chan_out_par.( fields{ i_field } ) = dat( :,clst );
+                    end
                 end
-            end
-            
-            % Update snapshot indices
-            if isfield( chan_out( 1,i_sp ).par, 'cluster_ind' )
-                chan_out( 1,i_sp ).par.cluster_snap =...
-                    [1 find( diff( chan_out( 1,i_sp ).par.cluster_ind ) )+1];
+                % Update snapshot indices
+                if isfield( chan_out_par, 'cluster_ind' )
+                    chan_out_par.cluster_snap = [1 find( diff( chan_out_par.cluster_ind ) )+1];
+                end
+                chan_out( 1,i_sp ).par = chan_out_par;
             end
         end
     end

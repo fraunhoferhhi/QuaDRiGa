@@ -140,7 +140,7 @@ switch method
         end
         
         % Test for multi-frequency simulations
-        if numel( h_layout.simpar.center_frequency ) > 1
+        if numel( h_layout.simpar(1,1).center_frequency ) > 1
             error('??? Multi-frequency simulations are not allowed when pairing by "power".')
         end
         

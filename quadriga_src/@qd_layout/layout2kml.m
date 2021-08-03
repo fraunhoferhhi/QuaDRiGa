@@ -1,5 +1,5 @@
 function layout2kml( h_layout , fn , reference_coord, embed_antennas, use_description, split_segments, absolute_altitude )
-%LAYOUT2KML Exports a layout object to a KML file 
+%LAYOUT2KML Exports a layout object to a KML file
 %
 % Calling object:
 %   Single object
@@ -41,9 +41,11 @@ function layout2kml( h_layout , fn , reference_coord, embed_antennas, use_descri
 %   not defined, segment splitting is disabled.
 %
 %   absolute_altitude
-%   If set to true, heights are stored relative to sea level. 
-% 
-% QuaDRiGa Copyright (C) 2011-2019
+%   Boolean value (optional). By default (0), heights are stored relative to the ground height. If
+%   set to true, heights are stored relative to sea level.
+%
+%
+% QuaDRiGa Copyright (C) 2011-2021
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -56,9 +58,9 @@ function layout2kml( h_layout , fn , reference_coord, embed_antennas, use_descri
 % contributors "AS IS" and WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES, including but not limited to
 % the implied warranties of merchantability and fitness for a particular purpose.
 %
-% You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for 
+% You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
-% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
+% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 if ~exist('reference_coord','var') || isempty( reference_coord )
     reference_coord_trx = cat(1,h_layout.tx_track.ReferenceCoord);
@@ -96,6 +98,23 @@ elseif size( split_segments,2 ) ~= 4
         '"split_segments" must have 4 elements.');
 end
 
+% Fix for Octave
+h_layout = h_layout(1,1);
+
+% Make sure, all variables are double precision
+tx_track_all = h_layout.tx_track;
+rx_track_all = h_layout.rx_track;
+for n = 1 : h_layout.no_tx
+    tx_track_all(1,n).initial_position = double( tx_track_all(1,n).initial_position );
+    tx_track_all(1,n).positions = double( tx_track_all(1,n).positions );
+end
+for n = 1 : h_layout.no_rx
+    rx_track_all(1,n).initial_position = double( rx_track_all(1,n).initial_position );
+    rx_track_all(1,n).positions = double( rx_track_all(1,n).positions );
+end
+h_layout.tx_track = tx_track_all;
+h_layout.rx_track = rx_track_all;
+h_layout.simpar(1,1).center_frequency = double( h_layout.simpar.center_frequency );
 
 % Process antennas
 a = qd_arrayant([]);                                            % Empy array of qd_arrayant objects
@@ -164,7 +183,7 @@ else
     fprintf(f,'\t<ExtendedData>\n');
 end
 
-val = sprintf('%1.14g,',h_layout.simpar.center_frequency);      % CenterFrequency
+val = sprintf('%1.14g,',h_layout.simpar(1,1).center_frequency);      % CenterFrequency
 if use_description
     fprintf(f,['CenterFrequency = ',val(1:end-1),'\n']);
 else
@@ -176,12 +195,12 @@ end
 % Check if all tracks have the movement profile enabled
 use_update_rate = true;
 for n = 1 : h_layout.no_tx
-    if h_layout.tx_track(1,n).no_snapshots > 1 && isempty( h_layout.tx_track(1,n).movement_profile )
+    if tx_track_all(1,n).no_snapshots > 1 && isempty( tx_track_all(1,n).movement_profile )
         use_update_rate = false;
     end
 end
 for n = 1 : h_layout.no_rx
-    if h_layout.rx_track(1,n).no_snapshots > 1 && isempty( h_layout.rx_track(1,n).movement_profile )
+    if rx_track_all(1,n).no_snapshots > 1 && isempty( rx_track_all(1,n).movement_profile )
         use_update_rate = false;
     end
 end
@@ -199,7 +218,7 @@ elseif ~isempty( h_layout.update_rate )
     end
 end
 
-val = sprintf('%1.14g',h_layout.simpar.sample_density);
+val = sprintf('%1.14g',h_layout.simpar(1,1).sample_density);
 if use_description
     fprintf(f,['SampleDensity = ',val,'\n']);
 else
@@ -208,7 +227,7 @@ else
     fprintf(f,'</Data>\n');
 end
 
-val = sprintf('%u',h_layout.simpar.use_absolute_delays);
+val = sprintf('%u',h_layout.simpar(1,1).use_absolute_delays);
 if use_description
     fprintf(f,['AbsoluteDelays = ',val,'\n']);
 else
@@ -217,7 +236,7 @@ else
     fprintf(f,'</Data>\n');
 end
 
-val = sprintf('%u',h_layout.simpar.use_random_initial_phase);
+val = sprintf('%u',h_layout.simpar(1,1).use_random_initial_phase);
 if use_description
     fprintf(f,['RandInitPhase = ',val,'\n']);
 else
@@ -226,7 +245,7 @@ else
     fprintf(f,'</Data>\n');
 end
 
-val = sprintf('%u',h_layout.simpar.use_3GPP_baseline);
+val = sprintf('%u',h_layout.simpar(1,1).use_3GPP_baseline);
 if use_description
     fprintf(f,['Baseline3GPP = ',val,'\n']);
 else
@@ -235,7 +254,7 @@ else
     fprintf(f,'</Data>\n');
 end
 
-val = sprintf('%u',h_layout.simpar.show_progress_bars);
+val = sprintf('%u',h_layout.simpar(1,1).show_progress_bars);
 if use_description
     fprintf(f,['ProgressReport = ',val,'\n']);
 else
@@ -245,10 +264,10 @@ else
 end
 
 if use_description
-    fprintf(f,['AutoCorrFcn = ',h_layout.simpar.autocorrelation_function,'\n']);
+    fprintf(f,['AutoCorrFcn = ',h_layout.simpar(1,1).autocorrelation_function,'\n']);
 else
     fprintf(f,'\t\t<Data name="AutoCorrFcn">');
-    fprintf(f,['<value>',h_layout.simpar.autocorrelation_function,'</value>']);
+    fprintf(f,['<value>',h_layout.simpar(1,1).autocorrelation_function,'</value>']);
     fprintf(f,'</Data>\n');
 end
 
@@ -291,16 +310,16 @@ end
 for n = 1 : h_layout.no_tx
     fprintf(f,'\t<Placemark>\n');
     
-    str = h_layout.tx_track(1,n).name;
+    str = tx_track_all(1,n).name;
     str = regexprep(str,'\_','-');
     str = ['tx_' ,str ];
     fprintf(f,['\t\t<name>',str,'</name>\n']);
     
     ExtendedData = false;
-    if any( abs( h_layout.tx_track(1,n).orientation(:) ) > 1e-7 )
+    if any( abs( tx_track_all(1,n).orientation(:) ) > 1e-7 )
         ExtendedData = true;
     end
-    if ~isempty( h_layout.tx_track(1,n).movement_profile )
+    if ~isempty( tx_track_all(1,n).movement_profile )
         ExtendedData = true;
     end
     if any( a_txind(:,n) ~= 0 )
@@ -339,8 +358,8 @@ for n = 1 : h_layout.no_tx
                 fprintf(f,'</value></Data>\n');
             end
         end
-        if any( abs( h_layout.tx_track(1,n).orientation(1,:) ) > 1e-7 )
-            val = sprintf('%1.8g,',h_layout.tx_track(1,n).orientation(1,:)*180/pi);
+        if any( abs( tx_track_all(1,n).orientation(1,:) ) > 1e-7 )
+            val = sprintf('%1.8g,',tx_track_all(1,n).orientation(1,:)*180/pi);
             if use_description
                 fprintf(f,['Bank = ',val(1:end-1),'\n']);
             else
@@ -349,8 +368,8 @@ for n = 1 : h_layout.no_tx
                 fprintf(f,'</Data>\n');
             end
         end
-        if any( abs( h_layout.tx_track(1,n).orientation(2,:) ) > 1e-7 )
-            val = sprintf('%1.8g,',h_layout.tx_track(1,n).orientation(2,:)*180/pi);
+        if any( abs( tx_track_all(1,n).orientation(2,:) ) > 1e-7 )
+            val = sprintf('%1.8g,',tx_track_all(1,n).orientation(2,:)*180/pi);
             if use_description
                 fprintf(f,['Tilt = ',val(1:end-1),'\n']);
             else
@@ -359,8 +378,8 @@ for n = 1 : h_layout.no_tx
                 fprintf(f,'</Data>\n');
             end
         end
-        if any( abs( h_layout.tx_track(1,n).orientation(3,:) ) > 1e-7 )
-            val = sprintf('%1.8g,',h_layout.tx_track(1,n).orientation(3,:)*180/pi);
+        if any( abs( tx_track_all(1,n).orientation(3,:) ) > 1e-7 )
+            val = sprintf('%1.8g,',tx_track_all(1,n).orientation(3,:)*180/pi);
             if use_description
                 fprintf(f,['Heading = ',val(1:end-1),'\n']);
             else
@@ -369,8 +388,8 @@ for n = 1 : h_layout.no_tx
                 fprintf(f,'</Data>\n');
             end
         end
-        if ~isempty( h_layout.tx_track(1,n).movement_profile )
-            val = sprintf('%1.8g,',h_layout.tx_track(1,n).movement_profile(1,:));
+        if ~isempty( tx_track_all(1,n).movement_profile )
+            val = sprintf('%1.8g,',tx_track_all(1,n).movement_profile(1,:));
             if use_description
                 fprintf(f,['Time = ',val(1:end-1),'\n']);
             else
@@ -379,7 +398,7 @@ for n = 1 : h_layout.no_tx
                 fprintf(f,'</Data>\n');
             end
             
-            val = sprintf('%1.12g,',h_layout.tx_track(1,n).movement_profile(2,:));
+            val = sprintf('%1.12g,',tx_track_all(1,n).movement_profile(2,:));
             if use_description
                 fprintf(f,['Distance = ',val(1:end-1),'\n']);
             else
@@ -395,14 +414,14 @@ for n = 1 : h_layout.no_tx
         end
     end
     
-    pos = h_layout.tx_track(1,n).positions_abs;
+    pos = tx_track_all(1,n).positions_abs;
     [ pos(1,:), pos(2,:), pos(3,:) ] = trans_ue2global( pos, reference_coord );
     coordinates = sprintf('%1.14g,%1.14g,%1.14g ',pos);
     if any(pos(3,:) > 1000)
         absolute_altitude = true;
     end
     
-    if h_layout.tx_track(1,n).no_snapshots == 1
+    if tx_track_all(1,n).no_snapshots == 1
         fprintf(f,'\t\t<Point>\n');
         if absolute_altitude
             fprintf(f,'\t\t\t<extrude>1</extrude><altitudeMode>absolute</altitudeMode>\n');
@@ -428,16 +447,16 @@ end
 for n = 1 : h_layout.no_rx
     fprintf(f,'\t<Placemark>\n');
     
-    rx_name_str = h_layout.rx_name{n};
+    rx_name_str = rx_track_all(1,n).name;
     rx_name_str = regexprep(rx_name_str,'\_','-');
     rx_name_str = ['rx_' ,rx_name_str ];
     fprintf(f,['\t\t<name>',rx_name_str,'</name>\n']);
     
     ExtendedData = false;
-    if any( abs( h_layout.rx_track(1,n).orientation(:) ) > 1e-7 )
+    if any( abs( rx_track_all(1,n).orientation(:) ) > 1e-7 )
         ExtendedData = true;
     end
-    if ~isempty( h_layout.rx_track(1,n).movement_profile )
+    if ~isempty( rx_track_all(1,n).movement_profile )
         ExtendedData = true;
     end
     if any( a_rxind(:,n) ~= 0 )
@@ -445,7 +464,7 @@ for n = 1 : h_layout.no_rx
     end
     
     % Save orientation data (only if different from Default values, in DEG)
-    rx_track = h_layout.rx_track(1,n);
+    rx_track = rx_track_all(1,n);
     if ExtendedData
         if use_description
             fprintf(f,'\t\t<description>\n');
@@ -540,14 +559,14 @@ for n = 1 : h_layout.no_rx
         end
     end
     
-	pos = h_layout.rx_track(1,n).positions_abs;
+    pos = rx_track_all(1,n).positions_abs;
     [ pos(1,:), pos(2,:), pos(3,:) ] = trans_ue2global( pos, reference_coord );
     coordinates = sprintf('%1.12g,%1.12g,%1.12g ',pos);
     if any(pos(3,:) > 1000)
         absolute_altitude = true;
     end
     
-    if h_layout.rx_track(1,n).no_snapshots == 1
+    if rx_track_all(1,n).no_snapshots == 1
         fprintf(f,'\t\t<Point>\n');
         if absolute_altitude
             fprintf(f,'\t\t\t<extrude>1</extrude><altitudeMode>absolute</altitudeMode>\n');
@@ -570,65 +589,71 @@ for n = 1 : h_layout.no_rx
     
     % Save segments and scenarios
     ntx = size(rx_track.scenario,1);
-    for m = 1 : rx_track.no_segments
-        fprintf(f,'\t<Placemark>\n');
-        
-        % Set name string
-        str = 'seg_';
-        for o = 1 : ntx
-            if sum( h_layout.pairing(2,:) == n & h_layout.pairing(1,:) == o) == 1
-                str = [str , rx_track.scenario{o,m} , ':' ];
+    if ~( rx_track.no_segments == 1 && numel( rx_track.scenario ) == 1 && isempty( rx_track.scenario{1,1} ) )
+        for m = 1 : rx_track.no_segments
+            fprintf(f,'\t<Placemark>\n');
+            
+            % Set name string
+            if ntx == 1
+                str = ['seg_',rx_track.scenario{1,m}];
             else
-                str = [str , '-' , ':' ];
+                str = 'seg_';
+                for o = 1 : ntx
+                    if sum( h_layout.pairing(2,:) == n & h_layout.pairing(1,:) == o) == 1
+                        str = [str , rx_track.scenario{o,m} , ':' ];
+                    else
+                        str = [str , '-' , ':' ];
+                    end
+                end
+                str = str(1:end-1);
             end
+            fprintf(f,['\t\t<name>',str,'</name>\n']);
+            
+            if use_description
+                fprintf(f,'\t\t<description>\n');
+            else
+                fprintf(f,'\t\t<ExtendedData>\n');
+            end
+            
+            if use_description
+                fprintf(f,['Track = ',rx_name_str,'\n']);
+            else
+                fprintf(f,'\t\t\t<Data name="Track">');
+                fprintf(f,['<value>',rx_name_str,'</value>']);
+                fprintf(f,'</Data>\n');
+            end
+            val = sprintf('%d',rx_track.segment_index(m));
+            if use_description
+                fprintf(f,['Index = ',val,'\n']);
+            else
+                fprintf(f,'\t\t\t<Data name="Index">');
+                fprintf(f,['<value>',val,'</value>']);
+                fprintf(f,'</Data>\n');
+            end
+            
+            if use_description
+                fprintf(f,'\t\t</description>\n');
+            else
+                fprintf(f,'\t\t</ExtendedData>\n');
+            end
+            
+            pos = rx_track.positions( :,rx_track.segment_index(m) ) + rx_track.initial_position;
+            [ pos(1,:), pos(2,:), pos(3,:) ] = trans_ue2global( pos, reference_coord );
+            coordinates = sprintf('%1.14g,%1.14g,%1.14g ',pos);
+            if any(pos(3,:) > 1000)
+                absolute_altitude = true;
+            end
+            
+            fprintf(f,'\t\t<Point>\n');
+            if absolute_altitude
+                fprintf(f,'\t\t\t<altitudeMode>absolute</altitudeMode>\n');
+            else
+                fprintf(f,'\t\t\t<altitudeMode>relativeToGround</altitudeMode>\n');
+            end
+            fprintf(f,['\t\t\t<coordinates>',coordinates(1:end-1),'</coordinates>\n']);
+            fprintf(f,'\t\t</Point>\n');
+            fprintf(f,'\t</Placemark>\n');
         end
-        str = str(1:end-1);
-        fprintf(f,['\t\t<name>',str,'</name>\n']);
-        
-        if use_description
-            fprintf(f,'\t\t<description>\n');
-        else
-            fprintf(f,'\t\t<ExtendedData>\n');
-        end
-        
-        if use_description
-            fprintf(f,['Track = ',rx_name_str,'\n']);
-        else
-            fprintf(f,'\t\t\t<Data name="Track">');
-            fprintf(f,['<value>',rx_name_str,'</value>']);
-            fprintf(f,'</Data>\n');
-        end
-        val = sprintf('%d',rx_track.segment_index(m));
-        if use_description
-            fprintf(f,['Index = ',val,'\n']);
-        else
-            fprintf(f,'\t\t\t<Data name="Index">');
-            fprintf(f,['<value>',val,'</value>']);
-            fprintf(f,'</Data>\n');
-        end
-        
-        if use_description
-            fprintf(f,'\t\t</description>\n');
-        else
-            fprintf(f,'\t\t</ExtendedData>\n');
-        end
-        
-        pos = rx_track.positions( :,rx_track.segment_index(m) ) + rx_track.initial_position;
-        [ pos(1,:), pos(2,:), pos(3,:) ] = trans_ue2global( pos, reference_coord );
-        coordinates = sprintf('%1.14g,%1.14g,%1.14g ',pos);
-        if any(pos(3,:) > 1000)
-            absolute_altitude = true;
-        end
-        
-        fprintf(f,'\t\t<Point>\n');
-        if absolute_altitude
-            fprintf(f,'\t\t\t<altitudeMode>absolute</altitudeMode>\n');
-        else
-            fprintf(f,'\t\t\t<altitudeMode>relativeToGround</altitudeMode>\n');
-        end
-        fprintf(f,['\t\t\t<coordinates>',coordinates(1:end-1),'</coordinates>\n']);
-        fprintf(f,'\t\t</Point>\n');
-        fprintf(f,'\t</Placemark>\n');
     end
 end
 

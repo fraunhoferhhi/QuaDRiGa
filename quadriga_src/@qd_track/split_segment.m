@@ -93,7 +93,7 @@ else
     h_track = h_track(1,1);
     
     seg_ind = [h_track.segment_index , h_track.no_snapshots];
-    [~,dist] = h_track.get_length;
+    [~,dist] = get_length( h_track );
     
     seg = [];
     scen = {};
@@ -184,7 +184,7 @@ else
                     
                     % Update segment parameters
                     seg_ind = [h_track.segment_index , h_track.no_snapshots];
-                    [~,dist] = h_track.get_length;
+                    [~,dist] = get_length( h_track );
                     seg_start  = seg_ind( i_seg );
                     seg_end    = seg_ind( i_seg+1 );
                     dist_seg = dist(seg_start:seg_end) - dist(seg_start);

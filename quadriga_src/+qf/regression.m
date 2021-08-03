@@ -7,7 +7,8 @@ function [ mu, sigma, R, str ] = regression( V, X, margin, round_digits, Xname, 
 % Description:
 %   This function fits the data "V" sampled at points "X":
 %
-%   V = R + Q * S R = mu(1) + mu(2) * X(1,:)+ mu(3) * x(2,:) ... 
+%   V = R + Q * S 
+%   R = mu(1) + mu(2) * X(1,:) + mu(3) * x(2,:) ... 
 %   S = sigma(1) + sigma(2) * X(1,:) + sigma(3) * x(2,:) ... 
 %
 %   V is assumed to be a random, normal-distributed variable with a mean value R and standard

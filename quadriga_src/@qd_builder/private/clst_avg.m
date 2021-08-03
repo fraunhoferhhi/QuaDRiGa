@@ -2,14 +2,14 @@ function val_clst = clst_avg( val_full, num_subpath, weight )
 %CLST_EXTRACT Average value for each sub-path 
 % 
 % Input:
-%   val_full        Data for each cluster [ N x  sum(num_subpath) x O* ]
+%   val_full        Data for each cluster [ N x  sum(num_subpath) x O ]
 %   num_subpath     Number of subpaths per cluster [ 1 x L ]
 %   weight          An optional weight vector [ N x sum(num_subpath) ]
 %
 % Output:
 %   val_clst        Average for each subpath [ N x L x O ]
 %
-% M is the number od subpaths for the selected cluster
+% M is the number of subpaths for the selected cluster
 %
 % 
 % QuaDRiGa Copyright (C) 2011-2019

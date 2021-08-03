@@ -115,8 +115,14 @@ for i_channel = 1 : n_channel
     % positions will be done.
     if isempty( h_channel(1,i_channel).par ) || ...
             ~isfield( h_channel(1,i_channel).par,'pg' ) || ...
-            isempty( h_channel(1,i_channel).par.pg )
-        h_channel(1,i_channel).par.pg = zeros( 1,h_channel( 1,i_channel ).no_snap );
+            isempty( h_channel(1,i_channel).par(1).pg )
+        if isempty( h_channel(1,i_channel).par )
+            h_channel(1,i_channel).par = struct( 'pg', zeros( 1,h_channel( 1,i_channel ).no_snap ) );
+        else
+            par = h_channel(1,i_channel).par;
+            par.pg = zeros( 1,h_channel( 1,i_channel ).no_snap );
+            h_channel(1,i_channel).par = par;
+        end
     end
 end
 
@@ -197,7 +203,9 @@ for i_trk = 1 : numel( trk_names )          % Do for each track
             coeff( :,:, ip, isn ) = h_channel( 1,ic1 ).coeff( :,:,:, is1n );
             delay( :,:, ip, isn ) = h_channel( 1,ic1 ).delay( :,:,:, is1n );
             rx_position( :,isn ) = h_channel( 1,ic1 ).rx_position( :,is1n );
-            pg( :,isn ) = h_channel( 1,ic1 ).par.pg( :,is1n );
+            try
+                pg( :,isn ) = h_channel( 1,ic1 ).par(1).pg( :,is1n );
+            end
             if dual_mobility
                 tx_position( :,isn ) = h_channel( 1,ic1 ).tx_position( :,is1n );
             end
@@ -231,9 +239,11 @@ for i_trk = 1 : numel( trk_names )          % Do for each track
                 end
                 
                 % Process path gain
-                pg1 = h_channel(1,ic1).par.pg(:,is1o);
-                pg2 = h_channel(1,ic2).par.pg(:,is2o);
-                pg( :,iso ) = pg1 .* (1-ramp) + pg2 .* ramp;
+                try
+                    pg1 = h_channel(1,ic1).par(1).pg(:,is1o);
+                    pg2 = h_channel(1,ic2).par(1).pg(:,is2o);
+                    pg( :,iso ) = pg1 .* (1-ramp) + pg2 .* ramp;
+                end
             end
         end
         
@@ -243,7 +253,9 @@ for i_trk = 1 : numel( trk_names )          % Do for each track
             coeff( :,:, ip, end ) = h_channel( 1,ic2 ).coeff( :,:,:, is2n );
             delay( :,:, ip, end ) = h_channel( 1,ic2 ).delay( :,:,:, is2n );
             rx_position( :,end ) = h_channel( 1,ic2 ).rx_position( :,is2n );
-            pg( :,end ) = h_channel( 1,ic2 ).par.pg( :,is2n );
+            try
+                pg( :,end ) = h_channel( 1,ic2 ).par(1).pg( :,is2n );
+            end
             if dual_mobility
                 tx_position( :,end ) = h_channel( 1,ic2 ).tx_position( :,is2n );
             end
@@ -265,11 +277,15 @@ for i_trk = 1 : numel( trk_names )          % Do for each track
         c(1,i_trk).rx_position = rx_position;
         c(1,i_trk).tx_position = tx_position;
         c(1,i_trk).center_frequency = h_channel(1,ic1).center_frequency;
-        if any( pg ~= 0 )
-            c(1,i_trk).par.pg = pg;
-        end
-        if trk_has_gr(i_trk)    % Indicate that the merged track has a ground reflection component
-            c(1,i_trk).par.has_ground_reflection = 1;
+        if any( pg ~= 0 ) || trk_has_gr(i_trk)
+            par_tmp = struct;
+            if any( pg ~= 0 )
+                par_tmp.pg = pg;
+            end
+            if trk_has_gr(i_trk) % Indicate that the merged track has a ground reflection component
+                par_tmp.has_ground_reflection = 1;
+            end
+            c(1,i_trk).par = par_tmp;
         end
     end
 end

@@ -15,6 +15,16 @@ Software License for The QuaDRiGa Channel Model
 email: quadriga@hhi.fraunhofer.de
 
 # Version history
+## Added features in version 2.6:
+
+* Octave 6.2 compatibility
+* GPU acceleration in Octave (requires OCL package)
+* Method to combine parameters of several different scenario configurations
+* Method to add semi-deterministic clusters
+* Method for calculating LSF and SSF parameters from MPCs
+* Save and load-functions for channel data
+* Performance improvements for larger scenarios
+
 ## Added features in version 2.4:
 
 * Satellite channel modelling (multi-beam parabolic antennas, non-GSO satellite orbit model, TLE-data import, model parameters)

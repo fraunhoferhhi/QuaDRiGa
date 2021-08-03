@@ -34,6 +34,11 @@ if ~exist('ReferenceCoord','var') || isempty( ReferenceCoord )
 end
 lonUE = ReferenceCoord( 1 );
 latUE = ReferenceCoord( 2 );
+if numel( ReferenceCoord ) == 3
+    hnnUE = ReferenceCoord(3);
+else
+    hnnUE = 0;
+end
 
 nP = size( pos,2 );
 oP = ones( 1,nP );
@@ -42,7 +47,7 @@ oP = ones( 1,nP );
 R_e = 6378.137*1e3;
 
 % Get the UE positions in XYZ coordinates
-xyzUE = R_e.*[  cosd(lonUE).*cosd(latUE); sind(lonUE).*cosd(latUE); sind(latUE) ];
+xyzUE = (R_e + hnnUE).*[  cosd(lonUE).*cosd(latUE); sind(lonUE).*cosd(latUE); sind(latUE) ];
 
 % QuaDRiGa X-Y-Z coordintes (east = 0, counter-clockwise) with WGS 84 coordinates
 Rzz = [cosd(90) -sind(90) 0; sind(90) cosd(90) 0; 0 0 1];

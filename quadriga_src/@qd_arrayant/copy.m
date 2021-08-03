@@ -62,7 +62,7 @@ if ~exist( 'in','var' )
 else
     % The list of properties that need to be copied
     prop = {'name','Pno_elements','elevation_grid','azimuth_grid','Pelement_position',...
-        'PFa','PFb','Pcoupling','center_frequency'};
+        'PFa','PFb','Pcoupling','center_frequency','Pphase_diff'};
     
     % Empty outout
     out = [];

@@ -1,4 +1,4 @@
-function indoor_rx = set_scenario( h_layout, scenario, rx, tx, indoor_frc, SC_lambda_rx, SC_lambda_tx )
+function indoor_rx = set_scenario( h_layout, scenario, rx, tx, indoor_frc, SC_lambda_rx, SC_lambda_tx, parse_shortnames )
 %SET_SCENARIO Assigns scenarios to tracks and segments.
 %
 % Calling object:
@@ -115,9 +115,13 @@ if ~exist( 'SC_lambda_tx' , 'var' ) || isempty(SC_lambda_tx)
     SC_lambda_tx = [];
 end
 
+if ~exist( 'parse_shortnames' , 'var' ) || isempty(parse_shortnames)
+    parse_shortnames = true;
+end
+
 indoor_rx = [];
 
-if any( strcmpi( scenario, qd_builder.supported_scenarios ))
+if any( strcmpi( scenario, qd_builder.supported_scenarios(parse_shortnames) ))
     % Set single scenarios
     
     scen_current = {scenario};  % Convert to 1x1 cell array
@@ -148,11 +152,13 @@ if any( strcmpi( scenario, qd_builder.supported_scenarios ))
 else
     
     % Set the default SC_lambda_rx values
-    if h_layout.simpar.use_3GPP_baseline && isempty( SC_lambda_rx )
+    if h_layout.simpar(1,1).use_3GPP_baseline && isempty( SC_lambda_rx )
         SC_lambda_rx = 0;   % Disable
     elseif isempty( SC_lambda_rx )
-        switch scenario
-            case { '3GPP_38.901_UMi', '3GPP_38.901_UMa', '3GPP_38.901_RMa','mmMAGIC_UMi',...
+        switch scenario % 3GPP TR 38.901 v16.1.0, Table 7.6.3.1-2
+            case { '3GPP_38.901_RMa' }
+                SC_lambda_rx = 60;
+            case { '3GPP_38.901_UMi', '3GPP_38.901_UMa','mmMAGIC_UMi',...
                     '5G-ALLSTAR_DenseUrban','5G-ALLSTAR_Urban','5G-ALLSTAR_Suburban','5G-ALLSTAR_Rural' }
                 SC_lambda_rx = 50;
             case { '3GPP_38.901_Indoor_Mixed_Office','3GPP_38.901_Indoor_Open_Office','mmMAGIC_Indoor' }  
@@ -166,13 +172,13 @@ else
             otherwise
                 SC_lambda_rx = 0;
         end
-        if h_layout.simpar.show_progress_bars && SC_lambda_rx > 0
+        if h_layout.simpar(1,1).show_progress_bars && SC_lambda_rx > 0
             disp(['Setting RX LOS state correlation distance to ',num2str(SC_lambda_rx),' m'])
         end
     end
     
     % Set the default SC_lambda_tx values
-    if h_layout.simpar.use_3GPP_baseline && isempty( SC_lambda_tx )
+    if h_layout.simpar(1,1).use_3GPP_baseline && isempty( SC_lambda_tx )
         SC_lambda_tx = 0;   % Disable
     elseif isempty( SC_lambda_tx ) && numel(tx) > 1
         switch scenario
@@ -197,7 +203,7 @@ else
             otherwise
                 SC_lambda_tx = 0;
         end
-        if h_layout.simpar.show_progress_bars && SC_lambda_tx > 0
+        if h_layout.simpar(1,1).show_progress_bars && SC_lambda_tx > 0
             disp(['Setting TX LOS state correlation distance to ',num2str(SC_lambda_tx),' m'])
         end
     elseif isempty( SC_lambda_tx )
@@ -238,7 +244,7 @@ else
             
             % If MT is outdoor, remove indoor distance and indoor-loss
             for i_rx = 1 : numel(rx)
-                if indoor_rx( i_rx ) == 0
+                if indoor_rx( i_rx ) == 0 && ~isempty( h_layout.rx_track(1,i_rx).par )
                     h_layout.rx_track(1,i_rx).par = [];
                 end
             end
@@ -312,7 +318,11 @@ else
         nS      = sum(rxi);
         randR   = randC(:,rC:rC+nS-1);
         rC      = rC+nS;
-        segment_index = h_layout.rx_track( 1,rx( i_rx ) ).segment_index;
+        
+        % Make a local copy of the current track handle to improve performance
+        rx_trackL = h_layout.Prx_track( 1,rx( i_rx ) );
+
+        segment_index = rx_trackL.segment_index;
         
         dist_3d = rx_pos_3d(:,rxi,:) - tx_pos_3d(:,rxi,:);
         dist_2d = sqrt( sum( dist_3d(1:2,:).^2 ,1) );
@@ -321,8 +331,8 @@ else
         dist_3d = reshape( dist_3d, nS, [] ).';
         
         % Calculate the outdoor 2D and 3D distance (for indoor scenarios)
-        if ~isempty( h_layout.rx_track(1,i_rx).par )
-            dist_3d_in = h_layout.rx_track(1,i_rx).par.o2i_d3din;
+        if ~isempty( rx_trackL.par )
+            dist_3d_in = rx_trackL.par.o2i_d3din;
             dist_2d_in = dist_2d .* dist_3d_in ./ dist_3d;
             dist_2d = dist_2d - dist_2d_in;
         end
@@ -345,8 +355,7 @@ else
                     '3GPP_3D_UMa_LOS_O2I', '3GPP_3D_UMa_NLOS_O2I' };
                 
                 % Include height-dependency of the user terminals
-                h_UT = h_layout.rx_track( 1,rx( i_rx ) ).positions( 3,segment_index ) +...
-                    h_layout.rx_track( 1,rx( i_rx ) ).initial_position(3);
+                h_UT = rx_trackL.positions( 3,segment_index ) + rx_trackL.initial_position(3);
                 
                 C = zeros( size( dist_2d ));
                 
@@ -394,8 +403,7 @@ else
                     '3GPP_38.901_UMa_LOS_O2I', '3GPP_38.901_UMa_NLOS_O2I' };
                 
                 % Include height-dependency of the user terminals
-                h_UT = h_layout.rx_track( 1,rx( i_rx ) ).positions( 3,segment_index ) +...
-                    h_layout.rx_track( 1,rx( i_rx ) ).initial_position(3);
+                h_UT = rx_trackL.positions( 3,segment_index ) + rx_trackL.initial_position(3);
                 
                 C = zeros( size( dist_2d ));
                 ii = h_UT > 13 & h_UT < 23;
@@ -638,8 +646,7 @@ else
                 end
                 
                 % Include height-dependency of the user terminals
-                h_UT = h_layout.rx_track( 1,rx( i_rx ) ).positions( 3,segment_index ) +...
-                    h_layout.rx_track( 1,rx( i_rx ) ).initial_position(3);
+                h_UT = rx_trackL.positions( 3,segment_index ) + rx_trackL.initial_position(3);
                 h_tx = reshape( tx_pos_3d(3,rxi,:) , nS, [] ).';
                 
                 %h_c = 10*rand(1,1);
@@ -664,8 +671,7 @@ else
                 end
                 
                 % Include height-dependency of the user terminals
-                h_UT = h_layout.rx_track( 1,rx( i_rx ) ).positions( 3,segment_index ) +...
-                    h_layout.rx_track( 1,rx( i_rx ) ).initial_position(3);
+                h_UT = rx_trackL.positions( 3,segment_index ) + rx_trackL.initial_position(3);
                 h_tx = reshape( tx_pos_3d(3,rxi,:) , nS, [] ).';
                 
                 %h_c = 10*rand(1,1);
@@ -686,15 +692,15 @@ else
         end
         
         no_segments = numel(segment_index);
-        tmp = size( h_layout.rx_track( 1,rx( i_rx ) ).scenario );
+        tmp = size( rx_trackL.scenario );
         if tmp(1) == no_tx && tmp(2) == no_segments
-            scen_old = h_layout.rx_track( 1,rx( i_rx ) ).scenario;
+            scen_old = rx_trackL.scenario;
         elseif tmp(1) == 1 && tmp(2) == no_segments
-            scen_old = h_layout.rx_track( 1,rx( i_rx ) ).scenario( ones(1,no_tx),: );
+            scen_old = rx_trackL.scenario( ones(1,no_tx),: );
         elseif tmp(1) == 1 && tmp(2) == 1
-            scen_old = h_layout.rx_track( 1,rx( i_rx ) ).scenario( ones(no_tx,no_segments ));
+            scen_old = rx_trackL.scenario( ones(no_tx,no_segments ));
         elseif tmp(1) == no_tx && tmp(2) == 1
-            scen_old = h_layout.rx_track( 1,rx( i_rx ) ).scenario( :,ones(1,no_segments ));
+            scen_old = rx_trackL.scenario( :,ones(1,no_segments ));
         else
             error(['Scenario definition dimension mismatch for Rx ',num2str(rx( i_rx ))]);
         end
@@ -705,7 +711,10 @@ else
         for i_tx = 1 : numel( tx )
             scen_old( tx( i_tx ),: ) = scen_current( tx( i_tx ),: );
         end
-        h_layout.rx_track( 1,rx( i_rx ) ).scenario = scen_old;
+        rx_trackL.scenario = scen_old;
+        
+        % Reassign track handle to layout
+        h_layout.Prx_track( 1,rx( i_rx ) ) = rx_trackL;
     end
 end
 end

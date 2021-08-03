@@ -141,6 +141,7 @@ if nargout == 0
     set_grid( h_qd_arrayant , azimuth_grid , elevation_grid, 0 );
     h_qd_arrayant.PFa = Fa;
     h_qd_arrayant.PFb = Fb;
+    h_qd_arrayant.Pphase_diff = [];
 end
 
 end

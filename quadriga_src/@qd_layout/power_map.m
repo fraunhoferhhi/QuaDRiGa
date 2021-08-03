@@ -56,6 +56,9 @@ function [ map, x_coords, y_coords] = power_map( h_layout, scenario, usage, samp
 %   This power is applied to each transmit antenna in the tx-array antenna. By default (if
 %   'tx_power' is not given), 0 dBm are assumed.
 %
+%   i_freq
+%   The frequency index in case of multi-frequency simulations. Default: 1
+%
 % Output:
 %   map
 %   A cell array containing the power map for each tx array in the layout. The power values are in
@@ -167,7 +170,7 @@ n_bs = h_layout.no_tx;
 
 % Create parameter sets for each tx-position
 h_builder = qd_builder([]);
-h_builder.simpar.show_progress_bars = h_layout.simpar.show_progress_bars;
+h_builder.simpar(1,1).show_progress_bars = h_layout.simpar(1,1).show_progress_bars;
 check = true;
 
 if h_layout.dual_mobility
@@ -215,12 +218,12 @@ for i_bs = 1 : n_bs
     
     % Set tx position and orientation
     h_builder(1,i_bs).tx_track = qd_track('linear',0,0);
-    h_builder(1,i_bs).tx_track.orientation = h_layout.tx_track(1,i_bs).orientation(:,1);
-    h_builder(1,i_bs).tx_track.initial_position = h_layout.tx_position(:,i_bs);
+    h_builder(1,i_bs).tx_track(1,1).orientation = h_layout.tx_track(1,i_bs).orientation(:,1);
+    h_builder(1,i_bs).tx_track(1,1).initial_position = h_layout.tx_position(:,i_bs);
 
     % Set rx positions and use first rx orientation
     h_builder(1,i_bs).rx_track = qd_track('linear',0,0);
-    h_builder(1,i_bs).rx_track.orientation = h_layout.rx_track(1,1).orientation(:,1);
+    h_builder(1,i_bs).rx_track(1,1).orientation = h_layout.rx_track(1,1).orientation(:,1);
     h_builder(1,i_bs).rx_positions = [repmat(x_coords, 1, n_y_coords); ...
         reshape(repmat(y_coords, n_x_coords, 1), 1, []); ...
         rx_height .* ones(1, n_x_coords * n_y_coords)];

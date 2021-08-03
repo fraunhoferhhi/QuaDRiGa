@@ -5,7 +5,7 @@ function pos = trans_global2ue( lon, lat, hnn, ReferenceCoord )
 %   lon                 Longitude in degree [ 1 x nP ]
 %   lat                 Latitude in degree  [ 1 x nP ]
 %   hnn                 Height above sea level in meters [ 1 x nP ]
-%   ReferenceCoord      Reference positions on Earth [lon, lat]
+%   ReferenceCoord      Reference positions on Earth [lon, lat] or [lon, lat, hnn]
 %
 % Output:
 %   pos                 Positions in local Cartesian coordinates in meters [ 3 x nP ]
@@ -34,6 +34,11 @@ if ~exist('ReferenceCoord','var') || isempty( ReferenceCoord )
 end
 lonUE = ReferenceCoord( 1 );
 latUE = ReferenceCoord( 2 );
+if numel( ReferenceCoord ) == 3
+    hnnUE = ReferenceCoord(3);
+else
+    hnnUE = 0;
+end
 
 if ~exist('lon','var') || isempty( lon )
     error('??? Longitude not given');
@@ -56,7 +61,7 @@ end
 R_e = 6378.137*1e3;
 
 % Get the UE positions in XYZ coordinates
-xyzUE = R_e.*[  cosd(lonUE).*cosd(latUE); sind(lonUE).*cosd(latUE); sind(latUE) ];
+xyzUE = (R_e + hnnUE).*[  cosd(lonUE).*cosd(latUE); sind(lonUE).*cosd(latUE); sind(latUE) ];
 
 % Align with QuaDRiGa X-Y-Z coordintes (east = 0, counter-clockwise)
 Rz = [cosd(-lonUE) -sind(-lonUE) 0; sind(-lonUE) cosd(-lonUE) 0; 0 0 1];
@@ -69,7 +74,7 @@ pos = zeros( 3, nP );
 pos(1,:) = cosd(lon).*cosd(lat);
 pos(2,:) = sind(lon).*cosd(lat);
 pos(3,:) = sind(lat);
-pos = [1;1;1]*(hnn+R_e) .* pos;
+pos = [1;1;1]*(R_e + hnn) .* pos;
 
 % Calculate relative satellite positions from UE perspective
 pos = pos - xyzUE(:,oP);

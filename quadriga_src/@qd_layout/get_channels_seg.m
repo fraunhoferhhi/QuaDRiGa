@@ -91,7 +91,7 @@ elseif numel(seg) > 1
     end
 end
 
-n_freq = numel( h_layout.simpar.center_frequency );
+n_freq = numel( h_layout.simpar(1,1).center_frequency );
 if ~exist( 'freq' , 'var' ) || isempty( freq )
     freq = 1 : n_freq;
 else
@@ -167,8 +167,8 @@ if ~all(all( builder_index(:,:,1) ~= 0 ))
 end
 
 % Temporary disable the progress bar
-show_progress_bars = h_layout.simpar.show_progress_bars;
-h_layout.simpar.show_progress_bars = false;
+show_progress_bars = h_layout.simpar(1,1).show_progress_bars;
+h_layout.simpar(1,1).show_progress_bars = false;
 
 if sum( builder_index(rx,tx,:) ~= 0 ) == 1                              % Only one segment
     
@@ -273,7 +273,11 @@ else    % Multiple segments
             end
             rx_position = h_channel_curr(1,iF).rx_position(:,snap_ind);
             h_channel_curr(1,iF).coeff = h_channel_curr(1,iF).coeff(:,:,:,snap_ind);
-            h_channel_curr(1,iF).par.pg = h_channel_curr(1,iF).par.pg(:,snap_ind,:,:);
+            
+            par_tmp = h_channel_curr(1,iF).par;
+            par_tmp.pg = par_tmp.pg(:,snap_ind,:,:);
+            h_channel_curr(1,iF).par = par_tmp;
+            
             if h_channel_curr(1,iF).individual_delays
                 h_channel_curr(1,iF).delay = delay(:,:,:,snap_ind);
             else
@@ -312,7 +316,11 @@ else    % Multiple segments
             end
             rx_position = h_channel(1,iF).rx_position(:,snap_ind);
             h_channel(1,iF).coeff = h_channel(1,iF).coeff(:,:,:,snap_ind);
-            h_channel(1,iF).par.pg = h_channel(1,iF).par.pg(:,snap_ind,:,:);
+            
+            par_tmp = h_channel(1,iF).par;
+            par_tmp.pg = par_tmp.pg(:,snap_ind,:,:);
+            h_channel(1,iF).par = par_tmp;
+            
             if h_channel(1,iF).individual_delays
                 h_channel(1,iF).delay = delay(:,:,:,snap_ind);
             else
@@ -327,7 +335,7 @@ end
 % Interpolate channels
 if use_channel_interpolation
          
-    if h_layout.rx_track(1,rx).get_length == 0
+    if get_length( h_layout.rx_track(1,rx) ) == 0
         dist_track = 1:h_layout.rx_track(1,rx).no_snapshots;
         dist_int = h_layout.rx_track(1,rx).interpolate( 'snapshot', h_layout.update_rate );
         
@@ -336,7 +344,7 @@ if use_channel_interpolation
         i_chan_last = i_seg(seg(end)+1);
         
     else
-        [ ~ , dist_track ] = h_layout.rx_track(1,rx).get_length;
+        [ ~ , dist_track ] = get_length( h_layout.rx_track(1,rx) );
         dist_int = h_layout.rx_track(1,rx).interpolate( 'time', h_layout.update_rate );
         
         % Find the channel start-position on the track
@@ -358,14 +366,17 @@ if use_channel_interpolation
     end
     dist_chan_int = dist_int(i_int) - dist_track( i_chan_first );
     
-    if h_layout.rx_track(1,rx).get_length == 0
+    if get_length( h_layout.rx_track(1,rx) ) == 0
         dist_chan_int = dist_chan_int + 1;
     end
     
     % Interpolate channels
     for iF = 1 : numel( freq )
         h_channel(1,iF) = interpolate( h_channel(1,iF), dist_chan_int );
-        h_channel(1,iF).par.update_rate = h_layout.update_rate;
+        
+        par_tmp = h_channel(1,iF).par;
+        par_tmp.update_rate = h_layout.update_rate;
+        h_channel(1,iF).par = par_tmp;
     end
 end
 
@@ -374,6 +385,6 @@ if numel( h_channel ) == 1 % Needed for Ocatve
 end
 
 % Set progress-bar state to old value
-h_layout.simpar.show_progress_bars = show_progress_bars;
+h_layout.simpar(1,1).show_progress_bars = show_progress_bars;
 
 end

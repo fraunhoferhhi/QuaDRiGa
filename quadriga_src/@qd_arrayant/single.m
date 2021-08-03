@@ -1,7 +1,6 @@
 function single( h_arrayant )
 %SINGLE Set all properties to single precision to increase computation performance
 %
-%
 % QuaDRiGa Copyright (C) 2011-2020
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
@@ -45,6 +44,7 @@ else
     h_arrayant.PFa = single( h_arrayant.PFa );
     h_arrayant.PFb = single( h_arrayant.PFb );
     h_arrayant.Pcoupling = single( h_arrayant.Pcoupling );
+    h_arrayant.Pphase_diff = single( h_arrayant.Pphase_diff );
 end
 
 end

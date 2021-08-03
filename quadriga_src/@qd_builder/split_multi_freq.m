@@ -55,7 +55,7 @@ function h_builder_out = split_multi_freq( h_builder )
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
 % Get the number of frequencies
-n_freq = numel( h_builder(1,1).simpar.center_frequency );
+n_freq = numel( h_builder(1,1).simpar(1,1).center_frequency );
 
 if numel(h_builder) > 1
     
@@ -66,7 +66,7 @@ if numel(h_builder) > 1
         [ i1,i2 ] = qf.qind2sub( sic, i_cb );
         
         % Check if the number of frequencies is the same in all builder objects
-        if numel( h_builder(i1,i2).simpar.center_frequency ) ~= n_freq
+        if numel( h_builder(i1,i2).simpar(1,1).center_frequency ) ~= n_freq
             error('QuaDRiGa:qd_builder:split_multi_freq','Number of frequencies is inconsistent in builder objects.');
         end
         
@@ -84,7 +84,7 @@ elseif n_freq > 1
         split_lsf = false;
     end
     split_ssf = true;       % Check if SSF parameters have been initialized
-    if h_builder.no_rx_positions > 0 && size( h_builder.pow,3 ) ~= n_freq
+    if h_builder.no_rx_positions > 0 && size( h_builder.gain,3 ) ~= n_freq
         split_ssf = false;
     end
     
@@ -155,15 +155,14 @@ elseif n_freq > 1
                 else
                     h_builder_out(1,f).taus     = h_builder.taus;
                 end
-                h_builder_out(1,f).pow          = h_builder.pow(:,:,f);
-                h_builder_out(1,f).gamma        = h_builder.gamma(:,:,f);
+                h_builder_out(1,f).gain         = h_builder.gain(:,:,f);
+                h_builder_out(1,f).xprmat       = h_builder.xprmat(:,:,:,f);
                 h_builder_out(1,f).pin          = h_builder.pin(:,:,f);
                 h_builder_out(1,f).subpath_coupling = h_builder.subpath_coupling(:,:,f);
+            end
+            if ~isempty( h_builder.fbs_pos ) && ~isempty( h_builder.lbs_pos )
                 h_builder_out(1,f).fbs_pos      = h_builder.fbs_pos(:,:,:,f);
                 h_builder_out(1,f).lbs_pos      = h_builder.lbs_pos(:,:,:,f);
-                if ~isempty( h_builder.kappa )
-                    h_builder_out(1,f).kappa    = h_builder.kappa(:,:,f);
-                end
             end
             
             % Split the frequencies in simpar

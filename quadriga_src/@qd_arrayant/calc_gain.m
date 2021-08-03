@@ -50,6 +50,12 @@ elseif any(i_element > h_qd_arrayant.no_elements)
     error('??? "i_element" exceeds "no_elements"')
 end
 
+if isa( h_qd_arrayant.PFa, 'single' )
+    use_single = true;
+else % double
+    use_single = false;
+end
+
 % Calculate azimuth weights
 % These weights are needed when there is an non-uniform grid in the azimuth sample points, e.g. for
 % parabolic antennas
@@ -65,7 +71,11 @@ waz = waz./sum(waz);
 % parabolic antennas
 el = h_qd_arrayant.elevation_grid;
 nel = numel( el );
-wel = zeros( nel,1 );
+if use_single
+    wel = zeros( nel,1,'single' );
+else
+    wel = zeros( nel,1 );
+end
 for n = 1 : nel
     if n == 1
         st = -pi/2; 
@@ -86,14 +96,19 @@ end
 w = wel * waz ;
 w = w./sum(w(:));
 
-directivity_dBi = zeros(numel(i_element),1);
-gain_dBi = zeros(numel(i_element),1);
+if use_single
+    directivity_dBi = zeros(numel(i_element),1,'single');
+    gain_dBi = zeros(numel(i_element),1,'single');
+else
+    directivity_dBi = zeros(numel(i_element),1);
+    gain_dBi = zeros(numel(i_element),1);
+end
 
 for n = 1 : numel(i_element)
     
     % Read the qd_arrayant elements
-    Fa = h_qd_arrayant.Fa(:, :, i_element(n));
-    Fb = h_qd_arrayant.Fb(:, :, i_element(n));
+    Fa = h_qd_arrayant.PFa(:, :, i_element(n));
+    Fb = h_qd_arrayant.PFb(:, :, i_element(n));
     
     % calculate radiation power pattern
     P = abs(Fa).^2 + abs(Fb).^2;

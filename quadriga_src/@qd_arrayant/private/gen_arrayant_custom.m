@@ -63,7 +63,7 @@ par.D = 0;
 
 % Calculate the azimuth response
 phi = h_qd_arrayant.azimuth_grid;
-ind = find(phi/pi*180 >= phi_3dB/2, 1);
+%ind = find(phi/pi*180 >= phi_3dB/2, 1);
 
 a   = 1;        % Initial angle
 dm  = 0.5;      % Step size
@@ -80,7 +80,8 @@ while lp < 5000 && delta > 1e-7
     end
     
     C = rear_gain + (1 - rear_gain) * exp(-an * phi.^2);
-    xn = abs(C(ind) - 0.5);
+    xn = abs( qf.interp( phi, [], C, phi_3dB*pi/360, [], 1 ) - 0.5 );
+    %xn = abs(C(ind) - 0.5);
     
     if xn < x
         a = an;
@@ -96,7 +97,7 @@ par.D = an;
 
 % Calculate the elevation response
 theta = h_qd_arrayant.elevation_grid;
-ind = find(theta/pi*180 >= theta_3dB/2, 1);
+%ind = find(theta/pi*180 >= theta_3dB/2, 1);
 
 a   = 1;        % Initial angle
 dm  = 0.5;      % Step size
@@ -113,7 +114,8 @@ while lp < 5000 && delta > 1e-7
     end
     
     D = cos(theta).^an;
-    xn = abs(D(ind) - 0.5);
+    xn = abs( qf.interp( theta, [], D, theta_3dB*pi/360, [], 1 ) - 0.5 );
+    %xn = abs(D(ind) - 0.5);
     
     if xn < x
         a = an;

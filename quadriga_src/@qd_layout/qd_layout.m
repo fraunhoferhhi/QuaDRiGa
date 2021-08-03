@@ -51,6 +51,7 @@ properties
     name = 'Layout';          	% Name of the layout
     simpar = qd_simulation_parameters;  	% Handle of a 'simulation_parameters' object
     update_rate = [];           % Channel update rate in seconds
+    ReferenceCoord = [];        % Reference coordiantes for KML read/write
 end
 
 properties(Dependent)
@@ -93,7 +94,6 @@ end
 
 properties(Hidden)
     OctEq = false; % For qf.eq_octave
-    ReferenceCoord = [];
     h_qd_builder_init = [];
     use_channel_interpolation = [];
     builder_index = [];
@@ -281,11 +281,11 @@ methods
         end
         for n = 1:no_pos
             trk = h_layout.Ptx_track(1,n); % Workaround for Octave 4.0
-            trk.initial_position = value(:,n);
+            trk.initial_position = double( value(:,n) );
             if no_pos == 1
-                h_layout.tx_track = trk;
+                h_layout.Ptx_track = trk;
             else
-                h_layout.tx_track(1,n) = trk;
+                h_layout.Ptx_track(1,n) = trk;
             end
         end
         if ~isempty( h_layout.h_qd_builder_init )
@@ -370,17 +370,21 @@ methods
         elseif ~all( size(value,1) == 3 )
             error('QuaDRiGa:qd_layout:WrongInput','??? "rx_position" must have 3 rows')
         end
+        scen = h_layout.rx_track(1,1).scenario(:,1);
         no_pos = size(value,2);
         if no_pos ~= h_layout.no_rx
             h_layout.no_rx = no_pos;
         end
         for n = 1:no_pos
             trk = h_layout.Prx_track(1,n); % Workaround for Octave 4.0
-            trk.initial_position = value(:,n);
+            trk.initial_position = double( value(:,n) );
+            if isempty(trk.scenario{1})
+                trk.scenario = scen;
+            end
             if no_pos == 1
-                h_layout.rx_track = trk;
+                h_layout.Prx_track = trk;
             else
-                h_layout.rx_track(1,n) = trk;
+                h_layout.Prx_track(1,n) = trk;
             end
         end
         if ~isempty( h_layout.h_qd_builder_init )

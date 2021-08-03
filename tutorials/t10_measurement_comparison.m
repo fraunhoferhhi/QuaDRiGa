@@ -114,7 +114,7 @@ title('PDP with fixed speed');
 % The next plot shows the total received power along the trajectory. Green shaded ares are LOS. The
 % rest is NLOS. You can see that there is more power when there is LOS propagation.
 
-dist = (1:cn.no_snap)*t.get_length/cn.no_snap;          % Traveled distance
+dist = (1:cn.no_snap)*get_length(t)/cn.no_snap;         % Traveled distance
 ind  = find(strcmp(t.scenario,Sl));                     % Find LOS scenarios
 los  = [];
 for n = 1:numel(ind)

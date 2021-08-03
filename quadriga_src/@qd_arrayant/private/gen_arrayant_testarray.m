@@ -43,20 +43,20 @@ if res ~= 1
 end
 
 h_qd_arrayant.element_position(1) = 1.6;                    % Element distance from array phase-center
-h_qd_arrayant.copy_element(1,2:N+3);                     	% Set number of elements
+h_qd_arrayant.copy_element(1,2:N+3);                        % Set number of elements
 for n = 1:N                                                 % Create sub-elements
     h_qd_arrayant.rotate_pattern( [0,theta(n),phi(n)]*180/pi,'xyz',n,1);
 end
-h_qd_arrayant.combine_pattern;                             	% Apply far field transformation
-P = sum( abs(h_qd_arrayant.Fa(:,:,1:N)).^2,3 );           	% Normalize to unit power
+h_qd_arrayant.combine_pattern;                              % Apply far field transformation
+P = sum( abs(h_qd_arrayant.Fa(:,:,1:N)).^2,3 );             % Normalize to unit power
 h_qd_arrayant.Fa(:,:,1:N) = h_qd_arrayant.Fa(:,:,1:N) ./ sqrt(P(:,:,ones(1,N)));
 
-h_qd_arrayant.Fb(:,:,N+1) = 1;                           	% Add horizontal polarization
+h_qd_arrayant.Fb(:,:,N+1) = 1;                              % Add horizontal polarization
 h_qd_arrayant.Fa(:,:,N+1) = 0;
 
 h_qd_arrayant.Fb(:,:,N+2) = 1/sqrt(2);                      % Add LHCP receive polarization
 h_qd_arrayant.Fa(:,:,N+2) = 1j/sqrt(2);
-h_qd_arrayant.Fb(:,:,N+3) = 1/sqrt(2);                    	% Add RHCP receive polarization
+h_qd_arrayant.Fb(:,:,N+3) = 1/sqrt(2);                      % Add RHCP receive polarization
 h_qd_arrayant.Fa(:,:,N+3) = -1j/sqrt(2);
 
 h_qd_arrayant.double;

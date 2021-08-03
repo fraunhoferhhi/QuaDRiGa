@@ -1,4 +1,4 @@
-function h_channel = get_channels( h_builder, vb_dots )
+function h_channel = get_channels( h_builder, vb_dots, use_gpu )
 %GET_CHANNELS Calculate the channel coefficients
 %
 % Calling object:
@@ -8,8 +8,8 @@ function h_channel = get_channels( h_builder, vb_dots )
 %   h_channel
 %   A vector of qd_channel objects
 %
-% 
-% QuaDRiGa Copyright (C) 2011-2019
+%
+% QuaDRiGa Copyright (C) 2011-2020
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -22,12 +22,18 @@ function h_channel = get_channels( h_builder, vb_dots )
 % contributors "AS IS" and WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES, including but not limited to
 % the implied warranties of merchantability and fitness for a particular purpose.
 %
-% You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for 
+% You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
-% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
+% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
+
+if ~exist( 'use_gpu','var' ) || isempty( use_gpu )
+    use_gpu = qd_simulation_parameters.has_gpu;
+elseif logical( use_gpu ) && ~qd_simulation_parameters.has_gpu
+    use_gpu = 0;
+end
 
 % Array indexing is needed for Octave
-verbose = h_builder(1,1,1,1).simpar.show_progress_bars;
+verbose = h_builder(1,1,1,1).simpar(1,1).show_progress_bars;
 if verbose && nargin == 1
     fprintf('Channels     [');
     vb_dots = 50;
@@ -47,11 +53,11 @@ if numel(h_builder) > 1
         else
             % Workaround for Octave 4
             if numel( sic ) == 4
-                h_builder(i1,i2,i3,i4).simpar.show_progress_bars = false;
+                h_builder(i1,i2,i3,i4).simpar(1,1).show_progress_bars = false;
             elseif numel( sic ) == 3
-                h_builder(i1,i2,i3).simpar.show_progress_bars = false;
+                h_builder(i1,i2,i3).simpar(1,1).show_progress_bars = false;
             else % 2 and 1
-                h_builder(i1,i2).simpar.show_progress_bars = false;
+                h_builder(i1,i2).simpar(1,1).show_progress_bars = false;
             end
         end
     end
@@ -65,7 +71,7 @@ if numel(h_builder) > 1
     for i_cb = 1 : numel(h_builder)
         [ i1,i2,i3,i4 ] = qf.qind2sub( sic, i_cb );
         if h_builder( i1,i2,i3,i4 ).no_rx_positions > 0
-            tmp = h_builder( i1,i2,i3,i4 ).get_channels( vb_dots(i_cb) );
+            tmp = h_builder( i1,i2,i3,i4 ).get_channels( vb_dots(i_cb), use_gpu );
             h_channel( 1, cnt : cnt+size(tmp,2)-1 ) = tmp;
             cnt = cnt + size(tmp,2);
         end
@@ -76,7 +82,7 @@ else
     h_builder = h_builder(1,1);
     
     % Check if we have a single-frequency builder
-    if numel( h_builder.simpar.center_frequency ) > 1
+    if numel( h_builder.simpar(1,1).center_frequency ) > 1
         error('QuaDRiGa:qd_builder:get_channels','get_channels only works for single-freqeuncy simulations.');
     end
     
@@ -92,20 +98,16 @@ else
     end
     
     % Set initial parameters
-    n_mobiles       = h_builder.no_rx_positions;
-    o4              = ones(1,4);
-    t2              = 2*ones(1,2);
+    n_mobiles = h_builder.no_rx_positions;
     
     % These variables are often needed. Pre-computing them saves a lot of time
-    use_3GPP_baseline = h_builder.simpar.use_3GPP_baseline; % logical
-    use_ground_reflection = logical( h_builder.scenpar.GR_enabled ); % logical
+    use_3GPP_baseline = h_builder.simpar(1,1).use_3GPP_baseline; % logical
+    use_ground_reflection = h_builder.check_los > 1.5; % logical
     if use_3GPP_baseline && use_ground_reflection
-        warning('QuaDRiGa:qd_builder:use_baseline_ground_reflection',...
-            'Ground reflection is not supported by the 3GPP baseline model.');
+        % For 3GPP-Baseline, GR is just another path. No need for GR-drfting
         use_ground_reflection = false;
-        warning('off','QuaDRiGa:qd_builder:use_baseline_ground_reflection');
     end
-    wave_no = 2*pi/h_builder.simpar.wavelength;
+    wave_no = 2*pi/h_builder.simpar(1,1).wavelength;
     
     % If Laplacian PAS is used, the intra-cluster angles are increased by a factor of sqrt(2). To
     % compensate, the intra-cluster powers must be adjusted. This is done by a weighting the path
@@ -141,16 +143,16 @@ else
     % The loop for each user position
     for i_mobile = 1 : n_mobiles
         if verbose
-            m1=ceil(i_mobile/n_mobiles*vb_dots); 
+            m1=ceil(i_mobile/n_mobiles*vb_dots);
             if m1>m0
                 for m2=1:m1-m0
-                    fprintf('o'); 
+                    fprintf('o');
                 end
-                m0=m1; 
+                m0=m1;
             end
         end
         
-        % Get the lst of zero-power paths - we do not return paths with zero-power
+        % Get the list of zero-power paths - we do not return paths with zero-power
         iClst       = h_builder.pow(i_mobile,:) ~= 0;
         iClst(1)    = true;
         if use_ground_reflection
@@ -158,9 +160,12 @@ else
         end
         iPath       = clst_expand( iClst, h_builder.NumSubPaths );
         n_clusters  = sum( iClst );
-        o_clusters  = ones(1,n_clusters,'uint8');
+        o_clusters  = ones(1,n_clusters);
         n_paths     = sum( iPath );
         n_subpaths  = h_builder.NumSubPaths( iClst );
+        n_rxant     = h_builder.rx_array(1,i_mobile).no_elements;
+        n_txant     = h_builder.tx_array(1,i_mobile).no_elements;
+        o_txrxant    = ones(1,n_txant*n_rxant);
         
         % Check if the positions are correct
         if any( abs( h_builder.rx_track(1,i_mobile).initial_position - h_builder.rx_positions(:,i_mobile) ) > 1e-5 )
@@ -176,28 +181,6 @@ else
                     'Tx position in track does not match the initial position, using initial position.');
             end
             h_builder.tx_track(1,i_mobile).initial_position = h_builder.tx_position(:,i_mobile);
-        end
-        
-        % The array antenna interpolation is the most time intense operation in the channel builder.
-        % We save some computing time by reading the array antennas here and passing them as
-        % variables to the interpolate function later.
-        
-        % Update Tx-array data
-        if i_mobile == 1 || ~qf.eqo( h_builder.tx_array(1,i_mobile), h_builder.tx_array(1,i_mobile-1) )
-            n_txant             = h_builder.tx_array(1,i_mobile).no_elements;
-            [ tx_patV, tx_patH, tx_azimuth_grid, tx_elevation_grid, tx_element_pos ] = ...
-                wrap_grid( h_builder.tx_array(1,i_mobile) );
-            tx_patV = reshape( tx_patV, [], n_txant );
-            tx_patH = reshape( tx_patH, [], n_txant );
-        end
-        
-        % Update Rx-array data
-        if i_mobile == 1 || ~qf.eqo( h_builder.rx_array(1,i_mobile), h_builder.rx_array(1,i_mobile-1) )
-            n_rxant             = h_builder.rx_array(1,i_mobile).no_elements;
-            [ rx_patV, rx_patH, rx_azimuth_grid, rx_elevation_grid, rx_element_pos ] = ...
-                wrap_grid( h_builder.rx_array(1,i_mobile) );
-            rx_patV = reshape( rx_patV, [], n_rxant );
-            rx_patH = reshape( rx_patH, [], n_rxant );
         end
         
         % Read some commonly needed variables in order to save time.
@@ -224,13 +207,13 @@ else
             delay = delay(:,iClst);
             
             % Calculate the distance-dependent phases
-            lambda  = h_builder.simpar.wavelength;
-            if h_builder.simpar.use_absolute_delays
-                d_lms   = h_builder.simpar.speed_of_light * delay;
+            lambda  = h_builder.simpar(1,1).wavelength;
+            if h_builder.simpar(1,1).use_absolute_delays
+                d_lms   = h_builder.simpar(1,1).speed_of_light * delay;
             else
                 r       = h_builder.rx_positions(:,i_mobile) - h_builder.tx_position(:,i_mobile);
                 norm_r  = sqrt(sum(r.^2)).';
-                d_lms   = norm_r + h_builder.simpar.speed_of_light * delay;
+                d_lms   = norm_r + h_builder.simpar(1,1).speed_of_light * delay;
             end
             phase   = 2*pi/lambda * mod(d_lms, lambda);
             phase   = clst_expand( phase, n_subpaths );
@@ -260,65 +243,33 @@ else
             tx_orientation = tx_orientation(:,o_snapshots);
         end
         
-        xprmat = zeros(4,n_paths);                         % Initialization of the pol. rotation
-        if use_3GPP_baseline
-            % This is the polarization coupling from WINNER / 3GPP. The polarization is initialized
-            % by random phases which are scaled by the XPR. Polarization drifting is not supported.
-            
-            if size( h_builder.kappa,3 ) == 1
-                % Parameters were generated using the advanced non-baseline model
-                % We need to update the polarization here to match the baseline model
-                
-                % Generate XPR, 3GPP TR 38.901, Step 9
-                gamma = randn( 1, n_paths  ) * h_builder.lsp_vals(8,2) + h_builder.lsp_vals(8,1); % dB
-                gamma = 10.^(0.1*gamma);        % Linear
-                gamma(:,1) = Inf;               % LOS
-
-                % Draw initial random phases, 3GPP TR 38.901, Step 10
-                kappa = 2*pi*rand( 1, n_paths, 4 ) - pi;
-                kappa(:,1,:) = 0;               % LOS
-            else
-                gamma = h_builder.gamma(i_mobile,iPath);
-                kappa = h_builder.kappa(i_mobile,iPath,:);
-            end
-            
-            % sqrt(1/XPR)-Values
-            xpr = sqrt( reshape( 1./gamma ,1,n_paths ) );
-            
-            % Random initial phases
-            xprmat = exp( 1j*permute( kappa , [3,2,1] ));
-            
-            % Global XPR-Matrix
-            xprmat = xprmat .* [ones(1,n_paths);xpr;xpr;ones(1,n_paths)];
-            
-            % Identity Matrix for the LOS-Path
-            xprmat( 1,1 ) = 1;
-            xprmat( 2,1 ) = 0;
-            xprmat( 3,1 ) = 0;
-            xprmat( 4,1 ) = -1;
-            
-            % Set rotation angles to 0
-            gamma = zeros( 1,n_paths);
-
-        else
-            % Conversion of the XPR into rotation angle for linear and circular polarization
-            gamma = h_builder.gamma(i_mobile,iPath);
-            kappa = exp(1j*h_builder.kappa(i_mobile,iPath));
-            xprmat_tx = zeros(2,n_paths,n_txant);
-            xprmat_rx = zeros(4,n_paths);
-        end
-        
         % Placeholder for the coefficient calculation
         cn    = zeros( n_links , n_clusters , n_snapshots );
         
         % Placeholder for the radiated power
         ppat  = zeros( n_links , n_clusters , n_snapshots );
         
+        if use_gpu == 2 % Single precision GPU Acceleration
+            gM = single( h_builder.xprmat(:,iPath,i_mobile) );     	% The NLOS polarization transfer matrix
+            gM(1) = gM(1) + 1j*1e-45;                               % Make sure it is complex-valued
+            
+        else % Double precision (CPU or GPU)
+            gM = h_builder.xprmat(:,iPath,i_mobile);               	% The NLOS polarization transfer matrix
+            gM(1) = gM(1) + 1j*4e-324;                              % Make sure it is complex-valued
+        end
+        gM = permute( gM,[3,4,2,1] );                               % Convert to [ 1 x 1 x n_paths x 4 ]
+        
+        % Transfer to GPU
+        if use_gpu
+            try
+                gM = gpuArray( gM );
+            catch
+                use_gpu = false;
+            end
+        end
+        
         % Do for each snapshot
         for i_snapshot = 1 : no_snap_process          % Track positions
-            
-            c  = zeros( n_links , n_paths );          % The pattern coefficient matrix
-            cp = zeros( n_links , n_paths );          % The phase coefficient matrix
             
             % Update the drifting angles, phases and delays.
             if ~use_3GPP_baseline
@@ -326,219 +277,146 @@ else
                     [ aod, eod, aoa, eoa, phase, delay(i_snapshot,:,:,:),...
                         aod_los, eod_los, aoa_los, eoa_los, theta_r, update_tx_ant ] =...
                         update_drifting( h_builder(1,1), i_snapshot, i_mobile, fbs_pos, lbs_pos );
+                    
                 else % Update
                     [ aod, eod, aoa, eoa, phase, delay(i_snapshot,:,:,:),...
                         aod_los, eod_los, aoa_los, eoa_los, theta_r, update_tx_ant ] =...
                         update_drifting( h_builder(1,1), i_snapshot );
                 end
+                aod = permute(aod,[4,2,1,3]);
+                eod = permute(eod,[4,2,1,3]);
+                aoa = permute(aoa,[3,2,1,4]);
+                eoa = permute(eoa,[3,2,1,4]);
             end
             
-            % Include the direction on travel in the angles
-            [ ~, aoa_c, eoa_c, deg_a ] = qf.calc_ant_rotation( rx_orientation(3,i_snapshot),...
-                -rx_orientation(2,i_snapshot), rx_orientation(1,i_snapshot), aoa, eoa );
-            if update_tx_ant
-                [ ~, aod_c, eod_c, deg_d ] = qf.calc_ant_rotation( tx_orientation(3,i_snapshot),...
-                    -tx_orientation(2,i_snapshot), tx_orientation(1,i_snapshot), aod, eod );
-            end
-            
-            % Apply the additional polarization rotation for the NLOS paths
-            deg = deg_a - gamma( :,:, ones(1,size(aoa,3)) );
-            
-            % Calculate the additional polarization scaling factors for the ground reflection
-            if use_ground_reflection
-                epsilon_r = h_builder.gr_epsilon_r( i_mobile );   % Relative permittivity
-                
-                Z      = sqrt( epsilon_r - (cos(theta_r)).^2 );
-                R_par  = (epsilon_r * sin(theta_r) - Z) ./ (epsilon_r * sin(theta_r) + Z);
-                R_per  = ( sin(theta_r) - Z) ./ ( sin(theta_r) + Z);
-                
-                % Read the path power scaling that was used in "generate_initial_paths.m"
-                P_LOS = h_builder.pow(i_mobile,1);
-                P_GR  = h_builder.pow(i_mobile,2);
-                if P_GR == 0
-                    Sl = 1;
-                    Sv = 0;
-                    Sh = 0;
-                else
-                    % Compensate for the power scaling in "generate_initial_paths.m"
-                    Rsq   = 2 * P_GR / (P_LOS + P_GR);
-                    Sv = sqrt(2/Rsq) * R_par;       % GR path vertical pol.
-                    Sh = sqrt(2/Rsq) * R_per;       % GR path horizontal pol.
-                    if P_LOS == 0
-                        Sl = 0;
-                    else
-                        Sl = 1 / sqrt( 1-Rsq/2 );       % LOS path
-                    end
-                end
-            end
-            
+            % Interpolate the antenna patterns for thr NLOS paths
             if use_3GPP_baseline % Planar waves
+
                 % Interpolate the receive antenna patterns
-                [Vr,Hr,Pr] = h_builder.rx_array(1,i_mobile).interpolate( aoa_c ,...
-                    eoa_c, 1:n_rxant, rx_azimuth_grid, rx_elevation_grid ,...
-                    rx_patV, rx_patH, rx_element_pos );
-                Pr  = reshape( Pr,1,n_paths,n_rxant );
+                [ gVr, gHr, Pr, aoa, eoa ] = interpolate( h_builder.rx_array(1,i_mobile), aoa, eoa, [], ...
+                    rx_orientation(:,i_snapshot), 14.3239, use_gpu(use_gpu~=0)+2 );
+                gVr = reshape( gVr, n_rxant,1,n_paths );
+                gHr = reshape( gHr, n_rxant,1,n_paths );
+                Pr = reshape( Pr, n_rxant,1,n_paths );
                 
                 % Interpolate the transmit antenna patterns
-                [Vt,Ht,Pt] = h_builder.tx_array(1,1).interpolate( ...
-                    aod_c, eod_c, 1:n_txant, tx_azimuth_grid, tx_elevation_grid, ...
-                    tx_patV, tx_patH, tx_element_pos );
-                Pt = reshape( Pt, 1 ,n_paths, n_txant );
+                [ gVt, gHt, Pt ] = interpolate( h_builder.tx_array(1,i_mobile), aod, eod, [], ...
+                    tx_orientation(:,i_snapshot), 14.3239, use_gpu(use_gpu~=0)+2 );
+                gVt = reshape( gVt, 1,n_txant,n_paths );
+                gHt = reshape( gHt, 1,n_txant,n_paths );
+                Pt = reshape( Pt, 1,n_txant,n_paths );
                 
                 % Calculate the Doppler profile.
-                doppler = reshape( cos(aoa_c+pi).*cos(eoa) ,1,n_paths );
+                doppler = cos(aoa+pi).*cos(eoa);
                 
-            else % Spherical waves
-                % Interpolate the receive antenna patterns (NLOS)
-                Vr  = zeros(1,n_paths,n_rxant);
-                Hr  = zeros(1,n_paths,n_rxant);
-                for i_rx = 1 : n_rxant
-                    [Vr(1,:,i_rx),Hr(1,:,i_rx)] =...
-                        h_builder.rx_array(1,i_mobile).interpolate( ...
-                        aoa_c(:,:,i_rx) , eoa_c(:,:,i_rx) , i_rx , ...
-                        rx_azimuth_grid , rx_elevation_grid , rx_patV , ...
-                        rx_patH, rx_element_pos);
-                end
+            else
+                % Interpolate the receive antenna patterns
+                [ gVr, gHr ] = interpolate( h_builder.rx_array(1,i_mobile), aoa, eoa, [], ...
+                    rx_orientation(:,i_snapshot), 14.3239, use_gpu(use_gpu~=0)+2 );
+                gVr = reshape( gVr, n_rxant,1,n_paths );
+                gHr = reshape( gHr, n_rxant,1,n_paths );
                 
-                % Interpolate the receive antenna patterns (NLOS)
+                % Interpolate the transmit antenna patterns only when needed
                 if update_tx_ant
-                    Vt  = zeros(1,n_paths,n_txant);
-                    Ht  = zeros(1,n_paths,n_txant);
-                    for i_tx = 1 : n_txant
-                        [Vt(1,:,i_tx),Ht(1,:,i_tx)] =...
-                            h_builder.tx_array(1,i_mobile).interpolate( ...
-                            aod_c(:,:,1,i_tx) , eod_c(:,:,1,i_tx) , i_tx , ...
-                            tx_azimuth_grid , tx_elevation_grid , tx_patV , ...
-                            tx_patH, tx_element_pos);
-                    end
+                    [ gVt, gHt ] = interpolate( h_builder.tx_array(1,i_mobile), aod, eod, [], ...
+                        tx_orientation(:,i_snapshot), 14.3239, use_gpu(use_gpu~=0)+2 );
+                    gVt = reshape( gVt, 1,n_txant,n_paths );
+                    gHt = reshape( gHt, 1,n_txant,n_paths );
                 end
+            end
+            
+            % Calculate the NLOS channel coefficients
+            gG = repmat(gVr,[1,n_txant,1]) .* repmat( gM(:,:,:,1),[n_rxant,n_txant,1] ) .* repmat(gVt,[n_rxant,1,1]) + ...
+                repmat(gVr,[1,n_txant,1]) .* repmat( gM(:,:,:,3),[n_rxant,n_txant,1] ) .* repmat(gHt,[n_rxant,1,1]) + ...
+                repmat(gHr,[1,n_txant,1]) .* repmat( gM(:,:,:,2),[n_rxant,n_txant,1] ) .* repmat(gVt,[n_rxant,1,1]) + ...
+                repmat(gHr,[1,n_txant,1]) .* repmat( gM(:,:,:,4),[n_rxant,n_txant,1] ) .* repmat(gHt,[n_rxant,1,1]);
+            
+            if ~use_3GPP_baseline
+
+                % Calculate the RX antenna response for the LOS and GR path
+                aoa_los = reshape( permute( aoa_los, [3,4,2,1] ) ,n_rxant,[] );
+                eoa_los = reshape( permute( eoa_los, [3,4,2,1] ) ,n_rxant,[] );
+                [ gVLr,gHLr ] = interpolate( h_builder.rx_array(1,i_mobile), aoa_los, eoa_los, [], ...
+                    rx_orientation(:,i_snapshot), 14.3239, use_gpu(use_gpu~=0)+2 );
+                gVLr = reshape( gVLr, n_rxant, n_txant, [] );
+                gHLr = reshape( gHLr, n_rxant, n_txant, [] );
                 
-                % Include the direction on travel in the LOS angles
-                [ ~, aoa_los_c, eoa_los_c, deg_LOS_a ] = qf.calc_ant_rotation( rx_orientation(3,i_snapshot),...
-                    -rx_orientation(2,i_snapshot), rx_orientation(1,i_snapshot), aoa_los, eoa_los );
-                [ ~, aod_los_c, eod_los_c, deg_LOS_d ] = qf.calc_ant_rotation( tx_orientation(3,i_snapshot),...
-                    -tx_orientation(2,i_snapshot), tx_orientation(1,i_snapshot), aod_los, eod_los );
-                
-                % Calculate the Rx-Array-Pattern LOS response for
-                % each element separately.
-                if use_ground_reflection
-                    Vr_LOS  = zeros(1,2,n_rxant,n_txant);
-                    Hr_LOS  = zeros(1,2,n_rxant,n_txant);
-                    Vt_LOS  = zeros(1,2,n_rxant,n_txant);
-                    Ht_LOS  = zeros(1,2,n_rxant,n_txant);
+                % Calculate the TX antenna response for the LOS and GR path
+                aod_los = reshape( permute( aod_los, [4,3,2,1] ) ,n_txant,[] );
+                eod_los = reshape( permute( eod_los, [4,3,2,1] ) ,n_txant,[] );
+                [ gVLt,gHLt ] = interpolate( h_builder.tx_array(1,i_mobile), aod_los, eod_los, [], ...
+                    tx_orientation(:,i_snapshot), 14.3239, use_gpu(use_gpu~=0)+2 );
+                if use_ground_reflection 
+                    gVLt = reshape( gVLt, n_txant, n_rxant, [] );   % Warning: wrong order!
+                    gHLt = reshape( gHLt, n_txant, n_rxant, [] );   % Warning: wrong order!
                 else
-                    Vr_LOS  = zeros(1,1,n_rxant,n_txant);
-                    Hr_LOS  = zeros(1,1,n_rxant,n_txant);
-                    Vt_LOS  = zeros(1,1,n_rxant,n_txant);
-                    Ht_LOS  = zeros(1,1,n_rxant,n_txant);
+                    gVLt = gVLt.';
+                    gHLt = gHLt.';
                 end
                 
-                for i_rx = 1 : n_rxant
-                    [ Vr_LOS(1,:,i_rx,:), Hr_LOS(1,:,i_rx,:) ] =...
-                        h_builder.rx_array(1,i_mobile).interpolate( ...
-                        aoa_los_c(1,:,i_rx,:), eoa_los_c(1,:,i_rx,:), i_rx, ...
-                        rx_azimuth_grid , rx_elevation_grid , rx_patV , ...
-                        rx_patH, rx_element_pos);
-                end
-                
-                for i_tx = 1 : n_txant
-                    [ Vt_LOS(1,:,:,i_tx), Ht_LOS(1,:,:,i_tx) ] =...
-                        h_builder.tx_array(1,1).interpolate( ...
-                        aod_los_c(1,:,:,i_tx), eod_los_c(1,:,:,i_tx), i_tx, ...
-                        tx_azimuth_grid, tx_elevation_grid, tx_patV,...
-                        tx_patH, tx_element_pos );
-                end
-            end
-            
-            % Calculate the Tx polarization rotation matrix
-            if update_tx_ant && ~use_3GPP_baseline
-                for i_tx = 1 : n_txant
-                    xprmat_tx(1,:,i_tx) = cos( deg_d(1,:,1,i_tx) );
-                    xprmat_tx(2,:,i_tx) = sin( deg_d(1,:,1,i_tx) );
-                end
-            end
-            
-            % The main loop to calculate the channel coefficients
-            for i_rx = 1 : n_rxant     % Rx elements
-                
-                % Rx uses spherical waves, we need to calculate one XPRMAT for each Rx antenna separately.
-                if ~use_3GPP_baseline
-                    % Calculate a common XPRMAT for all Tx and Rx antennas
-                    xprmat_rx(1,:) =  cos( deg(1,:,i_rx) );
-                    xprmat_rx(2,:) = -sin( deg(1,:,i_rx) );
-                    xprmat_rx(3,:) =  xprmat_rx(2,:);
-                    xprmat_rx(4,:) = -xprmat_rx(1,:);
+                % Calculate the additional polarization scaling factors for the ground reflection
+                if use_ground_reflection
+                    epsilon_r = h_builder.gr_epsilon_r( i_mobile );   % Relative permittivity
                     
-                    % Include circular phase offset
-                    xprmat_rx([1,2],:) = xprmat_rx([1,2],:) .* conj(kappa([1,1],:));
-                    xprmat_rx([3,4],:) = xprmat_rx([3,4],:) .* kappa([1,1],:);
-                end
-                
-                for i_tx = 1 : n_txant                           % Transmit elements
-                    ind = (i_tx-1)*n_rxant + i_rx;               % Index of element in c
+                    Z      = sqrt( epsilon_r - (cos(theta_r)).^2 );
+                    R_par  = (epsilon_r * sin(theta_r) - Z) ./ (epsilon_r * sin(theta_r) + Z);
+                    R_per  = ( sin(theta_r) - Z) ./ ( sin(theta_r) + Z);
                     
-                    % Tx uses spherical waves, we need to update XPRMAT for each Tx antenna
-                    if ~use_3GPP_baseline
-                        % Calculate XPRMAT by combining TX and RX matrices
-                        xprmat = xprmat_rx .* xprmat_tx(o4,:,i_tx);
-                        xprmat([1,2],:) = xprmat([1,2],:) + xprmat_rx([3,4],:) .* xprmat_tx(t2,:,i_tx);
-                        xprmat([3,4],:) = xprmat([3,4],:) - xprmat_rx([1,2],:) .* xprmat_tx(t2,:,i_tx);
-                        
-                        % Update XPRMAT for the LOS path
-                        TC = -cos( deg_LOS_d(1,1,i_rx,i_tx) );
-                        TS = -sin( deg_LOS_d(1,1,i_rx,i_tx) );
-                        xprmat([1,2,4],1) = [ -TC,TS ; TS,TC ; TC,-TS ] *...
-                            [ cos( deg_LOS_a(1,1,i_rx,i_tx) ) ; sin( deg_LOS_a(1,1,i_rx,i_tx) ) ];
-                        xprmat(3,1) = xprmat(2,1);
-                        
-                        % Apply scaling for the GR path
-                        if use_ground_reflection
-                            TC = -cos( deg_LOS_d(1,2,i_rx,i_tx) );
-                            TS = -sin( deg_LOS_d(1,2,i_rx,i_tx) );
-                            SV = Sv(i_rx,i_tx);
-                            SH = Sh(i_rx,i_tx);
-                            xprmat(:,2) = [ -TC*SV,TS*SH ; TS*SH,TC*SV ; TS*SV,TC*SH ; TC*SH,-TS*SV ] *...
-                                [ cos( deg_LOS_a(1,2,i_rx,i_tx) ) ; sin( deg_LOS_a(1,2,i_rx,i_tx) ) ];
-                            xprmat(:,1) = Sl .* xprmat(:,1);
-                        end
-                    end
-                    
-                    % Get antenna responses
-                    PatTx = [ Vt(1,:,i_tx) ; Ht(1,:,i_tx) ];
-                    PatRx = [ Vr(1,:,i_rx) ; Hr(1,:,i_rx) ];
-                    if ~use_3GPP_baseline
-                        PatTx(1,1) = Vt_LOS(1,1,i_rx,i_tx);
-                        PatTx(2,1) = Ht_LOS(1,1,i_rx,i_tx);
-                        PatRx(1,1) = Vr_LOS(1,1,i_rx,i_tx);
-                        PatRx(2,1) = Hr_LOS(1,1,i_rx,i_tx);
-                        if use_ground_reflection
-                            PatTx(1,2) = Vt_LOS(1,2,i_rx,i_tx);
-                            PatTx(2,2) = Ht_LOS(1,2,i_rx,i_tx);
-                            PatRx(1,2) = Vr_LOS(1,2,i_rx,i_tx);
-                            PatRx(2,2) = Hr_LOS(1,2,i_rx,i_tx);
-                        end
-                    end
-                    
-                    % Get the channel coefficients without random phases
-                    c(ind,:) = sum( [ sum( PatTx .* xprmat([1 3],:)) ;...
-                        sum( PatTx .* xprmat([2 4],:))] .* PatRx );
-                    
-                    % The phases
-                    if use_3GPP_baseline
-                        % In drifting mode, we have to update the coefficient
-                        % matrix with the time-variant Doppler profile.
-                        cp(ind,:) = exp( -1j*( pin + wave_no*( Pt(1,:,i_tx) + Pr(1,:,i_rx) ) + phase( 1 , : ) ));
+                    % Read the path power scaling that was used in "generate_initial_paths.m"
+                    P_LOS = h_builder.pow(i_mobile,1);
+                    P_GR  = h_builder.pow(i_mobile,2);
+                    if P_GR == 0
+                        Sl = 1;
+                        gSv = 0;
+                        gSh = 0;
                     else
-                        % The phases already contain the effect of the
-                        % AoD. Hence, the parallel projection of the
-                        % array antennas is not needed.
-                        cp(ind,:) = exp( -1j*( pin + phase( 1 , : , i_rx , i_tx )));
+                        % Compensate for the power scaling in "generate_initial_paths.m"
+                        Rsq   = 2 * P_GR / (P_LOS + P_GR);
+                        gSv = sqrt(2/Rsq) * R_par;       % GR path vertical pol.
+                        gSh = sqrt(2/Rsq) * R_per;       % GR path horizontal pol.
+                        if P_LOS == 0
+                            Sl = 0;
+                        else
+                            Sl = 1 / sqrt( 1-Rsq/2 );   % LOS path
+                        end
                     end
+                    
+                    % Transfer to GPU
+                    if use_gpu == 1 % double
+                        gSv(1) = gSv(1) + 1j*4e-324; gSv = gpuArray( gSv );
+                        gSh(1) = gSh(1) + 1j*4e-324; gSh = gpuArray( gSh );
+                    elseif use_gpu == 2 % single
+                        gSv(1) = gSv(1) + 1j*1e-45; gSv = gpuArray( single( gSv ) );
+                        gSh(1) = gSh(1) + 1j*1e-45; gSh = gpuArray( single( gSh ) );
+                    end
+                    
+                    % Update the LOS channel coefficients (LOS polarization transfer matrix is [ 1 0 ; 0 -1 ])
+                    gG(:,:,1) = Sl * gVLr(:,:,1) .*  gVLt(:,:,1).' - Sl * gHLr(:,:,1) .* gHLt(:,:,1).';
+                    gG(:,:,2) = gSv .* gVLr(:,:,2) .*  gVLt(:,:,2).' - gSh .* gHLr(:,:,2) .* gHLt(:,:,2).';
+                else
+                    % Update the LOS channel coefficients (LOS polarization transfer matrix is [ 1 0 ; 0 -1 ])
+                    gG(:,:,1) = gVLr(:,:,1) .*  gVLt(:,:,1) - gHLr(:,:,1) .* gHLt(:,:,1);
                 end
             end
             
-            % Combine antenna patterns and phases
-            ccp = c.*cp;
+            % Obtain coefficients from GPU
+            if use_gpu
+                gG = double( gather( gG ) );
+            end
+            
+            % The phases
+            if use_3GPP_baseline
+                % In drifting mode, we have to update the coefficient matrix with the time-variant
+                % Doppler profile. 
+                ccp = gG .* exp( -1j*( repmat(permute(pin,[1,3,2]),n_rxant,n_txant) + ...
+                    wave_no*( repmat(Pt,[n_rxant,1,1]) + repmat(Pr,[1,n_txant,1]) ) + ...
+                    repmat(permute(phase(1,:),[1,3,2]),n_rxant,n_txant) ) );
+            else
+                % The phases already contain the effect of the AoD. Hence, the parallel projection
+                % of the array antennas is not needed.
+                ccp = gG .* exp(-1j*( repmat(permute(pin,[1,3,2]),n_rxant,n_txant) +  permute(phase,[3,4,2,1] )));
+            end
+            ccp = reshape( ccp, n_rxant*n_txant,n_paths );
             
             % Sum over the sub-paths in a cluster. This changes the cluster power due to the random
             % phases. This is corrected later.
@@ -567,7 +445,8 @@ else
             % emulated by phase rotation.
             
             % Combine pattern and phase for the first snapshopt
-            c = c.*cp;
+            %c = c.*cp;
+            c = ccp;
             
             for i_snapshot = 2 : n_snapshots
                 % Generate rotating Dopplers for the sucessive snapshots
@@ -629,40 +508,61 @@ else
             
         else
             
-            % Get shadowing profile along the track from the correlation map. The first vector is
-            % the K-Factor and the second vector is the SF. The initial K-Factor is already applied
-            % in the path powers. We thus need to correct for that factor.
+            % Calculate the path gain along the track segment
+            path_gain = -h_builder.get_pl( h_builder.rx_track(1,i_mobile), [], h_builder.tx_track(1,i_mobile) );
+            
+            % We have a dynamic SF and KF profile that varies over the positions on the track.
+            % Get shadowing profile along the track from the SOS generators. 
             [sf,kf] = h_builder.get_sf_profile( h_builder.rx_track(1,i_mobile), h_builder.tx_track(1,i_mobile) );
             
-            % Scaling factor for the KF
-            kf  = kf./h_builder.kf(1,i_mobile);
-            if use_ground_reflection
-                p1 = h_builder.pow( i_mobile,1 ) + h_builder.pow( i_mobile,2 );
-                p1 = p1 ./ sum( h_builder.pow(i_mobile,:) );
+            % When changing the cluster powers (e.g., by "add_paths"), the SF changes as well. We
+            % obtain the difference of the SF by readig the initial SF values from the builder and
+            % the dynamic SF profile.
+            sf_init_builder = h_builder.sf(1,i_mobile);
+            sf_init_sos     = sf( initial_pos );
+            
+            % We now correct the dynamic SF values (linear scale).
+            sf = sf .* sf_init_builder/sf_init_sos;
+            
+            % Calculate the Rx power (sum-power of all clusters)
+            rx_power = path_gain + 10*log10( sf );
+            rx_power = 10.^( 0.1 * rx_power );
+            rx_power = permute( rx_power, [1,3,2] );
+            
+            % Get the KF scaling
+            if kf( initial_pos ) < 1e-10 
+                kf_scale = ones( size( kf ) );
             else
-                p1 = h_builder.pow( i_mobile,1 );
+                kf_scale = kf ./ kf( initial_pos );
             end
-            kf_power_scale = sqrt( 1+p1*(kf-1) );
-            kf = sqrt(kf);
+            kf_scale = permute( kf_scale, [1,3,2] );
             
-            % Calculate the path loss
-            [ path_loss , scale_sf ] = h_builder.get_pl( h_builder.rx_track(1,i_mobile), [], h_builder.tx_track(1,i_mobile) );
-            
-            % Calculate the Rx power
-            rx_power = -path_loss + 10*log10( sf ) .* scale_sf;
-            rx_power = sqrt( 10.^( 0.1 * rx_power ) );
-            
-            o_tmp = ones(1,n_txant*n_rxant,'uint8');
-            kf = permute( kf(o_tmp,:) , [1,3,2] );
-            
-            rx_power = rx_power ./ kf_power_scale;
-            rx_power = permute( rx_power(o_tmp,:) , [1,3,2] );
-            
-            cn(:,1,:) = cn(:,1,:).*kf;
+            % Get the normalized power for the LOS and NLOS componenets ( p_los + p_nlos = 1 )
             if use_ground_reflection
-                cn(:,2,:) = cn(:,2,:).*kf;
+                p_los  = h_builder.pow( i_mobile,1 ) + h_builder.pow( i_mobile,2 );
+                p_nlos = sum( h_builder.pow(i_mobile,3:end) );
+            else
+                p_los  = h_builder.pow( i_mobile,1 );
+                p_nlos = sum( h_builder.pow(i_mobile,2:end) );
             end
-            cn = cn.*rx_power(:,o_clusters,:);
+            
+            % Adjust the path powers to apply the varying KF along the track segment
+            if p_los > 1e-4 && p_nlos > 1e-4 && any(kf_scale(:) ~= 1)
+                
+                % Adjust the power of the LOS component to match the target KF
+                cn(:,1,:) = cn(:,1,:) .* repmat( sqrt(kf_scale),[n_links,1,1] );
+                if use_ground_reflection
+                    cn(:,2,:) = cn(:,2,:) .* repmat( sqrt(kf_scale),[n_links,1,1] );
+                end
+                
+                % The power adjustment of the LOS component changes the total RX power
+                % This needs to be compensated in the total RX power
+                rx_power = rx_power ./ ( p_los .* kf_scale + p_nlos );
+            end
+            
+            % Adjust the overall power of the channel coefficients
+            rx_power = sqrt( rx_power );
+            cn = cn .* rx_power(o_txrxant,o_clusters,:);
         end
         
         % Apply antenna coupling
@@ -723,11 +623,11 @@ else
         if ~isempty( tmp )
             channel_name = [ channel_name(1:tmp-1), h_builder.tx_track(1,i_mobile).name ];
         end
-        channel_name = [ channel_name ,'_', h_builder.rx_track(1,i_mobile).name ];
+        channel_name = [ channel_name ,'_', h_builder.rx_track(1,i_mobile).name ]; %#ok
         h_channel(1,i_mobile).name = channel_name;
         h_channel(1,i_mobile).rx_position = h_builder.rx_track(1,i_mobile).positions_abs;
         h_channel(1,i_mobile).tx_position = h_builder.tx_track(1,i_mobile).positions_abs;
-        h_channel(1,i_mobile).center_frequency = h_builder.simpar.center_frequency(1,1);
+        h_channel(1,i_mobile).center_frequency = h_builder.simpar(1,1).center_frequency(1,1);
         
         % Save Additional LSF and SSF information
         clear par_struct
@@ -742,12 +642,14 @@ else
             par_struct.pg_parset = 10*log10( mean(rx_power(:)).^2 ); % [db]
             par_struct.pg = 10*log10(abs( reshape( mean(mean(rx_power,1),2) , 1,[] ) ).^2);
         end
-        par_struct.sf_parset = 10*log10( h_builder.sf( i_mobile )); 
+        par_struct.sf_parset = 10*log10( h_builder.sf( i_mobile ));
         par_struct.asD_parset = h_builder.asD( i_mobile ); % [deg]
         par_struct.asA_parset = h_builder.asA( i_mobile ); % [deg]
         par_struct.esD_parset = h_builder.esD( i_mobile ); % [deg]
         par_struct.esA_parset = h_builder.esA( i_mobile ); % [deg]
-        par_struct.XPR_parset = 10*log10( h_builder.xpr( i_mobile ) ); % [db]
+        if ~isempty(h_builder.xpr) 
+            par_struct.XPR_parset = 10*log10( h_builder.xpr( i_mobile ) ); % [db]
+        end
         
         % Save the individual per-path values
         par_struct.AoD_cb = h_builder.AoD( i_mobile,iClst ) * 180/pi; % [deg]
@@ -755,6 +657,7 @@ else
         par_struct.EoD_cb = h_builder.EoD( i_mobile,iClst ) * 180/pi; % [deg]
         par_struct.EoA_cb = h_builder.EoA( i_mobile,iClst ) * 180/pi; % [deg]
         par_struct.pow_cb = h_builder.pow( i_mobile,iClst );          % [W]
+        par_struct.gain_cb = h_builder.gain( i_mobile,iClst );          % [W]
         
         % Calculate the spreads at the output of the builder
         par_struct.ds_cb  = qf.calc_delay_spread( h_builder.taus( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) );
@@ -772,7 +675,7 @@ else
         % Save update rate
         mp = h_builder.rx_track(1,i_mobile).movement_profile;
         if n_snapshots > 1 && all(size(mp)==[2,2]) && mp(1,1)==0 && mp(2,1)==0 && ...
-                abs(mp(2,2)-h_builder.rx_track(1,i_mobile).get_length) < 1e-6
+                abs(mp(2,2)-get_length(h_builder.rx_track(1,i_mobile))) < 1e-6
             par_struct.update_rate = mp(1,2)/n_snapshots;
         end
         h_channel(1,i_mobile).par = par_struct;

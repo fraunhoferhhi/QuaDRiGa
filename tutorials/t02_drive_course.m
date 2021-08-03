@@ -77,7 +77,7 @@ set(0,'defaultAxesFontName','Times')               	    % Default Font Type
 set(0,'defaultTextFontName','Times')                 	% Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')       	% Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')             	% Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 7.7])            	% Default Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 7.8])            	% Default Paper Size
 
 l = qd_layout;                                          % New layout
 [~,l.rx_track] = interpolate( t.copy,'distance',0.1 );  % Interpolate and assign track to layout
@@ -158,7 +158,7 @@ l.rx_array.combine_pattern;                           	% Merge polarized pattern
 l.rx_array.rotate_pattern(-90,'y');                    	% Point skywards
 
 % Calculate the beam footprint
-set(0,'DefaultFigurePaperSize',[14.5 7.7])              % Adjust paper size for plot
+set(0,'DefaultFigurePaperSize',[14.5 7.8])              % Adjust paper size for plot
 [map,x_coords,y_coords]=l.power_map('5G-ALLSTAR_Urban_LOS','quick',2e4,-6e6,6e6,-5e6,5e6);
 P = 10*log10( map{:}(:,:,1) ) + 50;                     % RX copolar power @ 50 dBm TX power
 l.visualize([],[],0);                                   % Plot layout

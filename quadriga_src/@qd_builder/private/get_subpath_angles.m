@@ -138,9 +138,9 @@ end
 if nargout == 5 && use_qd_builder
     dl = h_builder.taus(i_mobile,:);
     n_snapshots = h_builder.rx_track(1,i_mobile).no_snapshots;
-    if h_builder.simpar.use_absolute_delays
+    if h_builder.simpar(1,1).use_absolute_delays
         r_0 = h_builder.rx_positions(:,i_mobile) - h_builder.tx_position(:,i_mobile);
-        D = sqrt(sum(r_0.^2)) / h_builder.simpar.speed_of_light;
+        D = sqrt(sum(r_0.^2)) / h_builder.simpar(1,1).speed_of_light;
         delay = repmat( dl+D , n_snapshots , 1  );
     else
         delay = repmat( dl , n_snapshots , 1  );

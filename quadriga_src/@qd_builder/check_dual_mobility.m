@@ -1,4 +1,4 @@
-function isdual = check_dual_mobility( h_builder )
+function isdual = check_dual_mobility( h_builder, show_warnings )
 %CHECK_DUAL_MOBILITY Checks the input data of the builder
 %
 % Calling object:
@@ -10,6 +10,12 @@ function isdual = check_dual_mobility( h_builder )
 %   that all other methods of the builder class can work with the variables without checking them
 %   again. The method also checks if dual-mobility processing is required. This information is
 %   stored in "qd_builder.dual_mobility" to be accessed by other methods.
+%
+% Input:
+%   show_warnings
+%   If set to true (default), 'qd_builder.check_dual_mobility' performs a set of tests to determine
+%   if all provided input variables are correctly initialized. This can be disabled by setting
+%   'show_warnings = 0'.
 %
 % Output:
 %   isdual
@@ -34,13 +40,18 @@ function isdual = check_dual_mobility( h_builder )
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
+% Parse input variables.
+if ~exist( 'show_warnings','var' ) || isempty( show_warnings )
+    show_warnings = true;
+end
+
 if numel(h_builder) > 1
     
     sic = size( h_builder );
     isdual = false( sic );
     for i_cb = 1 : numel(h_builder)
         [ i1,i2,i3,i4 ] = qf.qind2sub( sic, i_cb );
-        isdual(i1,i2,i3,i4) = check_dual_mobility( h_builder(i1,i2,i3,i4) );
+        isdual(i1,i2,i3,i4) = check_dual_mobility( h_builder(i1,i2,i3,i4), show_warnings );
     end
     
 else
@@ -78,7 +89,7 @@ else
                 'You must provide valid simulation parameters.');
         end
         
-        n_freq = numel( h_builder.simpar.center_frequency );                    % Read the number of drequencies
+        n_freq = numel( h_builder.simpar(1,1).center_frequency );                    % Read the number of drequencies
         o_freq = ones(1,n_freq);
         o_mobiles = ones(1,n_mobiles);
         
@@ -121,8 +132,6 @@ else
         
         % Make sure the rx_arrays are correct
         if isempty( h_builder.rx_array )
-            warning('QuaDRiGa:qd_builder:check_dual_mobility:no_rx_antenna',...
-                'Rx-antenna antenna undefined - using omni.');
             h_builder.rx_array = qd_arrayant;
         elseif ~isa(h_builder.rx_array(1,1),'qd_arrayant')
             error('QuaDRiGa:qd_builder:check_dual_mobility:wrong_Rx_array_class',...
@@ -256,8 +265,6 @@ else
         
         % Make sure the tx_arrays are correct
         if isempty( h_builder.tx_array )
-            warning('QuaDRiGa:qd_builder:check_dual_mobility:no_tx_antenna',...
-                'Tx-antenna antenna undefined - using omni.');
             h_builder.tx_array = qd_arrayant;
             
         elseif ~isa(h_builder.tx_array(1,1),'qd_arrayant')

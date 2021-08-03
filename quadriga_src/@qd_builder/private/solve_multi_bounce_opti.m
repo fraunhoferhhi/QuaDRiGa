@@ -101,6 +101,7 @@ norm_a = oNM * d_min;
 [ ~, norm_c, norm_b ] = solve_cos_theorem( -bhat , r + ahat.*d_min , dist-d_min );
 
 step_size  = max( 0.05*d_max, 10 );
+d_max = d_max + step_size;
 
 norm_a_new = norm_a;
 norm_b_new = norm_b;
@@ -124,7 +125,7 @@ while any( upd ) && stp_cnt < 400
     ind = norm_a_new > d_max & upd;
     if any( ind )
         norm_a_new( ind ) = d_max( ind ); 
-        step_size( ind ) = 0;
+        step_size( ind ) = -0.9 * abs( step_size( ind ) );
     end
     
     [ ~, norm_c_new(upd) , norm_b_new(upd) ] = solve_cos_theorem( -bhat(:,upd) ,...

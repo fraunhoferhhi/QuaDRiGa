@@ -106,14 +106,14 @@ if numel( h_builder ) > 1
     end
     
 else
-    % Fix for octave 4.0 (conversion from object-array to single object)
+    % Fix for Octave (conversion from object-array to single object)
     h_builder = h_builder(1,1);
     
     % Test if there is only one Rx-array in the builder
     if numel( h_builder.rx_array ) > 1 && any( ~qf.eqo( h_builder.rx_array(1,1) , h_builder.rx_array ) )
         error('QuaDRiGa:qf_builder:get_los_channels:Rx_array_ambiguous',...
             ['There is more than one Rx array antenna in "h_builder".\n ',...
-            '"get_los_channels" can only use one array antenna. Results might be erroneous.']);
+            '"get_los_channels" can only use one array antenna.']);
     elseif isempty( h_builder.rx_array )
         rx_array = qd_arrayant('omni');
     else
@@ -124,8 +124,8 @@ else
     if numel( h_builder.tx_array ) > 1 && any( ~qf.eqo( h_builder.tx_array(1,1) , h_builder.tx_array ) )
         error('QuaDRiGa:qf_builder:get_los_channels:Tx_array_ambiguous',...
             ['There is more than one Tx array antenna in "h_builder".\n ',...
-            '"get_los_channels" can only use one array antenna. Results might be erroneous.']);
-    elseif isempty( h_builder.rx_array )
+            '"get_los_channels" can only use one array antenna.']);
+    elseif isempty( h_builder.tx_array )
         tx_array = qd_arrayant('omni');
     else
         tx_array = h_builder.tx_array(1,1);
@@ -149,14 +149,18 @@ else
     end
     
     % Check if we have a single-grequency builder
-    if numel( h_builder.simpar.center_frequency ) > 1
+    if numel( h_builder.simpar(1,1).center_frequency ) > 1
          error('QuaDRiGa:qd_builder:get_los_channels','get_los_channels only works for single-freqeuncy simulations.');
     end
      
-    lambda  = h_builder.simpar.wavelength;
+    lambda  = h_builder.simpar(1,1).wavelength;
     n_positions = h_builder.no_rx_positions;
     o_positions = ones( 1,n_positions );
+    
     wave_no = 2*pi/lambda;
+    if single_precision
+        wave_no = single( wave_no );
+    end
     
     % Extract the travel directions at the initial position
     rx_orientation = zeros(3,n_positions,precision);
@@ -194,112 +198,74 @@ else
         tx_orientation = single( tx_orientation );
     end
     
-    % Calculate the effective rotation angles for the antennas
-    [ ~, aoa_c, eoa_c, deg_a ] = qf.calc_ant_rotation( rx_orientation(3,:), -rx_orientation(2,:),...
-        rx_orientation(1,:), angles(2,:), angles(4,:) );
-    [ ~, aod_c, eod_c, deg_d ] = qf.calc_ant_rotation( tx_orientation(3,:), -tx_orientation(2,:),...
-        tx_orientation(1,:), angles(1,:), angles(3,:) );
+    % Interpolate the transmit antenna patterns
+    [ Vt,Ht,Pt ] = interpolate( tx_array, angles(1,:), angles(3,:), tx_array_mask, tx_orientation, 14.3239 );
+    n_tx = size(Vt,1);
     
-    % Interpolate the tx array antennas
-    if exist( 'tx_array_mask','var' ) && ~isempty( tx_array_mask )
-        [ Vt,Ht,Pt ] = tx_array.interpolate( aod_c , eod_c, tx_array_mask );
-        Ct = tx_array.coupling( tx_array_mask,tx_array_mask );
-        n_tx = numel(tx_array_mask);
-    else
-        [ Vt,Ht,Pt ] = tx_array.interpolate( aod_c , eod_c );
+    Vt = reshape( Vt,[1,n_tx,n_positions] );
+    Ht = reshape( Ht,[1,n_tx,n_positions] );
+    Pt = reshape( Pt,[1,n_tx,n_positions] );
+    
+    if isempty( tx_array_mask )
         Ct = tx_array.coupling;
-        n_tx = tx_array.no_elements;
+    elseif size(tx_array.coupling,2) == size(tx_array.coupling,1)
+        Ct = tx_array.coupling(tx_array_mask,tx_array_mask);
+    else
+        Ct = tx_array.coupling(tx_array_mask,:);
     end
-    if single_precision
+    if single_precision && ~isa(Ct,'single')
         Ct = single(Ct);
     end
     
     if raw_coeff
+        
+        % Use two Rx elements for the two polarizaions
         n_rx = 2;
+        
         % It is possible to provide different Jones matrices for the raw coefficients
         if rx_array.no_elements == 2
             Cr = rx_array.coupling.';
         else
             Cr = eye(2);
         end
-    else
-        [ Vr,Hr,Pr ] = rx_array.interpolate( aoa_c , eoa_c );
-        n_rx = rx_array.no_elements;
-        Cr = rx_array.coupling.';
-    end
-    if single_precision
-        Cr = single(Cr);
-    end
-    
-    % Calculate the distance-dependent phases
-    if ~raw_coeff
-        r = (h_builder.rx_positions(1,:) - h_builder.tx_position(1,:)).^2 + ...
-            (h_builder.rx_positions(2,:) - h_builder.tx_position(2,:)).^2 + ...
-            (h_builder.rx_positions(3,:) - h_builder.tx_position(3,:)).^2;
-        phase = 2*pi/lambda * mod( sqrt(r), lambda);
+        if single_precision && ~isa(Cr,'single')
+            Cr = single(Cr);
+        end
         
+        % Calculate the LOS channel coefficients (LOS polarization transfer matrix is [ 1 0 ; 0 -1 ])
+        c = repmat([1;0],[1,n_tx,n_positions]) .* repmat(Vt,[n_rx,1,1]) - repmat([0;1],[1,n_tx,n_positions]) .* repmat(Ht,[n_rx,1,1]);
+        
+        % Appy the per-element phase offset
+        c = c.* exp( -1j*(wave_no.*(repmat(Pt,[2,1,1])))) ;
+         
+    else
+        % Interpolate the RX antenna patterns
+        [ Vr,Hr,Pr ] = interpolate( rx_array, angles(2,:), angles(4,:), [], rx_orientation, 14.3239 );
+        n_rx = rx_array.no_elements;
+        
+        Vr = reshape( Vr,[n_rx,1,n_positions] );
+        Hr = reshape( Hr,[n_rx,1,n_positions] );
+        Pr = reshape( Pr,[n_rx,1,n_positions] );
+        
+        Cr = rx_array.coupling.';
+        if single_precision && ~isa(Cr,'single')
+            Cr = single(Cr);
+        end
+        
+        % Calculate the LOS channel coefficients (LOS polarization transfer matrix is [ 1 0 ; 0 -1 ])
+        c = repmat(Vr,[1,n_tx,1]) .* repmat(Vt,[n_rx,1,1]) - repmat(Hr,[1,n_tx,1]) .* repmat(Ht,[n_rx,1,1]);
+        
+        % Calculate the phase
+        phase = 2*pi/lambda * mod( sqrt(sum((h_builder.rx_positions - h_builder.tx_position).^2)), lambda );
         if single_precision
             phase = single( phase );
         end
+        phase = reshape( phase,1,1,n_positions );
         
-        % Precalculate Rx pattern response
-        co_a = cos( deg_a(1,:) );
-        si_a = sin( deg_a(1,:) );
-        PatRx = zeros( 2,n_positions,n_rx,precision );
-        for i_rx = 1 : n_rx
-            % Rx Patterns
-            PatRx(:,:,i_rx) = [ reshape( Vr(1,:,i_rx) , 1,n_positions ) ;...
-                reshape( Hr(1,:,i_rx) , 1,n_positions ) ];
-            
-            % Apply polarizazion rotation to the rx antennas
-            PatRx(:,:,i_rx) = [ PatRx(1,:,i_rx) .* co_a - PatRx(2,:,i_rx) .* si_a ; ...
-                PatRx(1,:,i_rx) .* si_a + PatRx(2,:,i_rx) .* co_a ];
-        end
-    end
-    
-    if single_precision
-        wave_no = single( wave_no );
-    end
-    
-    % Tx polarization rotation coefficients
-    co_d = cos( deg_d(1,:) );
-    si_d = sin( deg_d(1,:) );
-
-    % Calculate the channel coefficients including polarization
-    c = zeros( n_rx*n_tx , n_positions, precision );
-    for i_tx = 1 : n_tx
+        % Appy phase to channel coefficients
+        c = c.* exp( -1j*(wave_no.*(repmat(Pr,[1,n_tx,1]) + repmat(Pt,[n_rx,1,1])) + repmat(phase,[n_rx,n_tx,1])) );
         
-        % Tx Patterns
-        PatTx = [ reshape( Vt(1,:,i_tx) , 1,n_positions ) ;...
-            reshape( Ht(1,:,i_tx) , 1,n_positions ) ];
-        
-        % Apply polariaion rotation to the tx antenna
-        PatTx = [ co_d .* PatTx(1,:) - si_d .* PatTx(2,:) ; ...
-            si_d .* PatTx(1,:) + co_d .* PatTx(2,:)  ];
-        
-        if raw_coeff
-            
-            % First component
-            ind = (i_tx-1)*2 + 1;
-            c(ind,:) = PatTx(1,:) .* exp( -1j*(  wave_no*( Pt(1,:,i_tx)  )));
-            
-            % Second component
-            ind = ind + 1;
-            c(ind,:) = PatTx(2,:) .* exp( -1j*(  wave_no*( Pt(1,:,i_tx)  )));
-            
-        else
-            for i_rx = 1 : n_rx
-                ind = (i_tx-1)*n_rx + i_rx;
-
-                % Coefficients and antenna-dependent phase offset
-                c(ind,:) = ( PatTx(1,:) .* PatRx(1,:,i_rx) - PatTx(2,:) .* PatRx(2,:,i_rx) ).* ...
-                    exp( -1j*(  wave_no*( Pt(1,:,i_tx) + Pr(1,:,i_rx) ) + phase ));
-            end
-        end
-    end
-    
-    % Apply path loss
-    if ~raw_coeff
+        % Calculate the path loss
         [ path_loss , scale_sf ] = h_builder.get_pl;
         if isempty( h_builder.sf )
             rx_power = -path_loss;
@@ -307,12 +273,12 @@ else
             rx_power = -path_loss + 10*log10( h_builder.sf ) .* scale_sf;
         end
         rx_power = sqrt( 10.^( 0.1 * rx_power ) );
-        c = c.*rx_power( ones(1,n_tx*n_rx) , : );
+        
+        % Appy the path loss
+        c = c .* repmat(reshape( rx_power,1,1,n_positions ),[n_rx,n_tx,1]);
     end
-    
+        
     % Apply antenna coupling
-    c = reshape( c , n_rx , n_tx , n_positions );
-    
     if single_precision
         Ct = single( Ct );
         Cr = single( Cr );
@@ -375,7 +341,7 @@ else
         coeff = reshape(coeff,size(coeff,1), size(coeff,2),1,n_positions);
         h_channel = qd_channel( coeff , zeros(1,n_positions,precision) , 1  );
         h_channel.name = h_builder.name;
-        h_channel.center_frequency = h_builder.simpar.center_frequency(1,1);
+        h_channel.center_frequency = h_builder.simpar(1,1).center_frequency(1,1);
         h_channel.tx_position = h_builder.tx_position;
         h_channel.rx_position = h_builder.rx_positions;
     end

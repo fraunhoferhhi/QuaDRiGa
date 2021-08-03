@@ -357,9 +357,12 @@ end
 
 methods(Static)
     [ h_channel, dims ] = hdf5_load( varargin )
+    [ h_channel, dims ] = mat_load( filename, varargin )
     [ h_channel, snr, pdp ] = import_meas_data( Y, B, L_max, usage, noise_limit, delay_limit, pilot_grid, verbose, show_pdp )
-    h_channel = fr2cir( freq_response, bandwidth, no_path, min_pow, pilot_grid, use_gpu  )
+    h_channel = fr2cir( freq_response, bandwidth, no_path, min_pow, pilot_grid, delay_range, use_gpu, no_chunk, verbose  )
     varargout = call_private_fcn( functionName, varargin )
+    h_channel = process_data( Y, h_arrayant, no_path, no_subpath, search_range, tx_pos, rx_pos, bandwidth, pilot_grid, no_chunk, verbose, plot_title, plot_filename, plot_ylim, plot_PDPgain )
+    h_channel = process_data2( Y, h_arrayant, no_path, no_subpath, search_range, tx_pos, rx_pos, bandwidth, pilot_grid, no_chunk, verbose, plot_title, plot_filename, plot_ylim, plot_PDPgain )
 end
 
 end

@@ -60,7 +60,7 @@ else
     if isempty( speed )
         h_track.movement_profile = [];
     else
-        len = h_track.get_length;
+        len = get_length( h_track );
         if len == 0
             h_track.movement_profile = [ 0 , 1/speed ; 1 h_track.no_snapshots ];
         else

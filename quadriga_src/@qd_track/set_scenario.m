@@ -135,7 +135,7 @@ else
     
     if create_segments
                 
-        [ trk_length , dist ] = h_track.get_length;
+        [ trk_length , dist ] = get_length( h_track );
         dist_offset = min(diff(dist))/2;
         no_snapshots = h_track.no_snapshots;
         

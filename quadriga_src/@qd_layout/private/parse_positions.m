@@ -121,7 +121,7 @@ if timebased
     if ~isempty( h_layout.update_rate )
         sample_rate = h_layout.update_rate;
     else
-        sample_rate = 1/(h_layout.simpar.samples_per_meter*maxV);
+        sample_rate = 1/(h_layout.simpar(1,1).samples_per_meter*maxV);
     end
     for r = 1 : numel( i_rx )
         [~,rxT(1,i_rx(1,r))] = interpolate( rxT(1,i_rx(1,r)), 'time', sample_rate, [], [], 0 );
@@ -149,7 +149,7 @@ for t = 1 : numel( i_tx )
     it  = i_tx( t );
 
     % Length of the track
-    max_dist = txT(1,it).get_length;
+    max_dist = get_length( txT(1,it) );
     
     if txT(1,it).no_snapshots > 1 && ~isempty( h_layout.update_rate ) && ~isempty( txT(1,it).movement_profile )
         
@@ -170,7 +170,7 @@ for t = 1 : numel( i_tx )
         % interpolate them according to the sample density.
         
         % Distance-based interpolation
-        sample_rate = 1/h_layout.simpar.samples_per_meter;
+        sample_rate = 1/h_layout.simpar(1,1).samples_per_meter;
         
         % Interpolate the tx track
         no_snapshots_out = ceil((max_dist-sample_rate/2) / sample_rate ) + 1;
@@ -186,7 +186,7 @@ end
 for r = 1 : numel( rxT )
     
     % Length of the track
-    max_dist = rxT(1,r).get_length;
+    max_dist = get_length( rxT(1,r) );
     
     if rxT(1,r).no_snapshots > 1 && ~isempty( h_layout.update_rate ) && ~isempty( rxT(1,r).movement_profile )
         
@@ -207,7 +207,7 @@ for r = 1 : numel( rxT )
         % interpolate them according to the sample density.
            
         % Distance-based interpolation
-        sample_rate = 1/h_layout.simpar.samples_per_meter;
+        sample_rate = 1/h_layout.simpar(1,1).samples_per_meter;
         
         % Interpolate the tx track
         no_snapshots_out = ceil((max_dist-sample_rate/2) / sample_rate ) + 1;

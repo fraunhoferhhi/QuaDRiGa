@@ -108,10 +108,7 @@ if isempty( h_builder.sos )
     error('QuaDRiGa:qd_builder:get_sf_profile','No qd_sos object found.');  
 else
     % Calculate the KF and the SF from the SOS generators
-    [ ~, kf, sf ] = generate_lsf( txpos, [x;y;z], h_builder.lsp_vals,...
-        h_builder.lsp_xcorr, h_builder.sos, [], [], h_builder.dual_mobility );
+    [ ~, kf, sf ] = gen_lsf_parameters( h_builder, 3, 0, txpos, [x;y;z] );
 end
-
-
 
 end

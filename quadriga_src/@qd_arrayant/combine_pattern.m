@@ -93,16 +93,15 @@ Pt = exp( -1j*(  wave_no*( Pt )));
 % Calculate the coefficients
 c = zeros( 2*no_tx , no_positions, precision);
 for i_tx = 1 : no_tx
-    PatTx = [ reshape( Vt(1,:,i_tx) , 1,no_positions ) ;...
-        reshape( Ht(1,:,i_tx) , 1,no_positions ) ];
+    PatTx = [ Vt(i_tx,:) ; Ht(i_tx,:) ];
     
     % First component
     ind = (i_tx-1)*2 + 1;
-    c(ind,:) = PatTx(1,:) .* Pt(1,:,i_tx);
+    c(ind,:) = PatTx(1,:) .* Pt(i_tx,:);
     
     % Second component
     ind = ind + 1;
-    c(ind,:) = PatTx(2,:) .* Pt(1,:,i_tx);
+    c(ind,:) = PatTx(2,:) .* Pt(i_tx,:);
 end
 
 % Apply antenna coupling
@@ -141,5 +140,6 @@ h_qd_arrayant.PFa = reshape( pat(:,:,1), no_el ,no_az , [] );
 h_qd_arrayant.PFb = reshape( pat(:,:,2), no_el ,no_az , [] );
 h_qd_arrayant.Pelement_position = zeros(3,size( pat,2 ),precision);
 h_qd_arrayant.Pcoupling = eye( h_qd_arrayant.no_elements,precision);
+h_qd_arrayant.Pphase_diff = [];
 
 end

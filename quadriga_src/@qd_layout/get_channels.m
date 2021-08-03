@@ -105,10 +105,10 @@ if ~exist( 'init_builder' , 'var' ) || isempty( init_builder )
 end
 
 update_rate = h_layout.update_rate;
-verbose = h_layout.simpar.show_progress_bars;
+verbose = h_layout.simpar(1,1).show_progress_bars;
 no_rx = h_layout.no_rx;
 no_tx = h_layout.no_tx;
-n_freq = numel( h_layout.simpar.center_frequency );
+n_freq = numel( h_layout.simpar(1,1).center_frequency );
 start_time_model_run = clock;
 restore_tracks_in_layout = false;
 
@@ -145,20 +145,20 @@ if isempty( h_layout.h_qd_builder_init ) || init_builder
         else
             str = [ str, ' transmitters, ' ];
         end
-        str = [ str, num2str(numel(h_layout.simpar.center_frequency)) ];
-        if numel(h_layout.simpar.center_frequency) == 1
+        str = [ str, num2str(numel(h_layout.simpar(1,1).center_frequency)) ];
+        if numel(h_layout.simpar(1,1).center_frequency) == 1
             str = [ str, ' frequency (' ];
         else
             str = [ str, ' frequencies (' ];
         end
-        str = [ str, sprintf('%1.1f GHz, ', h_layout.simpar.center_frequency/1e9) ];
+        str = [ str, sprintf('%1.1f GHz, ', h_layout.simpar(1,1).center_frequency/1e9) ];
         str = [ str(1:end-2) , ')'];
         
-        disp(['Starting channel generation using QuaDRiGa v',h_layout.simpar.version]);
+        disp(['Starting channel generation using QuaDRiGa v',h_layout.simpar(1,1).version]);
         disp(str);
     end
     
-    samling_limit = min( h_layout.simpar.wavelength / 2 );
+    samling_limit = min( h_layout.simpar(1,1).wavelength / 2 );
     sampling_ok = true;
     if ~isempty( update_rate )
         
@@ -187,7 +187,7 @@ if isempty( h_layout.h_qd_builder_init ) || init_builder
                 end
             end
         end
-        sr = h_layout.simpar.samples_per_meter * v_max;                     % SR in samples per second
+        sr = h_layout.simpar(1,1).samples_per_meter * v_max;                     % SR in samples per second
         
         % If the sample rate is greater than the update rate, it is more economic to generate the
         % channels at the desired update rate and not use the channel interpolation.
@@ -227,7 +227,7 @@ if isempty( h_layout.h_qd_builder_init ) || init_builder
         no_snap_per_trk = zeros( 1,numel(trk) );
         for i_trk = 1 : numel(trk)
             if trk(1,i_trk).no_snapshots > 1
-                if trk(1,i_trk).get_length == 0
+                if get_length( trk(1,i_trk) ) == 0
                     trk(1,i_trk).interpolate('snapshot',sr,[],algorithm,true);
                 else
                     trk(1,i_trk).interpolate('time',sr,[],algorithm,true);
@@ -258,7 +258,7 @@ if isempty( h_layout.h_qd_builder_init ) || init_builder
     % Check if tracks fulfill the sampling theoreme
     for i_rx = 1 : no_rx
         if h_layout.rx_track(1,i_rx).no_snapshots > 1
-            [~,dist] = h_layout.rx_track(1,i_rx).get_length;
+            [~,dist] = get_length( h_layout.rx_track(1,i_rx) );
             if any( diff(dist) > samling_limit )
                 sampling_ok = false;
             end
@@ -267,7 +267,7 @@ if isempty( h_layout.h_qd_builder_init ) || init_builder
     if h_layout.dual_mobility
         for i_tx = 1 : no_tx
             if h_layout.tx_track(1,i_tx).no_snapshots > 1
-                [~,dist] = h_layout.tx_track(1,i_tx).get_length;
+                [~,dist] = get_length( h_layout.tx_track(1,i_tx) );
                 if any( diff(dist) > samling_limit )
                     sampling_ok = false;
                 end
@@ -302,7 +302,7 @@ if isempty( h_layout.h_qd_builder_init ) || init_builder
             [ i1,i2 ] = qf.qind2sub( sic, i_cb );
             cnt = cnt + h_builder(i1,i2).no_rx_positions;
         end
-        cnt = cnt * numel(h_layout.simpar.center_frequency);
+        cnt = cnt * numel(h_layout.simpar(1,1).center_frequency);
         if cnt == 1
             fprintf('1 channel segment\n')
         else
@@ -317,7 +317,7 @@ if isempty( h_layout.h_qd_builder_init ) || init_builder
     init_sos( h_builder);
     
     % Split builder object for multi-frequency simulations
-    if n_freq > 1 && h_layout.simpar.use_3GPP_baseline
+    if n_freq > 1 && h_layout.simpar(1,1).use_3GPP_baseline
         h_builder = split_multi_freq( h_builder );    % Split the builders for multiple frequencies
     end
     
@@ -354,7 +354,7 @@ else % Generate all channel objects
     gen_parameters( h_builder, 5 );
     
     % Split builder object for multi-frequency simulations
-    if n_freq > 1 && ~h_layout.simpar.use_3GPP_baseline
+    if n_freq > 1 && ~h_layout.simpar(1,1).use_3GPP_baseline
         if verbose
             fprintf('Preparing multi-frequency simulations')
         end
@@ -365,7 +365,7 @@ else % Generate all channel objects
     end
     
     % Display some warning of mobility is not supported by 3GPP baseline model
-    if h_layout.simpar.use_3GPP_baseline
+    if h_layout.simpar(1,1).use_3GPP_baseline
         if h_layout.dual_mobility
             warning('QuaDRiGa:qd_layout:get_channels:dual_mobility',...
                 'Dual-mobility simulations are not supported by 3GPP baseline model. Results will be incorrect.');
@@ -374,7 +374,7 @@ else % Generate all channel objects
         for i_track = 1 : h_layout.no_rx
             if h_layout.rx_track(1,i_track).no_segments > 1
                 single_mobility = true;
-            elseif h_layout.rx_track(1,i_track).no_snapshots > 1 && h_layout.rx_track(1,i_track).get_length > 5
+            elseif h_layout.rx_track(1,i_track).no_snapshots > 1 && get_length( h_layout.rx_track(1,i_track) ) > 5
                 single_mobility = true;
             end
         end
@@ -411,7 +411,7 @@ else % Generate all channel objects
             if verbose; m1=ceil(i_trk/no_rx*50); if m1>m0; for m2=1:m1-m0; fprintf('o'); end; m0=m1; end; end
             
             trk = h_layout.rx_track(1,i_trk);                               % Copy handle
-            if trk.get_length == 0                                          % Get the distance vector
+            if get_length( trk ) == 0                                       % Get the distance vector
                 dist = trk.interpolate( 'snapshot', update_rate, [], algorithm );
             else
                 dist = trk.interpolate( 'time', update_rate, [], algorithm );
@@ -421,7 +421,11 @@ else % Generate all channel objects
                 if ~channels_done( i_channel )
                     if ~isempty( regexp( names{i_channel} ,  trk.name, 'once' ) )
                         h_channel(1,i_channel) = interpolate( h_channel(1,i_channel), dist, algorithm );
-                        h_channel(1,i_channel).par.update_rate = update_rate;   % Store update rate
+                        
+                        par_tmp = h_channel(1,i_channel).par;
+                        par_tmp.update_rate = update_rate;   % Store update rate
+                        h_channel(1,i_channel).par = par_tmp;
+                        
                         channels_done( i_channel ) = true;
                     end
                 end

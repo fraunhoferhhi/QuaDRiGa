@@ -1,4 +1,4 @@
-function init_sos( h_builder, force )
+function init_sos( h_builder, usage )
 %INIT_SOS Initializes all SOS random number generators
 %
 % Calling object:
@@ -11,12 +11,13 @@ function init_sos( h_builder, force )
 %   channels. Note that this does not work for 3GPP baseline simulations.
 %
 % Input:
-%   force
-%   If set to true (1), existing SOS generators will be discarded. By default (0), they will be
-%   reused.
+%   usage
+%   Controls the behavior of the method: If set to 0, all existing SOS generators will be discarded
+%   and the method exits. By default (1), new SOS generators will be created, existing ones will be
+%   replaced. It set to 2, existing SOS generators will be reused and missing ones will be created.
 %
 % 
-% QuaDRiGa Copyright (C) 2011-2019
+% QuaDRiGa Copyright (C) 2011-2020
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -33,10 +34,9 @@ function init_sos( h_builder, force )
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
-
 % Parse input variables.
-if ~exist( 'force','var' ) || isempty( force )
-    force = false;
+if ~exist( 'usage','var' ) || isempty( usage )
+    usage = 1;
 end
 
 if numel(h_builder) > 1
@@ -45,15 +45,36 @@ if numel(h_builder) > 1
     sic = size( h_builder );
     for i_cb = 1 : numel(h_builder)
         [ i1,i2,i3,i4 ] = qf.qind2sub( sic, i_cb );
-        if h_builder( i1,i2,i3,i4 ).no_rx_positions > 0
-            init_sos( h_builder( i1,i2,i3,i4 ), force );
-        end
+        init_sos( h_builder( i1,i2,i3,i4 ), usage );
     end
     
 else
     
     % Fix for octave 4.0 (conversion from object-array to single object)
     h_builder = h_builder(1,1);
+    
+    % Remove existing parameters
+    if usage == 0 || usage == 1
+        h_builder.sos = [];
+        h_builder.path_sos = [];
+        h_builder.xpr_sos = [];
+        h_builder.pin_sos = [];
+        h_builder.clst_dl_sos = [];
+        h_builder.gr_sos = [];
+        h_builder.absTOA_sos = [];
+        h_builder.subpath_coupling = [];
+    end
+    
+    % Dual Mobility indicator
+    if h_builder.dual_mobility == -1 
+        h_builder.check_dual_mobility( false );
+    end
+    dual_mobility = h_builder.dual_mobility;
+    
+    % Check if we need to do anything else
+    if usage == 0
+        return
+    end
     
     % Set the number of clusters
     L = h_builder.scenpar.NumClusters;
@@ -63,10 +84,6 @@ else
     
     % Spatial consistency decorrelation distance in [m]
     SC_lambda = h_builder.scenpar.SC_lambda;
-    
-    % Dual Mobility indicator
-    dual_mobility = h_builder.dual_mobility;
-    
     if h_builder.scenpar.absTOA_mu > -30
         absTOA_lambda = h_builder.scenpar.absTOA_lambda;
     else
@@ -74,7 +91,7 @@ else
     end
     
     % ACF
-    acf = h_builder.simpar.autocorrelation_function;
+    acf = h_builder.simpar(1,1).autocorrelation_function;
     if strcmp( acf, 'Disable' )     % Disable spatial consistency for SSF
         acf = 'Comb300';
         SC_lambda = 0;
@@ -82,12 +99,6 @@ else
     end
     
     use_ground_reflection = logical( h_builder.scenpar.GR_enabled );
-    if h_builder.simpar.use_3GPP_baseline && use_ground_reflection
-        warning('QuaDRiGa:qd_builder:use_baseline_ground_reflection',...
-            'Ground reflection is not supported by the 3GPP baseline model.');
-        use_ground_reflection = false;
-        warning('off','QuaDRiGa:qd_builder:use_baseline_ground_reflection');
-    end
     if use_ground_reflection && L == 1
         error('You need at least 2 clusters to enable the ground reflection option.');
     end
@@ -96,11 +107,11 @@ else
     Ln = L - 1 - double( use_ground_reflection );
     
     % Number of frequencies
-    F = numel( h_builder.simpar.center_frequency );
+    F = numel( h_builder.simpar(1,1).center_frequency );
     
     % Initialize SOS generators for the LSF model
     lambda = h_builder.lsp_vals(:,3,1);
-    if isempty( h_builder.sos ) || force
+    if isempty( h_builder.sos )
         lsf_sos = qd_sos([]);
         
         lsf_sos(1,1) = qd_sos( acf, 'Normal', lambda(1) );  % DS
@@ -133,7 +144,7 @@ else
     end
     
     % SOS geneator for spatially correlated absolute time-of-arrival
-    if ~h_builder.simpar.use_3GPP_baseline && absTOA_lambda > 0 && ( isempty( h_builder.absTOA_sos ) || force )
+    if ~h_builder.simpar(1,1).use_3GPP_baseline && absTOA_lambda > 0 && isempty( h_builder.absTOA_sos )
         
         % Delay offsets (are identical if Tx and Rx positions are swapped)
         absTOA_sos = qd_sos( acf, 'Normal', absTOA_lambda );
@@ -149,13 +160,13 @@ else
     end
     
     % Initialize the SOS generator for the ground reflection coefficient
-    if ~h_builder.simpar.use_3GPP_baseline && SC_lambda > 0 && ( isempty( h_builder.gr_sos ) || force )
+    if ~h_builder.simpar(1,1).use_3GPP_baseline && SC_lambda > 0 && isempty( h_builder.gr_sos )
         h_builder.gr_sos = qd_sos( acf, 'Uniform', SC_lambda );
         h_builder.gr_sos.sos_phase(:,2) = h_builder.gr_sos.sos_phase(:,1);
     end
     
     % Initialize SOS genrators for the geneation of multipath components
-    if ~h_builder.simpar.use_3GPP_baseline && SC_lambda > 0 && ( isempty( h_builder.path_sos ) || force )
+    if ~h_builder.simpar(1,1).use_3GPP_baseline && SC_lambda > 0 && isempty( h_builder.path_sos )
         path_sos = qd_sos([]);
         for i_cluster = 1 : Ln
             % Delays (are identical if Tx and Rx positions are swapped)
@@ -178,7 +189,7 @@ else
     end
     
     % Initialize SOS genrators for the XPR
-    if ~h_builder.simpar.use_3GPP_baseline && SC_lambda > 0 && ( isempty( h_builder.xpr_sos ) || force )
+    if ~h_builder.simpar(1,1).use_3GPP_baseline && SC_lambda > 0 && isempty( h_builder.xpr_sos )
         xpr_sos = qd_sos([]);
         for i_freq = 1 : F
             for i_cluster = 1 : Ln
@@ -196,7 +207,7 @@ else
     end
     
     % Initialize SOS genrators for initial phases
-    if ~h_builder.simpar.use_3GPP_baseline && SC_lambda > 0 && ( isempty( h_builder.pin_sos ) || force )
+    if ~h_builder.simpar(1,1).use_3GPP_baseline && SC_lambda > 0 && isempty( h_builder.pin_sos )
         pin_sos = qd_sos([]);
         for i_freq = 1 : F
             for i_cluster = 1 : Ln
@@ -214,7 +225,7 @@ else
     end
     
     % Initialize SOS genrators for mmMAGIC intra-cluster delay offsets
-    if ~h_builder.simpar.use_3GPP_baseline && SC_lambda > 0 && ( isempty( h_builder.clst_dl_sos ) || force )
+    if ~h_builder.simpar(1,1).use_3GPP_baseline && SC_lambda > 0 && isempty( h_builder.clst_dl_sos )
         clst_dl_sos = qd_sos([]);
         for i_cluster = 1 : Ln
             for i_sub = 1 : M
@@ -226,12 +237,18 @@ else
     end
     
     % Initialize subpath coupling
-    if isempty( h_builder.subpath_coupling ) || force
-        if h_builder.simpar.use_3GPP_baseline
-            h_builder.subpath_coupling = rand( 4 , Ln * M + L - Ln , h_builder.no_rx_positions );
-        else
-            h_builder.subpath_coupling = rand( 4 , Ln * M + L - Ln , F );
+    NumSubPaths = Ln * M + L - Ln;
+    if isempty( h_builder.subpath_coupling )
+        if ~isempty( h_builder.NumSubPaths )
+            NumSubPaths = sum( h_builder.NumSubPaths );
         end
+        if h_builder.simpar(1,1).use_3GPP_baseline
+            h_builder.subpath_coupling = rand( 4 , NumSubPaths , h_builder.no_rx_positions );
+        else
+            h_builder.subpath_coupling = rand( 4 , NumSubPaths , F );
+        end
+    elseif size( h_builder.subpath_coupling,2 ) > NumSubPaths
+        h_builder.subpath_coupling = h_builder.subpath_coupling( :,1:NumSubPaths,: );
     end
 end
 end

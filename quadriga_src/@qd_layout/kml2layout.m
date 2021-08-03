@@ -90,30 +90,30 @@ for n = 1 : 2
     
     if isfield( p , fld )
         if isfield( p.(fld) , 'CenterFrequency' )
-            h_layout.simpar.center_frequency = ...
+            h_layout.simpar(1,1).center_frequency = ...
                 str2double( regexp( p.(fld).CenterFrequency,'[0-9e.-]+','match' ) );
         end
         if isfield( p.(fld) , 'SampleDensity' )
-            h_layout.simpar.sample_density = ...
+            h_layout.simpar(1,1).sample_density = ...
                 str2double( regexp( p.(fld).SampleDensity,'[0-9e.-]+','once','match' ) );
         end
         if isfield( p.(fld) , 'AbsoluteDelays' )
-            h_layout.simpar.use_absolute_delays = ...
+            h_layout.simpar(1,1).use_absolute_delays = ...
                 str2double( regexp( p.(fld).AbsoluteDelays,'[0,1]','once','match' ) );
         end
         if isfield( p.(fld) , 'RandInitPhase' )
-            h_layout.simpar.use_random_initial_phase = ...
+            h_layout.simpar(1,1).use_random_initial_phase = ...
                 str2double( regexp( p.(fld).RandInitPhase,'[0,1]','once','match' ) );
         end
         if isfield( p.(fld) , 'Baseline3GPP' )
-            h_layout.simpar.use_3GPP_baseline = ...
+            h_layout.simpar(1,1).use_3GPP_baseline = ...
                 str2double( regexp( p.(fld).Baseline3GPP,'[0,1]','once','match' ) );
         end
         if isfield( p.(fld) , 'AutoCorrFcn' )
-            h_layout.simpar.autocorrelation_function = regexp( p.(fld).AutoCorrFcn,'[a-zA-Z0-9]+','once','match');
+            h_layout.simpar(1,1).autocorrelation_function = regexp( p.(fld).AutoCorrFcn,'[a-zA-Z0-9]+','once','match');
         end
         if isfield( p.(fld) , 'ProgressReport' )
-            h_layout.simpar.show_progress_bars = ...
+            h_layout.simpar(1,1).show_progress_bars = ...
                 str2double( regexp( p.(fld).ProgressReport,'[0,1]','once','match' ) );
         end
         if isfield( p.(fld) , 'UpdateRate' )
@@ -131,7 +131,7 @@ for n = 1 : 2
     end
 end
 
-if h_layout.simpar.show_progress_bars
+if h_layout.simpar(1,1).show_progress_bars
     fprintf('Processing KML file ... ')
 end
 
@@ -280,17 +280,17 @@ for n = 1 : numel( p.Placemark )
     end
 end
 if numel( tx_track ) == 1
-    h_layout.tx_track = tx_track(1,1);
+    h_layout.Ptx_track = tx_track(1,1);
 else
-    h_layout.tx_track = tx_track;
+    h_layout.Ptx_track = tx_track;
 end
 if numel( rx_track ) == 1
-    h_layout.rx_track = rx_track(1,1);
+    h_layout.Prx_track = rx_track(1,1);
 else
-    h_layout.rx_track = rx_track;
+    h_layout.Prx_track = rx_track;
 end
 
-if h_layout.simpar.show_progress_bars
+if h_layout.simpar(1,1).show_progress_bars
     fprintf([num2str(h_layout.no_tx),' Tx, '])
     fprintf([num2str(h_layout.no_rx),' Rx, '])
     fprintf([num2str(seg_cnt),' Segments\n'])
@@ -302,29 +302,33 @@ if ~isempty( ForceRefCoord )
 elseif ~exist('ReferenceCoord','var') || isempty( ReferenceCoord )
     coord = [];
     for n = 1 : h_layout.no_tx
-        coord = [coord,h_layout.tx_track(1,n).positions(1:2,:)];
+        coord = [coord,tx_track(1,n).positions(1:2,:)];
     end
     for n = 1 : h_layout.no_rx
-        coord = [coord,h_layout.rx_track(1,n).positions(1:2,:)];
+        coord = [coord,rx_track(1,n).positions(1:2,:)];
     end
     ReferenceCoord = mean(coord,2)';
 end
 h_layout.ReferenceCoord = ReferenceCoord;       % Hidden variable
 
-if h_layout.simpar.show_progress_bars
+if h_layout.simpar(1,1).show_progress_bars
     fprintf('Reference Coordinates: ');
     fprintf( '%1.6f',abs( ReferenceCoord(1) ) );
     if ReferenceCoord(1) >= 0
-        fprintf( 'e,' );
+        fprintf( 'e, ' );
     else
-        fprintf( 'w,' );
+        fprintf( 'w, ' );
     end
     fprintf( '%1.6f',abs( ReferenceCoord(2) ) );
     if ReferenceCoord(2) >= 0
-        fprintf( 'n\n' );
+        fprintf( 'n' );
     else
-        fprintf( 's\n' );
+        fprintf( 's' );
     end
+    if numel(ReferenceCoord) == 3 && ReferenceCoord(3) ~= 0
+        fprintf( ', %1.6g m',abs( ReferenceCoord(3) ) );
+    end
+    fprintf('\n')
 end
 
 % Copy all track handles in the layout to a temporary variable
@@ -353,7 +357,7 @@ for n = 1 : numel( trk )
     
     % Fix numeric precision issue with closed tracks
     if trk(1,n).no_snapshots > 1 &&...
-            trk(1,n).get_length > 1e-6 &&...
+            get_length( trk(1,n) ) > 1e-6 &&...
             all( abs(trk(1,n).positions(:,1) - trk(1,n).positions(:,end)) < 1e-6 ) &&...
             all( abs(trk(1,n).orientation(:,1) - trk(1,n).orientation(:,end)) < 1e-6 )
         trk(1,n).positions(:,end) = trk(1,n).positions(:,1);
@@ -361,7 +365,7 @@ for n = 1 : numel( trk )
     end
     
     if ~isempty( trk(1,n).movement_profile )
-        len = trk(1,n).get_length;
+        len = get_length( trk(1,n) );
         if size( trk(1,n).movement_profile,2 ) == 1      % Single time value from track
             trk(1,n).movement_profile = [ 0,trk(1,n).movement_profile(1,1) ; 0,len ];
         elseif any( trk(1,n).movement_profile(2,:) > len )
@@ -433,26 +437,21 @@ end
 
 % Check segments
 for n = 1 : h_layout.no_rx
-    if isempty( h_layout.rx_track(1,n).scenario{1,1} )
-        if h_layout.rx_track(1,n).no_segments == 1
-            warning('QuaDRiGa:qd_layout:kml2layout:no_Scenario_found',...
-                ['Track "',trk(1,n).name,'" has no assigned Scenarios.']);
-        else    % Fix first scenario issue
-            sc = h_layout.rx_track(1,n).scenario(:,2:end);
-            si = h_layout.rx_track(1,n).segment_index;
-            h_layout.rx_track(1,n).segment_index = si([1,3:end]);
-            h_layout.rx_track(1,n).scenario = sc;
-        end
+    if isempty( h_layout.rx_track(1,n).scenario{1,1} ) && h_layout.rx_track(1,n).no_segments ~= 1
+        sc = h_layout.rx_track(1,n).scenario(:,2:end);
+        si = h_layout.rx_track(1,n).segment_index;
+        h_layout.rx_track(1,n).segment_index = si([1,3:end]);
+        h_layout.rx_track(1,n).scenario = sc;
     end
 end
 
 % Split segments
 if exist('SplitSegments','var') && split_seg
-    if h_layout.simpar.show_progress_bars
+    if h_layout.simpar(1,1).show_progress_bars
         fprintf('Creating sub-segments ... ')
     end
     if numel( SplitSegments ) == 4
-        if h_layout.simpar.show_progress_bars
+        if h_layout.simpar(1,1).show_progress_bars
             fprintf([num2str(SplitSegments(3)),' +/- ',...
                 num2str(SplitSegments(4)),' m, min. ',num2str(SplitSegments(1)),' m, max. ',...
                 num2str(SplitSegments(2)),' m\n'])
@@ -468,16 +467,16 @@ end
 trk = h_layout.rx_track;
 for n = 1 : h_layout.no_rx
     if ~isempty( trk(1,n).movement_profile )
-        len = trk(1,n).get_length;
+        len = get_length( trk(1,n) );
         trk(1,n).movement_profile(2, trk(1,n).movement_profile(2,:) > len ) = len;
     end
 end
 
 % Process antennas
-if h_layout.simpar.show_progress_bars
+if h_layout.simpar(1,1).show_progress_bars
     fprintf('Processing antennas ... ')
 end
-if isempty( antenna_ind ) && h_layout.simpar.show_progress_bars
+if isempty( antenna_ind ) && h_layout.simpar(1,1).show_progress_bars
     fprintf('no antennas found, using omni\n')
 else
     
@@ -489,21 +488,21 @@ else
         ii = antenna_ind(:,1) == 0;
         antenna_ind(ii,6) = antenna_ind(ii,2);
         a = p.qdant;
-        if h_layout.simpar.show_progress_bars
+        if h_layout.simpar(1,1).show_progress_bars
             fprintf([num2str(numel(a)),' embedded antennas, ']);
         end
     end
-    if h_layout.simpar.show_progress_bars
+    if h_layout.simpar(1,1).show_progress_bars
         fprintf([num2str(numel(antenna_file)),' QDANT files\n']);
     end
     
     % Loading antennas
     for n = 1 : numel( antenna_file )
-        if h_layout.simpar.show_progress_bars
+        if h_layout.simpar(1,1).show_progress_bars
             fprintf(['Loading "',antenna_file{n},'" ... ']);
         end
         a_tmp = qd_arrayant.xml_read( antenna_file{n}, [], [], [], 1 );
-        if h_layout.simpar.show_progress_bars
+        if h_layout.simpar(1,1).show_progress_bars
             fprintf([num2str(numel(a_tmp)),' antenna']);
             if numel(a_tmp) == 1
                 fprintf('\n');
@@ -524,10 +523,10 @@ end
 
 % Assigning antennas to the tx and rx
 if ~isempty( antenna_ind )
-    if h_layout.simpar.show_progress_bars
+    if h_layout.simpar(1,1).show_progress_bars
         fprintf('Assigning antennas to transmitters and receivers\n');
     end
-    n_freq = numel( h_layout.simpar.center_frequency );
+    n_freq = numel( h_layout.simpar(1,1).center_frequency );
     for n = 1 : h_layout.no_tx
         % Duplicate handles in existeng rx_array to match the number of frequencies
         ii = find( antenna_ind(:,3) == n );

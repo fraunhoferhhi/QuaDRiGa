@@ -16,6 +16,7 @@
 
 clear all
 close all
+warning('off','all');
 
 s = qd_simulation_parameters;               % Set general simulation parameters
 s.center_frequency = 2e9;                   % 2 GHz center frequency

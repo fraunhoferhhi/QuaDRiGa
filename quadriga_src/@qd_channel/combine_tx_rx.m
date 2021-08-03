@@ -169,7 +169,7 @@ for n = 1 : no_rx
        ip = ip+1;
     end
 end
-h_channel_comb.par.port_dsc = str;
+h_channel_comb.par = struct('port_dsc',str);
 
 % We need to store the rx positions of the fastest moving user (this is needed for exporting the
 % channels to the Probsim emulator)

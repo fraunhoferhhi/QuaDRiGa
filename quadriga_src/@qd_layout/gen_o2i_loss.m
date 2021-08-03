@@ -1,5 +1,5 @@
 function o2i_loss_dB = gen_o2i_loss( h_layout, method, low_loss_fraction, SC_lambda, max_indoor_dist )
-%GEN_O2I_LOSS Generates the outdoor-to-indoor penetration loss for the 3GPP 38.901 model
+%GEN_O2I_LOSS Generates the outdoor-to-indoor penetration loss
 %
 % Calling object:
 %   Single object
@@ -17,6 +17,11 @@ function o2i_loss_dB = gen_o2i_loss( h_layout, method, low_loss_fraction, SC_lam
 %   and applied to the path-loss in the specific scenario.
 %
 % Input:
+%   method
+%   String selecting the indoor pathloss model. Two models are implemented: the 3GPP model 
+%   '3GPP_38.901' as described in 3GPP TR 38.901 v14.1.0, Sec. 7.4.3, Page 27 and the 'mmMAGIC'
+%   model as described in H2020-ICT-671650-mmMAGIC/D2.2, Sec. 4.3.
+%
 %   low_loss_fraction
 %   3GPP TR 38.901 specifies two different formulas for the O2I-loss, one for high-loss (e.g. IRR
 %   glass and concrete) and one for low-loss (standard multi-pane glass). The variable
@@ -83,8 +88,8 @@ end
 % Parse some often used variables
 no_rx   = h_layout.no_rx;
 no_tx   = h_layout.no_tx;
-no_freq = numel( h_layout.simpar.center_frequency );
-f_GHz   = h_layout.simpar.center_frequency / 1e9;
+no_freq = numel( h_layout.simpar(1,1).center_frequency );
+f_GHz   = h_layout.simpar(1,1).center_frequency / 1e9;
 o_tx    = ones(no_tx,1);
 o_frq   = ones(1,no_freq);
 
@@ -269,8 +274,10 @@ for r = 1 : no_rx
     pl_tmp = PL( :, rx_ind(1,:) == r, : );
     o2i_loss_dB{ r } = pl_tmp;
     if any( abs( pl_tmp(:) ) ~= 0 )
-        h_layout.rx_track(1,r).par.o2i_loss  = PL( :, rx_ind(1,:) == r, : );
-        h_layout.rx_track(1,r).par.o2i_d3din = d_3d_in(:,rx_ind(1,:) == r);
+        par_tmp = h_layout.rx_track(1,r).par;
+        par_tmp.o2i_loss  = PL( :, rx_ind(1,:) == r, : );
+        par_tmp.o2i_d3din = d_3d_in(:,rx_ind(1,:) == r);
+        h_layout.rx_track(1,r).par = par_tmp;
     end
 end
 

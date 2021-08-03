@@ -14,6 +14,7 @@
 
 close all
 clear all
+warning('off','all');
 
 % Antenna configuration 1 (UMa and UMi)
 % 10 elements in elevation, 1 element in azimuth, vertical pol., 12 deg downtilt, 0.5 lambda spacing

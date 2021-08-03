@@ -10,6 +10,161 @@
 
 <hr style="width: 100%; height: 2px;">
 <span style="font-weight: bold;"><br>
+v2.6.1</span><br style="font-weight: bold;">
+<span style="font-weight: bold;">(Release: 2021-07-12)<br>
+</span><span style="font-weight: bold;"><br></span>
+<hr style="width: 100%; height: 2px;"><br>
+
+v2.6.1<br>
+- Bugfix: [qd_builder.get_los_channels] ignored "tx_array" in some cases<br>
+<br>
+
+v2.5.19<br>
+- Bugfix: [qd_builder.get_pl] fixed a small offset in the dual and tripple-slope models caused by not considering the heights at the brek-point<br>
+- Bugfix: [qd_channel.merge] deleted additional parameters in some cases<br>
+- Feature: [qd_builder.write_conf_file] Added annotation options<br>
+- Performace: [qd_layout.kml2layout] improved reading performance for a large number of terminals<br>
+- Performace: [qd_layout.kml2layout] improved writing performance for a large number of terminals<br>
+- Updated configuration files, documentation and tutorials<br>
+<br>
+
+v2.5.18<br>
+- Bugfix: [qd_buillder.write_conf_file] Caused crash on Octave using MAC when writing complex numbers into the conf file<br>
+- Feature: [qd_channel.mat_save] Added option to save qd_channel object arrays to a mat specially formatted file<br>
+- Feature: [qd_channel.mat_load] Added option to load qd_channel object arrays from a mat file<br>
+<br>
+
+v2.5.17<br>
+- Bugfix: [qf.calc_xpr] returned NaN when XPRMAT was zero<br>
+- Bugfix: [qd_arrayant.clac_phase_diff] fixed some rare numeric instabilities<br>
+- Bugfix: [qd_builder.add_sdc] Crashed when sdc_radius was empty and NumSubPaths was set to 1<br>
+- Bugfix: [qd_layout] Defined datatype for input variables of all set functions to avoid crashes during channel generation in Octave<br>
+- Cleanup: [qd_channel] Removed old analysis functions (they are still available in the v2.4 branch)<br>
+<br>
+
+v2.5.16<br>
+- Fixed compatibility issues with older MATLAB vesions (different syntax of the "repmat"-function)<br>
+- Bugfix: [qd_builder.check_los] Crashed when adding a zero-power LOS component to multiple RX positions<br>
+<br>
+
+v2.5.15<br>
+- Feature: [qd_builder.get_los_channels] Updated function to use new array antenna interpolation methods<br>
+- Bugfix: [qd_arrayant.interpolate] Did not work with different orientations for different angles<br>
+<br>
+
+v2.5.14<br>
+- Feature: Octave 6.2 compatibility<br>
+- Feature: [qd_builder.check_dual_mobility] Remove "antenna-undefined" warning<br>
+- Bugfix: [qf.calc_angles] Crashed when using Octave without GPU acceleration<br>
+<br>
+
+v2.5.13<br>
+- Bugfix: [qd_arrayant.interpolate] Fixed several numeric stability issues for spherical interpolation method<br>
+- Performace: [qf.calc_angles] Improved accuracy for detecting multiple spatial sub-paths<br>
+<br>
+
+v2.5.12<br>
+- Bugfix: [qd_arrayant.interpolate] possible crash due to data type mismatch<br>
+- Bugfix: [qd_builder.add_sdc] Fixed division-by-zero error when BS and MT were on the same height<br>
+- Feature: [qf.calc_angles] improved accuracy for path-powers and angles, support for GPU acceleration<br>
+<br>
+
+v2.5.11<br>
+- Feature: [qf.calc_angles] Added additional output variables<br>
+- Bugfix: [qd_builder.copy] Crashed in some cases due to class mismatch in the antenna arrays<br>
+- Bugfix: [qd_builder.gen_fbs_lbs] Relaxed numeric precision requirements to allow for single-precision inputs<br>
+- Bugfix: [qd_channel.fr] Crashed in some cases when using GPU acceleration due to datatype mismatch<br>
+- Bugfix: [qd_layout.layout2kml] Incorrect positions due to numeric precision errors<br>
+- Performace: [qd_layout] Improved performance when seting positions for a large number of MTs<br>
+<br>
+
+v2.5.10<br>
+- Critical Bugfix: [qd_layout.set_scenario] Wrong LOS / NLOS states were assigned when using spatial consistency for multiple BSs<br>
+- Bugfix: [qd_layout.set_scenario] Decorrellation distance for RMa should be 60 according to 3GPP TR 38.901 v16.1.0, Table 7.6.3.1-2<br>
+- Performace: [qd_layout.set_scenario] Improved execution speed assigning parameters to a large number of terminals<br>
+- Performace: [qd_layout] Speedup for setting TX and RX positions directly in the Layout<br>
+<br>
+
+v2.5.9<br>
+- Feature: [qd_builder.add_sdc] Added method to add semi-deterministic clusters to a builder<br>
+- Feature: [qd_builder.get_pl] Added option to calculate PL without evaltrack (use [x;y;z] instead)<br>
+- Feature: [qd_buillder.gen_fbs_lbs] Added optimal input parameter to adjust the Per-cluster AS for each cluster individually<br>
+- Bugfix: [qd_builder.get_channels] crashed when GR was enables in the scenario parameters but no GR path was defined in the SSF parameers<br>
+<br>
+
+v2.5.8<br>
+- Feature: Enabled ground-reflection simulations for 3GPP-Baseline scenarios<br>
+- Bugfix: [qd_builder.gen_lsf_parameters] Removed warning for ground-reflecion being not available in 3GPP baseline (it is now available)<br>
+- Bugfix: [qd_builder.gen_ssf_parameters] Removed warning for ground-reflecion being not available in 3GPP baseline (it is now available)<br>
+- Bugfix: [qd_builder.get_channels] Removed warning for ground-reflecion being not available in 3GPP baseline (it is now available)<br>
+- Bugfix: [qd_builder.init_sos] Removed warning for ground-reflecion being not available in 3GPP baseline (it is now available)<br>
+- Bugfix: [qd_builder.get_channels] Did not correctly apply dynamic SF and KF profiles when "add_paths" was used<br>
+<br>
+
+v2.5.7<br>
+- Bugfix: [qd_builder.copy] did not correctly copy recursive handles of arrays and SOS generators<br>
+- Bugfix: [qd_builder.gen_fbs_lbs] did not process frequency-dependent cluster-delays<br>
+- Bugfix: [qd_builder.gen_lsf_from_ssf] did not handle zero-power GR path correctly<br>
+- Bugfix: [qd_builder.gen_lsf_parameters] crashed when SSF spatial consistency was disabled and absTOA was enabled<br>
+- Bugfix: [qd_builder.gen_ssf_from_scatterers] returned incorrect GR-EoA angle in some rae cases<br>
+- Bugfix: [qd_builder.init_sos] did not initialize the subpath coupling correctly when NumSubPaths differs from "scenpar"<br>
+- Bugfix: [qd_builder.split_rx] did not split array antennas correctly in case of mutiple frequencies<br>
+- Feature: [qd_builder.add_paths] New method to combine parameters of several different scenario configurations<br>
+- Feature: [qd_builder.check_los] New method to obtain the LOS state of a builder<br>
+<br>
+
+v2.5.6<br>
+- Bugfix: [qd_builder.gen_fbs_lbs] increased robustness<br>
+- Feature: [qd_builder.gen_lsf_parameters] Added option to calculate LSF parameters for arbitrary positions<br>
+- Cleanup: [qd_builder.gen_cdl_model] Updated to new "gen_fbs_lbs" method<br>
+- Cleanup: [qd_builder.get_lsp_map] Updated to new "gen_lsf_parameters" method<br>
+- Cleanup: [qd_builder.get_sf_profile] Updated to new "gen_lsf_parameters" method<br>
+<br>
+
+v2.5.5<br>
+- Bugfix: [qd_layout.layout2kml] did not write correct segment tags when used in combination with pairing<br>
+- Feature: [qd_layout] Added property "ReferenceCoord" for reading and writing KML files<br>
+- Feature: [qd_builder,check_dual_mobility] Added option to disable warning messages<br>
+- Feature: [qd_builder.gen_lsf_parameters] Generates the large-scale-fading parameters for all terminals and frequencies<br>
+- Feature: [qd_builder.gen_ssf_parameters] Generates the small-scale-fading parameters for all terminals and frequencies<br>
+- Feature: [qd_builder.gen_lsf_from_ssf] Calculates the LSF parameters from existing SSF parameters<br>
+- Feature: [qd_builder.gen_fbs_lbs] Added explicit method to generate the positions of the FBS and the LBS<br>
+- Feature: [qd_builder.gen_ssf_from_scatterers] Calculates the SSF parameters from existing FBS and LBS positions<br>
+- Cleanup: [qd_builder] removed properties "gamma" and "kappa" for the polarizaion change during scattering. Instead, the variable "xparmat" now contains the complete polarization transfer amtrix<br>
+<br>
+
+v2.5.4<br>
+- Bugfix: [qd_builder.gen_parameters] did not correctly calculate ground reflection polarization<br>
+- Bugfix: [qd_builder.gen_parameters] did not remove the first NLOS cluster delay before applying absolute TOA offsets<br>
+- Feature: [qd_sos.remove_bias] added function to remove bias from SOS generators for given positions (enforce Normal distribution)<br>
+- Feature: [qd_sos.val] added option to use different phases as input<br>
+- Feature: [qf.calc_xpr] Added heler function to calculate XPR from polarization transfer matrix<br>
+- Feature: [qd_builder.copy] Added missing copy function to builder<br>
+- Feature: [qd_builder.get_lsp_from_ssp] Added function to calculate LSPs from SSPs<br>
+- Feature: [qd_builder] Restructured property layout for better readability<br>
+<br>
+
+v2.5.3<br>
+- Bugfix: [qd_builder.get_pl] Crashed when default variables were not correcly initialized for "dual_slope" and "tripple_slope" models<br>
+- Performace: [qd_arrayant.interpolate] Vectorized array interpolation function to improve performance<br>
+- Feature: [qd_arrayant.calc_phase_diff] calculates the maximum phase difference between two samples in the arrays<br>
+<br>
+
+v2.4.2<br>
+- Critical Bugfix: [qd_builder.supported_scenarios] did not return any results on Windows due to different format of the path-variable - Backport to v2.4.0<br>
+- Bugfix: [qd_channel.merge] crashed when "qd_channel.par.pg" did not have one vale per snapshot<br>
+- Bugfix: [qd_mesh] default material setting caused negative attenuation (amplification) when a ray passed through an objectes<br>
+<br>
+
+v2.4.1<br>
+- Bugfix: [qd_builder.get_pl] returned NaNs for dual-slope PL model when MT was at the environment height<br>
+- Bugfix: [qd_builder.visualize_clusters] crashed when creating 2D-Plots<br>
+- Performace: [qd_builder.get_channels] Improved Performance by a factor of 3<br>
+- Feature: [qd_builder.gen_parameters] Added explicit generation of polarization transfer matrix<br>
+<br>
+
+<hr style="width: 100%; height: 2px;">
+<span style="font-weight: bold;"><br>
 v2.4.0</span><br style="font-weight: bold;">
 <span style="font-weight: bold;">(Release: 2020-10-09)<br>
 </span><span style="font-weight: bold;"><br></span>

@@ -69,7 +69,7 @@ else
     if h_track.no_segments > 1
         
         % Get the distance relative to the start point for each point on the track
-        [~,dist] = h_track.get_length;
+        [~,dist] = get_length( h_track );
        
         % Get a list of the segment indices
         seg_ind = [ h_track.segment_index , h_track.no_snapshots ];
@@ -117,7 +117,7 @@ else
                 
                 seg_ind(n+1) = ii;
                 seg_ind(n+2:end) = seg_ind(n+2:end)+1;
-                [~,dist] = h_track.get_length;
+                [~,dist] = get_length( h_track );
             end
         end
         

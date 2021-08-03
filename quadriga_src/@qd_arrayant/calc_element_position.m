@@ -174,8 +174,8 @@ for iEl = 1 : nEl
         
         % Update progress bar
         i_bar = i_bar + 1;
-        if verbose; m1=ceil(i_bar/(nEl*6)*vb_dots); if m1>m0;
-                for m2=1:m1-m0; fprintf('o'); end; m0=m1; end; end;
+        if verbose; m1=ceil(i_bar/(nEl*6)*vb_dots); if m1>m0
+                for m2=1:m1-m0; fprintf('o'); end; m0=m1; end; end
         
         if verbose == 2
               figure(1)

@@ -235,9 +235,9 @@ sc(end+1,:) = {'LEO1200',   8,  3,  2, 7.6397, 23.0,  7.0,   0.4 };
 l = qd_layout;                                              % Initialize layout variable
 for isc = 1 : size(sc,1)
     l(1,isc) = qd_layout;                                   % Create new QuaDRiGa layout
-    l(1,isc).simpar.center_frequency = ...
+    l(1,isc).simpar(1,1).center_frequency = ...
         satant(1,sc{isc,2}).center_frequency;               % Set Frequency
-    l(1,isc).simpar.show_progress_bars = 0;                 % Disable Progress bars
+    l(1,isc).simpar(1,1).show_progress_bars = 0;            % Disable Progress bars
     
     if sc{isc,4} == 1                                       % Set number of beams
         l(1,isc).no_tx = 61;                                % FR1: Two tiers of interfering beams
@@ -246,7 +246,7 @@ for isc = 1 : size(sc,1)
     end
     
     for itx = 1 : l(1,isc).no_tx                                        % Set satellite position
-        l(1,isc).tx_track(1,itx) = copy( sat.(sc{isc,1}) );            	% Copy satellite track obj.
+        l(1,isc).tx_track(1,itx) = copy( sat.(sc{isc,1}) );             % Copy satellite track obj.
         l(1,isc).tx_track(1,itx).name = ['B',num2str(itx,'%03d')];      % Set beam ID
         l(1,isc).tx_track(1,itx).calc_orientation( [],...               % Apply beam offset
             imag(Pb(itx))*sc{isc,5}*pi/180, -real(Pb(itx))*sc{isc,5}*pi/180 );

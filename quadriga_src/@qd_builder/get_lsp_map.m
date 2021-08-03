@@ -59,7 +59,7 @@ if h_builder.dual_mobility ~= 0
     error('QuaDRiGa:qd_builder:get_lsp_map','Parameter-maps are meamimgless for dual-mobility setups.')
 end
 
-if numel( h_builder.simpar.center_frequency ) > 1
+if numel( h_builder.simpar(1,1).center_frequency ) > 1
     error('QuaDRiGa:qd_builder:get_lsp_map','Parameter-maps cannot be generated for multi-frequency simulations.')
 end
 
@@ -91,10 +91,7 @@ z = reshape( single(zc) , 1 , 1, []  );
 z = z( oy,ox,: );
 z = z(:);
 
-[ ds, kf, sf, asD, asA, esD, esA, xpr ] = ...
-    generate_lsf( h_builder.tx_position, [x,y,z].', h_builder.lsp_vals,...
-    h_builder.lsp_xcorr, h_builder.sos,...
-    h_builder.scenpar.ES_D_mu_A, h_builder.scenpar.ES_D_mu_min, h_builder.dual_mobility );
+[ ds, kf, sf, asD, asA, esD, esA, xpr ] = gen_lsf_parameters( h_builder, 3, 0, h_builder.tx_position, [x,y,z].' );
 
 map = [ ds; kf; sf; asD; asA; esD; esA; xpr ].';
 map = reshape( map, ny, nx, nz, [] );

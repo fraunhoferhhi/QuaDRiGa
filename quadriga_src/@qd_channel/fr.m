@@ -10,12 +10,17 @@ function freq_response = fr( h_channel, bandwidth, carriers, i_snapshot, use_gpu
 %
 %   carriers
 %   The carrier positions. There are two options:
-%      * Specify the total number of carriers. In this case, 'carriers' a scalar natural number >
-%        0. The carriers are then equally spaced over the bandwidth.
-%      * Specify the pilot positions. In this case, 'carriers' is a vector of carrier positions.
-%        The carrier positions are given relative to the bandwidth where '0' is the begin of the
-%        spectrum and '1' is the end. For example, if a 5 MHz channel should be sampled at 0, 2.5 and
-%        5 MHz, then 'carriers' must be set to [0, 0.5, 1].
+%      * Specify the total number of sub-carriers. In this case, 'carriers' a scalar natural number
+%        > 0. The sub-carriers are then equally spaced over the bandwidth. The first entry of the
+%        generated spectrum is equal to the center frequency f0. The spectrum is generated from f0
+%        to f0+bandwidth.
+%
+%      * Specify the sub-carrier positions. In this case, 'carriers' is a vector of sub-carrier
+%        positions relative to the bandwidth. The carrier positions are given relative to the
+%        bandwidth where '0' is the begin of the spectrum (i.e., the center frequency f0) and '1' is
+%        equal to f0+bandwidth. To obtain the channel frequency response centered around f0, the
+%        input variable 'carriers' must be set to '(-N/2:N/2)/N', where N is the number of sub-
+%        carriers.
 %
 %   i_snapshot
 %   The snapshot numbers for which the frequency response should be calculated. By default, i.e. if
@@ -32,7 +37,7 @@ function freq_response = fr( h_channel, bandwidth, carriers, i_snapshot, use_gpu
 %   the 4-D tensor are: [ Rx-Antenna , Tx-Antenna , Carrier-Index , Snapshot ]
 %
 %
-% QuaDRiGa Copyright (C) 2011-2020
+% QuaDRiGa Copyright (C) 2011-2021
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -67,8 +72,8 @@ else
 end
     
 if ~exist( 'use_gpu','var' )
-    use_gpu = 0 ; %qd_simulation_parameters.has_gpu;
-elseif logical( use_gpu ) % && ~qd_simulation_parameters.has_gpu
+    use_gpu = qd_simulation_parameters.has_gpu;
+elseif logical( use_gpu ) &&  ~qd_simulation_parameters.has_gpu
     use_gpu = 0;
 end
 
@@ -113,7 +118,7 @@ n_i_snapshots = numel(i_snapshot);
 n_taps = h_channel.no_path;
 
 % Preallocate some memory and rearrange coefficients
-freq_response = complex( zeros(n_i_snapshots * n_rx * n_tx, carriers) ); 
+freq_response = zeros(n_i_snapshots * n_rx * n_tx, carriers); 
 if h_channel.individual_delays
     m = reshape(permute(h_channel.delay(:, :, :, i_snapshot)*bandwidth,...
         [ 4 1 2 3 ]), n_i_snapshots*n_rx*n_tx, n_taps);
@@ -128,15 +133,25 @@ v  = -2 * pi * 1j * pilot_grid;
 
 % Load all variables to GPU memory
 if use_gpu == 1
+    freq_response(1) = freq_response(1) + 1j*4e-324;
+    m(1) = m(1) + 1j*4e-324;
+    c(1) = c(1) + 1j*4e-324;
     freq_response = gpuArray( freq_response );
-    m = gpuArray( complex( m ) );
-    c = gpuArray( complex( c ) );
+    m = gpuArray( m );
+    c = gpuArray( c );
     v = gpuArray( v );
 elseif use_gpu == 2
-    freq_response = gpuArray( single( freq_response ) );
-    m = gpuArray( complex( single( m ) ) );
-    c = gpuArray( complex( single( c ) ) );
-    v = gpuArray( single( v ) );
+    freq_response = single( freq_response );
+    m = single( m );
+    c = single( c );
+    v = single( v );
+    freq_response(1) = freq_response(1) + 1j*1e-45;
+    m(1) = m(1) + 1j*1e-45;
+    c(1) = c(1) + 1j*1e-45;
+    freq_response = gpuArray( freq_response );
+    m = gpuArray( m );
+    c = gpuArray( c );
+    v = gpuArray( v );
 end
 
 % The main calculation

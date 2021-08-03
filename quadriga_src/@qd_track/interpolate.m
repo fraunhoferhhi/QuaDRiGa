@@ -128,7 +128,7 @@ no_snapshots = h_track.no_snapshots;                                % Read numbe
 
 % Calculate distance vector of the input track
 positions = h_track.positions;                                      % Read positions for faster processing
-[ max_dist, dist_in ] = h_track.get_length;
+[ max_dist, dist_in ] = get_length( h_track );
 
 % Calculate interpolation target
 do_not_interpolate = false;

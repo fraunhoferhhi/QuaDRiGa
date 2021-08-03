@@ -21,6 +21,7 @@
 
 close all
 clear all
+warning('off','all');
 
 % The mapping function of antenna elements to CRS port (0 degree panning angle)
 port_mapping = [ 1,0;0,1 ; 1,0;0,1 ;1,0;0,1 ;1,0;0,1 ]; 

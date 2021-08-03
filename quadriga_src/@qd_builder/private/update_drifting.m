@@ -79,12 +79,14 @@ function [ phi_d_lms, theta_d_lms, phi_a_lms, theta_a_lms, psi_lms, tau_ls, ...
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
-persistent i_mobile_p fbs_pos_p lbs_pos_p norm_b_tlms phi_d_lms_p theta_d_lms_p norm_c_lm e_ts e_ts0 NumSubPaths
+persistent i_mobile_p fbs_pos_p lbs_pos_p norm_b_tlms phi_d_lms_p theta_d_lms_p norm_c_lm e_ts e_ts0 NumSubPaths useGR
 
 % If "i_mobile" is given as an input, we initialize all persistent variables. If it is not given, we
 % use the values from the last call to the method. This reduces computing time significantly.
 if exist( 'i_mobile','var' )
     i_mobile_p = i_mobile;
+    
+    useGR = h_builder.check_los > 1.5;
     
     % Initialize "fbs_pos_p" and "lbs_pos_p"
     if ~exist( 'fbs_pos','var' ) || isempty( fbs_pos ) || ~exist( 'lbs_pos','var' ) || isempty( lbs_pos )
@@ -100,7 +102,7 @@ if exist( 'i_mobile','var' )
     
     iClst = h_builder.pow(i_mobile,:) ~= 0;
     iClst(1) = true;
-    if logical( h_builder.scenpar.GR_enabled )
+    if useGR
         iClst(2) = true;
     end
     NumSubPaths = h_builder.NumSubPaths( iClst );
@@ -109,7 +111,7 @@ end
 % Read some common variables
 n_paths = size( fbs_pos_p,2 );
 o_path  = ones( 1,n_paths );
-lambda  = h_builder.simpar.wavelength;                  % Wavelength in [m]
+lambda  = h_builder.simpar(1,1).wavelength;                  % Wavelength in [m]
 
 % We only update the variables for the tx-antenna if the Tx is moving.
 if h_builder.tx_track(1,i_mobile_p).no_snapshots == 1 && i_snapshot > 1
@@ -211,7 +213,7 @@ theta_a_lms(1,1,:) = theta_a_1ms(1,1,:,1);
 d_lms(1,1,:,:) = norm_r_rts(1,1,:,:);
 
 % Additional calculations for the ground reflection
-if logical( h_builder.scenpar.GR_enabled )
+if useGR
     % The vector pointing from the origin to the current Rx element position
     o_gr = rx_pos(:,1,o_rx) + e_rs;
     
@@ -251,15 +253,15 @@ end
 psi_lms     = 2*pi/lambda * mod(d_lms, lambda);
 
 % The average delay for each cluster
-tau_ls      = clst_avg( d_lms, NumSubPaths ) ./ h_builder.simpar.speed_of_light;
+tau_ls      = clst_avg( d_lms, NumSubPaths ) ./ h_builder.simpar(1,1).speed_of_light;
 
 % When we use relative delays, we have to normalize the delays to the LOS tau_ls0 is the LOS delay
 % at the RX-position without antennas. It is needed when the coefficients are going to be normalized
 % to LOS delay. 
-if ~h_builder.simpar.use_absolute_delays
+if ~h_builder.simpar(1,1).use_absolute_delays
     r_rts0 = -e_ts0 -tx_pos +rx_pos +e_rs0;
     norm_r_rts0 = sqrt( sum( (r_rts0).^2,1 ) );
-    tau_ls0 = norm_r_rts0 ./ h_builder.simpar.speed_of_light;
+    tau_ls0 = norm_r_rts0 ./ h_builder.simpar(1,1).speed_of_light;
     tau_ls = tau_ls - tau_ls0;
 end
 

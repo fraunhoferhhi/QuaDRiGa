@@ -87,7 +87,7 @@ b.scenpar.KF_mu = -3;                           % Set los power to 33 % of the t
 b.scenpar.KF_sigma = 0.5;
 b.scenpar.SC_lambda = 5;                        % Set SSF decorrelation distance to 5 m
 
-b.gen_ssf_parameters;                           % Generate small-scale-fading parameters
+b.gen_parameters;                               % Generate small-scale-fading parameters
 
 c = get_channels( b );                          % Generate channel coefficients
 c = merge( c, [], 0 );                          % Combine output channels
@@ -96,7 +96,7 @@ c.individual_delays = 0;                        % Remove per-antenna delays
 dl = c.delay.';                                 % Extract path delays from the channel
 pow = squeeze( abs(c.coeff).^2 )';              % Calculate path powers from the channel
 
-[len,dist] = l.rx_track.get_length;             % Store the length and distances from start point
+[len,dist] = get_length( l.rx_track );          % Store the length and distances from start point
 
 %% Path powers
 % The first plot shows the path powers along the receiver track. The path parameters (delays,
@@ -250,7 +250,7 @@ legend('Requested AS','Actual AS','LOS angle', 'NLOS angles')
 % consistency is needed to achieve realistic channels. (You need to run the code in the loop
 % manually) 
 
-set(0,'DefaultFigurePaperSize',[14.5 7.7])            	% Default Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 7.8])            	% Default Paper Size
 b.visualize_clusters;
 if 0
     for n = 1 : b.no_rx_positions

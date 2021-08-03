@@ -473,11 +473,11 @@ end
 
 % Configure channel builder
 h_builder = qd_builder('LOSonly');
-h_builder.simpar.center_frequency = center_frequency;
-h_builder.simpar.sample_density = sample_density;
-h_builder.simpar.use_3GPP_baseline = true;
-h_builder.simpar.show_progress_bars = false;
-h_builder.simpar.autocorrelation_function = 'Disable';
+h_builder.simpar(1,1).center_frequency = center_frequency;
+h_builder.simpar(1,1).sample_density = sample_density;
+h_builder.simpar(1,1).use_3GPP_baseline = true;
+h_builder.simpar(1,1).show_progress_bars = false;
+h_builder.simpar(1,1).autocorrelation_function = 'Disable';
 
 % Default omni-antennas, vertial polarization
 h_builder.tx_array = qd_arrayant('omni');
@@ -491,7 +491,7 @@ else
     h_builder.rx_track = qd_track('linear',mobile_speed*duration,0);
 end
 if h_builder.rx_track.no_snapshots > 1.5
-    h_builder.rx_track.interpolate_positions( h_builder.simpar.samples_per_meter );
+    h_builder.rx_track.interpolate_positions( h_builder.simpar(1,1).samples_per_meter );
 end
 h_builder.rx_track.initial_position(3,1) = 1.5;     % RX-Height = 1.5 Meters
 if abs( ang(3,1) ) < 1e-3 && abs( ang(4,1) ) < 1e-3
@@ -503,7 +503,7 @@ end
 h_builder.rx_track.initial_position(1:2,1) = [cos(ang(1,1));sin(ang(1,1))]*d2d;
 
 if duration > 0
-    h_builder.rx_track.movement_profile = [0,duration;0,h_builder.rx_track.get_length];
+    h_builder.rx_track.movement_profile = [0,duration;0, get_length( h_builder.rx_track )];
 end
 h_builder.check_dual_mobility;
 
@@ -556,11 +556,7 @@ h_builder.EoA       = ang(4,:);
 
 % Set FBS and LBS positions (for visualization only)
 if ~use_tdl_model
-    [ fbs_pos, lbs_pos ] = generate_fbs_lbs( h_builder.tx_position, h_builder.rx_positions,...
-        h_builder.taus, h_builder.AoD, h_builder.AoA, h_builder.EoD, h_builder.EoA,...
-        h_builder.NumSubPaths, h_builder.subpath_coupling, cAS.', SubpathMethod );
-    h_builder.fbs_pos = fbs_pos;
-    h_builder.lbs_pos = lbs_pos;
+    gen_fbs_lbs( h_builder );
 end
 
 % Set name-tags

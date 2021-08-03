@@ -51,9 +51,6 @@ elseif h_builder(1,1).no_rx_positions > 0
     % Fix for octave 4.0 (conversion from object-array to single object)
     h_builder = h_builder(1,1);
     
-    % Get the number of frequencies
-    n_freq = numel( h_builder(1,1).simpar.center_frequency );
-    
     if h_builder.dual_mobility == -1
         h_builder.check_dual_mobility;
     end
@@ -65,7 +62,7 @@ elseif h_builder(1,1).no_rx_positions > 0
         split_lsf = false;
     end
     split_ssf = true;       % Check if SSF parameters have been initialized
-    if h_builder.no_rx_positions > 0 && size( h_builder.pow,1 ) ~= n_rx
+    if h_builder.no_rx_positions > 0 && size( h_builder.gain,1 ) ~= n_rx
         split_ssf = false;
     end
     
@@ -97,8 +94,8 @@ elseif h_builder(1,1).no_rx_positions > 0
         % Split tracks and antennas
         h_builder_out(1,r).tx_position  = h_builder.tx_position(:,r);
         h_builder_out(1,r).rx_positions = h_builder.rx_positions(:,r);
-        h_builder_out(1,r).tx_array     = h_builder.tx_array(1,r);
-        h_builder_out(1,r).rx_array     = h_builder.rx_array(1,r);
+        h_builder_out(1,r).tx_array     = h_builder.tx_array(:,r);
+        h_builder_out(1,r).rx_array     = h_builder.rx_array(:,r);
         h_builder_out(1,r).rx_track     = h_builder.rx_track(1,r);
         h_builder_out(1,r).tx_track     = h_builder.tx_track(1,r);
         
@@ -122,26 +119,24 @@ elseif h_builder(1,1).no_rx_positions > 0
         
         % Split SSF variables
         if split_ssf
-            h_builder_out(1,r).taus     = h_builder.taus(r,:);
-            h_builder_out(1,r).pow      = h_builder.pow(r,:,:);
+            h_builder_out(1,r).taus     = h_builder.taus(r,:,:);
+            h_builder_out(1,r).gain     = h_builder.gain(r,:,:);
             h_builder_out(1,r).AoD      = h_builder.AoD(r,:);
             h_builder_out(1,r).AoA      = h_builder.AoA(r,:);
             h_builder_out(1,r).EoD      = h_builder.EoD(r,:);
             h_builder_out(1,r).EoA      = h_builder.EoA(r,:);
-            h_builder_out(1,r).gamma    = h_builder.gamma(r,:,:);
+            h_builder_out(1,r).xprmat   = h_builder.xprmat(:,:,r,:);      
             h_builder_out(1,r).pin      = h_builder.pin(r,:,:);
-            if ~isempty( h_builder.kappa )
-                h_builder_out(1,r).kappa = h_builder.kappa(r,:,:);
-            end
-            if ~isempty( h_builder.fbs_pos )
-                h_builder_out(1,r).fbs_pos  = h_builder.fbs_pos(:,:,r,:);
-                h_builder_out(1,r).lbs_pos  = h_builder.lbs_pos(:,:,r,:);
-            end
         end
-        
+        if ~isempty( h_builder.fbs_pos )
+            h_builder_out(1,r).fbs_pos  = h_builder.fbs_pos(:,:,r,:);
+            h_builder_out(1,r).lbs_pos  = h_builder.lbs_pos(:,:,r,:);
+        end
         h_builder_out(1,r).dual_mobility = h_builder.dual_mobility;
     end
+    
+else
+    h_builder_out = copy( h_builder );
 end
 
 end
-

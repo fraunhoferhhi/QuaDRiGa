@@ -87,4 +87,7 @@ cpl( nc(1)+1:end , nc(2)+1:end ) = cpl_app;
 
 h_arrayant.coupling = cpl;
 
+% Clear internal varaible
+h_arrayant.Pphase_diff = [];
+
 end

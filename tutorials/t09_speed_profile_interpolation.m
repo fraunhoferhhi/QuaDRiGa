@@ -74,7 +74,7 @@ ci = cn.interpolate( dist );                            % Interpolate channels
 % interpolated values (blue line) have 17 times as many sample points.
 
 nsnap = cn.no_snap;                                     % No. snapshots
-dist_orig = (0:nsnap-1) * t.get_length/(nsnap-1);       % Distances
+dist_orig = (0:nsnap-1) * get_length(t)/(nsnap-1);      % Distances
 pwr_orig  = 10*log10(squeeze(abs(cn.coeff(1,1,1:3,:))).^2);  % Power before interpolation
 pwr_int   = 10*log10(squeeze(abs(ci.coeff(1,1,1:3,:))).^2);  % Power after interpolation
 
@@ -119,7 +119,7 @@ title('PDP with fixed speed');
 % sample interval (in s) as an input argument. Here, we choose an interval of 1 ms which gives us
 % 1000 samples per second. The plot the illustrates the results.
 
-t.movement_profile = [ 0,7 ; 5,0 ; 6,0 ; 20,t.get_length  ]';   % Generate movement profile
+t.movement_profile = [ 0,7 ; 5,0 ; 6,0 ; 20,get_length(t)  ]';   % Generate movement profile
 dist = t.interpolate_movement( 1e-3 );                  % Get snapshot positions
 ci = cn.interpolate( dist );                            % Interpolate channels
 

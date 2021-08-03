@@ -99,7 +99,9 @@ else
     if use_interpolate
         el = repmat( elevation_grid' , 1 , numel(azimuth_grid) );
         az = repmat( azimuth_grid , numel(elevation_grid) , 1 );
-        [V,H] = h_qd_arrayant.interpolate( az , el, 1:h_qd_arrayant.no_elements  );
+        [ V,H ] = h_qd_arrayant.interpolate( reshape(az,1,[]), reshape(el,1,[]) );
+        V = reshape(V.',numel(elevation_grid),numel(azimuth_grid),[]);
+        H = reshape(H.',numel(elevation_grid),numel(azimuth_grid),[]);
         
     else
         no_elements = h_qd_arrayant.no_elements;

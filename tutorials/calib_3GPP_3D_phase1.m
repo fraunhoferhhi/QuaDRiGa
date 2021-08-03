@@ -22,6 +22,7 @@
 
 clear all
 close all
+warning('off','all');
 
 s = qd_simulation_parameters;               % Set general simulation parameters
 s.center_frequency = 2e9;                   % 2 GHz center frequency
@@ -118,6 +119,7 @@ for il = create_curves
     name   = cell( no_rx * 19, 1  );                        % Name in the form "Tx_Rx"
     
     b = l(1,il).init_builder;                               % Initialze channel builder objects
+    init_sos( b );                                          % Initialize random generators
     gen_lsf_parameters( b );                                % Generat shadow fading
     cf = get_los_channels( b );                             % Get the LOS channel coefficients only
     

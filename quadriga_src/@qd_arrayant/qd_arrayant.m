@@ -23,7 +23,7 @@ classdef qd_arrayant < handle
 %    a.visualize;                         % Show the output
 %
 %
-% QuaDRiGa Copyright (C) 2011-2019
+% QuaDRiGa Copyright (C) 2011-2021
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -113,16 +113,14 @@ properties(Dependent)
     is_wrapped                         % Indicator if the array is wrapped
 end
 
-properties(Access=private)
-    Pno_elements                = 1;
-    Pelement_position           = [0;0;0];
-    PFa                         = ones(3,5);
-    PFb                         = zeros(3,5);
-    Pcoupling                   = 1;
-end
-
 properties(Hidden)
-    OctEq = false; % For qf.eq_octave
+    Pno_elements        = 1;
+    Pelement_position   = [0;0;0];
+    PFa                 = ones(3,5);
+    PFb                 = zeros(3,5);
+    Pcoupling           = 1;
+    OctEq               = false; % For qf.eq_octave
+    Pphase_diff         = [];
 end
 
 methods
@@ -140,7 +138,7 @@ methods
         %   parameters and the list of supported antenna types.
         %
         %
-        % QuaDRiGa Copyright (C) 2011-2017 Fraunhofer Heinrich Hertz Institute
+        % QuaDRiGa Copyright (C) 2011-2021 Fraunhofer Heinrich Hertz Institute
         % e-mail: quadriga@hhi.fraunhofer.de
         %
         % QuaDRiGa is free software: you can redistribute it and/or modify
@@ -239,6 +237,7 @@ methods
         end
         
         h_qd_arrayant.Pno_elements = value;
+        h_qd_arrayant.Pphase_diff = [];
     end
     
     function set.element_position(h_qd_arrayant,value)
@@ -270,6 +269,7 @@ methods
                 'x',num2str(h_qd_arrayant.Pno_elements),'].'])
         end
         h_qd_arrayant.PFa = value;
+        h_qd_arrayant.Pphase_diff = [];
     end
     
     function set.Fb(h_qd_arrayant,value)
@@ -289,6 +289,7 @@ methods
                 'x',num2str(h_qd_arrayant.Pno_elements),'].'])
         end
         h_qd_arrayant.PFb = value;
+        h_qd_arrayant.Pphase_diff = [];
     end
     
     function set.coupling(h_qd_arrayant,value)

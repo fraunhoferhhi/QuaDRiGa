@@ -1,6 +1,6 @@
-function write_conf_file( h_builder, fn, write_defaults )
+function write_conf_file( h_builder, fn, write_defaults, ref, ref_sec, valid_range )
 %WRITE_CONF_FILE Writes configuration files from qd_builder objects
-% 
+%
 % Calling object:
 %   Single object
 %
@@ -11,8 +11,21 @@ function write_conf_file( h_builder, fn, write_defaults )
 %   write_defaults
 %   If set to true, default values are written to the file.
 %
+%   ref
+%   String containing the literature reference of the parameters
 %
-% QuaDRiGa Copyright (C) 2011-2019
+%   ref_sec
+%   Reference for each section; Cell-Array containing 8 strings
+%
+%   valid_range
+%   A 4x2 matrix containing the validity range of the parameters (to be written as text into the
+%   conf file). The first row is for the frequency in GHz, the second row contains the distance in
+%   m, the third row the allowed BS antenna height and the fourth row contains the allowed MT
+%   height in m. The first column is for the lower range, the second for the upper range. Entering
+%   NaN into a row prevents the writing of that row to the file.
+%
+%
+% QuaDRiGa Copyright (C) 2011-2021
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -27,7 +40,7 @@ function write_conf_file( h_builder, fn, write_defaults )
 %
 % You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for 
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
-% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
+% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 if numel( h_builder ) > 1
     error('QuaDRiGa:qd_builder:ObjectArray','??? "write_conf_file" is only defined for scalar objects.')
@@ -36,7 +49,7 @@ else
 end
 
 if ~exist( 'fn','var' ) || isempty( fn )
-    error('QuaDRiGa:qd_arrayant:xml_write:filename_not_given',...
+    error('QuaDRiGa:qd_arrayant:xml_write',...
         'You did not specify a filename.');
 end
 
@@ -46,10 +59,80 @@ else
     write_defaults = Inf;
 end
 
+if ~exist( 'ref','var' ) || isempty( ref )
+    ref = '';
+end
+
+if ~exist( 'ref_sec','var' ) || isempty( ref_sec )
+    ref_sec = [];
+elseif ~iscell(ref_sec) || numel( ref_sec ) ~= 8
+    error('QuaDRiGa:qd_arrayant:xml_write',...
+        '"ref_sec" must be a cell array with 8 variables.');
+end
+
+if ~exist( 'valid_range','var' ) || isempty( valid_range )
+    valid_range = [];
+elseif all( size( valid_range ) ~= [4,2] )
+    error('QuaDRiGa:qd_arrayant:xml_write',...
+        '"valid_range" must be a 4x2 array.');
+end
+
 % Open file
 fid = fopen( fn, 'w');
 
 fprintf(fid,['%% Config file for scenario "',h_builder.scenario,'"\n']);
+
+if ~isempty( ref )
+    fprintf(fid,['%% See: ',ref,'\n']);
+end
+
+if ~isempty(valid_range)
+    fprintf(fid,'\n');
+    if ~any(isnan(valid_range(1,:)))
+        fprintf(fid,'%% Valid frequency range:        ');
+        if valid_range(1,1) == valid_range(1,2)
+            fprintf(fid,'%g',valid_range(1,1));
+        else
+            fprintf(fid,'%g',valid_range(1,1));
+            fprintf(fid,' to ');
+            fprintf(fid,'%g',valid_range(1,2));
+        end
+        fprintf(fid,' GHz\n');
+    end
+    if ~any(isnan(valid_range(2,:)))
+        fprintf(fid,'%% Valid distance range:         ');
+        if valid_range(2,1) == valid_range(2,2)
+            fprintf(fid,'%g',valid_range(2,1));
+        else
+            fprintf(fid,'%g',valid_range(2,1));
+            fprintf(fid,' to ');
+            fprintf(fid,'%g',valid_range(2,2));
+        end
+        fprintf(fid,' m\n');
+    end
+    if ~any(isnan(valid_range(3,:)))
+        fprintf(fid,'%% Valid BS antenna height:      ');
+        if valid_range(3,1) == valid_range(3,2)
+            fprintf(fid,'%g',valid_range(3,1));
+        else
+            fprintf(fid,'%g',valid_range(3,1));
+            fprintf(fid,' to ');
+            fprintf(fid,'%g',valid_range(3,2));
+        end
+        fprintf(fid,' m\n');
+    end
+    if ~any(isnan(valid_range(4,:)))
+        fprintf(fid,'%% Valid MT antenna height:      ');
+        if valid_range(4,1) == valid_range(4,2)
+            fprintf(fid,'%g',valid_range(4,1));
+        else
+            fprintf(fid,'%g',valid_range(4,1));
+            fprintf(fid,' to ');
+            fprintf(fid,'%g',valid_range(4,2));
+        end
+        fprintf(fid,' m\n');
+    end
+end
 
 if ( h_builder.scenpar.NumClusters == 1 || ...
         ( h_builder.scenpar.NumClusters == 2 && h_builder.scenpar.GR_enabled == 1 ) ) && write_defaults == 0
@@ -57,6 +140,9 @@ if ( h_builder.scenpar.NumClusters == 1 || ...
 else
     fprintf(fid,'\n%% ==================================================================================================\n');
     fprintf(fid,'%% Large scale distributions\n');
+    if ~isempty( ref_sec ) && ~isempty( ref_sec{1} )
+        fprintf(fid,['%% See: ',ref,'; ',ref_sec{1},' \n']);
+    end
     fprintf(fid,'%% ==================================================================================================\n\n');
     
     % Overviews
@@ -234,7 +320,7 @@ else
     write_par_line( fid, 'ES_D_beta', 'elevation-dep. of ESD STD [log10(deg)/log10(rad)]', h_builder.scenpar.ES_D_beta, write_defaults );
     write_par_line( fid, 'ES_D_mu_min', 'minimum ESD reference value [log10(deg)]', h_builder.scenpar.ES_D_mu_min, -Inf );
     write_par_line( fid, 'ES_D_mu_A', 'TX-RX 2D dist.-dep. of ESD [log10(deg)/km]', h_builder.scenpar.ES_D_mu_A, write_defaults );
-
+    
     % ESA
     fprintf(fid,'\n');
     write_par_line( fid, 'ES_A_mu', 'elevation of arrival angle spread [log10(deg)]', h_builder.scenpar.ES_A_mu, Inf, ...
@@ -277,76 +363,33 @@ else
     
 end
 
-fprintf(fid,'\n%% ==================================================================================================\n');
-fprintf(fid,'%% Model parameters\n');
-fprintf(fid,'%% ==================================================================================================\n\n');
-
-write_par_line( fid, 'NumClusters', 'number of clusters', h_builder.scenpar.NumClusters, write_defaults );
-
-if ( h_builder.scenpar.NumClusters == 1 || ...
-        ( h_builder.scenpar.NumClusters == 2 && h_builder.scenpar.GR_enabled == 1 ) ) && write_defaults == 0
-    % Don't write
-else
-    write_par_line( fid, 'NumSubPaths', 'number of paths per (NLOS) cluster', h_builder.scenpar.NumSubPaths, write_defaults );
-    write_par_line( fid, 'SubpathMethod', 'subpath mapping method (legacy, Laplacian or mmMAGIC)', h_builder.scenpar.SubpathMethod, write_defaults );
-    write_par_line( fid, 'LOS_scatter_radius', 'not used', h_builder.scenpar.LOS_scatter_radius, write_defaults );
-    
-    fprintf(fid,'\n');
-    
-    write_par_line( fid, 'r_DS', 'delay scaling factor', h_builder.scenpar.r_DS, Inf );
-    write_par_line( fid, 'LNS_ksi', 'per cluster shadowing STD [dB]', h_builder.scenpar.LNS_ksi, write_defaults );
-    
-    fprintf(fid,'\n');
-    
-    write_par_line( fid, 'PerClusterDS', 'cluster delay spread [ns]', h_builder.scenpar.PerClusterDS, write_defaults );
-    write_par_line( fid, 'PerClusterDS_gamma', 'freq.-dep. of cluster delay spread [ns/log10(GHz)]', h_builder.scenpar.PerClusterDS_gamma, write_defaults );
-    write_par_line( fid, 'PerClusterDS_min', 'minumum cluster delay spread [ns]', h_builder.scenpar.PerClusterDS_min, write_defaults );
-    
-    write_par_line( fid, 'PerClusterAS_D', 'cluster azimuth of departure angle spread [deg]', h_builder.scenpar.PerClusterAS_D, write_defaults );
-    write_par_line( fid, 'PerClusterAS_A', 'cluster azimuth of arrival angle spread [deg]', h_builder.scenpar.PerClusterAS_A, write_defaults );
-    write_par_line( fid, 'PerClusterES_D', 'cluster elevation of departure angle spread [deg]', h_builder.scenpar.PerClusterES_D, write_defaults );
-    write_par_line( fid, 'PerClusterES_A', 'cluster elevation of arrival angle spread [deg]', h_builder.scenpar.PerClusterES_A, write_defaults );
-end
-
-if h_builder.scenpar.absTOA_mu > -99
-    fprintf(fid,'\n%% ==================================================================================================\n');
-    fprintf(fid,'%% Absolute time of arrival model parameters (optional feature)\n');
-    fprintf(fid,'%% See: 3GPP TR 38.901 Section 7.6.9\n');
-    fprintf(fid,'%% ==================================================================================================\n\n');
-    
-    write_par_line( fid, 'absTOA_mu', 'absolute time of arrival offset reference value [log10(s)]', h_builder.scenpar.absTOA_mu, write_defaults );
-    write_par_line( fid, 'absTOA_sigma', 'absolute time of arrival offset referenece STD [log10(s)]', h_builder.scenpar.absTOA_sigma, write_defaults );
-    write_par_line( fid, 'absTOA_lambda', 'absolute time of arrival offset decorrelation distance [m]', h_builder.scenpar.absTOA_lambda, write_defaults );
-end
-
 if ( h_builder.scenpar.NumClusters == 1 || ...
         ( h_builder.scenpar.NumClusters == 2 && h_builder.scenpar.GR_enabled == 1 ) ) && write_defaults == 0
     % Don't write
 else
     fprintf(fid,'\n%% ==================================================================================================\n');
     fprintf(fid,'%% Large-Scale fading decorrelation distances\n');
+    if ~isempty( ref_sec ) && ~isempty( ref_sec{2} )
+        fprintf(fid,['%% See: ',ref,'; ',ref_sec{2},' \n']);
+    end
     fprintf(fid,'%% ==================================================================================================\n\n');
     
     write_par_line( fid, 'DS_lambda', 'DS decorrelation distance [m]', h_builder.scenpar.DS_lambda, Inf );
     write_par_line( fid, 'KF_lambda', 'KF decorrelation distance [m]', h_builder.scenpar.KF_lambda, Inf );
     write_par_line( fid, 'SF_lambda', 'SF decorrelation distance [m]', h_builder.scenpar.SF_lambda, Inf );
     write_par_line( fid, 'AS_D_lambda', 'ASD decorrelation distance [m]', h_builder.scenpar.AS_D_lambda, Inf );
-    write_par_line( fid, 'AS_A_lambda', 'ASD decorrelation distance [m]', h_builder.scenpar.AS_A_lambda, Inf );
+    write_par_line( fid, 'AS_A_lambda', 'ASA decorrelation distance [m]', h_builder.scenpar.AS_A_lambda, Inf );
     write_par_line( fid, 'ES_D_lambda', 'ESD decorrelation distance [m]', h_builder.scenpar.ES_D_lambda, Inf );
-    write_par_line( fid, 'ES_A_lambda', 'ESD decorrelation distance [m]', h_builder.scenpar.ES_A_lambda, Inf );
+    write_par_line( fid, 'ES_A_lambda', 'ESA decorrelation distance [m]', h_builder.scenpar.ES_A_lambda, Inf );
     write_par_line( fid, 'XPR_lambda', 'XPR decorrelation distance [m]', h_builder.scenpar.XPR_lambda, Inf );
-end
-
-if h_builder.scenpar.SC_lambda > 0  || write_defaults ~= 0
-    fprintf(fid,'\n%% ==================================================================================================\n');
-    fprintf(fid,'%% Decorrelation distance for the small-scale fading spatial consistency\n');
-    fprintf(fid,'%% ==================================================================================================\n\n');
-    write_par_line( fid, 'SC_lambda', 'decorrelation distance [m]; 0 = disabled', h_builder.scenpar.SC_lambda, Inf );
 end
 
 if any( abs( reshape( h_builder.lsp_xcorr - eye(8),[],1 ) ) > 1e-3 ) || write_defaults ~= 0
     fprintf(fid,'\n%% ==================================================================================================\n');
     fprintf(fid,'%% Inter-parameter correlations\n');
+    if ~isempty( ref_sec ) && ~isempty( ref_sec{3} )
+        fprintf(fid,['%% See: ',ref,'; ',ref_sec{3},' \n']);
+    end
     fprintf(fid,'%% ==================================================================================================\n\n');
     
     fprintf(fid,'%%         DS     KF     SF     ASD    ASA    ESD    ESA    XPR\n');
@@ -389,19 +432,83 @@ if any( abs( reshape( h_builder.lsp_xcorr - eye(8),[],1 ) ) > 1e-3 ) || write_de
     write_par_line( fid, 'xpr_esa', 'ESA vs. XPR', h_builder.scenpar.xpr_esa, write_defaults );
 end
 
+fprintf(fid,'\n%% ==================================================================================================\n');
+fprintf(fid,'%% Model parameters\n');
+if ~isempty( ref_sec ) && ~isempty( ref_sec{4} )
+    fprintf(fid,['%% See: ',ref,'; ',ref_sec{4},' \n']);
+end
+fprintf(fid,'%% ==================================================================================================\n\n');
+
+write_par_line( fid, 'NumClusters', 'number of clusters', h_builder.scenpar.NumClusters, write_defaults );
+
+if ( h_builder.scenpar.NumClusters == 1 || ...
+        ( h_builder.scenpar.NumClusters == 2 && h_builder.scenpar.GR_enabled == 1 ) ) && write_defaults == 0
+    % Don't write
+else
+    write_par_line( fid, 'NumSubPaths', 'number of paths per (NLOS) cluster', h_builder.scenpar.NumSubPaths, write_defaults );
+    write_par_line( fid, 'SubpathMethod', 'subpath mapping method (legacy, Laplacian or mmMAGIC)', h_builder.scenpar.SubpathMethod, write_defaults );
+    write_par_line( fid, 'LOS_scatter_radius', 'not used', h_builder.scenpar.LOS_scatter_radius, write_defaults );
+    
+    fprintf(fid,'\n');
+    
+    write_par_line( fid, 'r_DS', 'delay scaling factor', h_builder.scenpar.r_DS, Inf );
+    write_par_line( fid, 'LNS_ksi', 'per cluster shadowing STD [dB]', h_builder.scenpar.LNS_ksi, write_defaults );
+    
+    fprintf(fid,'\n');
+    
+    write_par_line( fid, 'PerClusterDS', 'cluster delay spread [ns]', h_builder.scenpar.PerClusterDS, write_defaults );
+    write_par_line( fid, 'PerClusterDS_gamma', 'freq.-dep. of cluster delay spread [ns/log10(GHz)]', h_builder.scenpar.PerClusterDS_gamma, write_defaults );
+    write_par_line( fid, 'PerClusterDS_min', 'minumum cluster delay spread [ns]', h_builder.scenpar.PerClusterDS_min, write_defaults );
+    
+    write_par_line( fid, 'PerClusterAS_D', 'cluster azimuth of departure angle spread [deg]', h_builder.scenpar.PerClusterAS_D, write_defaults );
+    write_par_line( fid, 'PerClusterAS_A', 'cluster azimuth of arrival angle spread [deg]', h_builder.scenpar.PerClusterAS_A, write_defaults );
+    write_par_line( fid, 'PerClusterES_D', 'cluster elevation of departure angle spread [deg]', h_builder.scenpar.PerClusterES_D, write_defaults );
+    write_par_line( fid, 'PerClusterES_A', 'cluster elevation of arrival angle spread [deg]', h_builder.scenpar.PerClusterES_A, write_defaults );
+end
+
+if h_builder.scenpar.SC_lambda > 0  || write_defaults ~= 0
+    fprintf(fid,'\n%% ==================================================================================================\n');
+    fprintf(fid,'%% Decorrelation distance for the small-scale fading spatial consistency\n');
+    if ~isempty( ref_sec ) && ~isempty( ref_sec{5} )
+        fprintf(fid,['%% See: ',ref,'; ',ref_sec{5},' \n']);
+    end
+    fprintf(fid,'%% ==================================================================================================\n\n');
+    write_par_line( fid, 'SC_lambda', 'decorrelation distance [m]; 0 = disabled', h_builder.scenpar.SC_lambda, Inf );
+end
+
 if h_builder.scenpar.GR_enabled ~= 0 || write_defaults ~= 0
     fprintf(fid,'\n%% ==================================================================================================\n');
     fprintf(fid,'%% Parameters for the ground reflection extension\n');
+    if ~isempty( ref_sec ) && ~isempty( ref_sec{6} )
+        fprintf(fid,['%% See: ',ref,'; ',ref_sec{6},' \n']);
+    end
     fprintf(fid,'%% ==================================================================================================\n\n');
     
     write_par_line( fid, 'GR_enabled', 'Enables the explicit ground reflection model', h_builder.scenpar.GR_enabled, write_defaults );
     write_par_line( fid, 'GR_epsilon', 'Fixed relative permittivity of the ground (0 = automatic)', h_builder.scenpar.GR_epsilon, write_defaults );
 end
 
+if h_builder.scenpar.absTOA_mu > -99 || write_defaults ~= 0
+    fprintf(fid,'\n%% ==================================================================================================\n');
+    fprintf(fid,'%% Absolute time of arrival model parameters (optional feature)\n');
+    if ~isempty( ref_sec ) && ~isempty( ref_sec{7} )
+        fprintf(fid,['%% See: ',ref,'; ',ref_sec{7},' \n']);
+    end
+    fprintf(fid,'%% ==================================================================================================\n\n');
+    
+    write_par_line( fid, 'absTOA_mu', 'absolute time of arrival offset reference value [log10(s)]', h_builder.scenpar.absTOA_mu, write_defaults );
+    write_par_line( fid, 'absTOA_sigma', 'absolute time of arrival offset referenece STD [log10(s)]', h_builder.scenpar.absTOA_sigma, write_defaults );
+    write_par_line( fid, 'absTOA_lambda', 'absolute time of arrival offset decorrelation distance [m]', h_builder.scenpar.absTOA_lambda, write_defaults );
+end
+
 if ~isempty( h_builder.plpar )
     fprintf(fid,'\n%% ==================================================================================================\n');
     fprintf(fid,'%% Path-loss model\n');
+    if ~isempty( ref_sec ) && ~isempty( ref_sec{8} )
+        fprintf(fid,['%% See: ',ref,'; ',ref_sec{8},' \n']);
+    end
     fprintf(fid,'%% ==================================================================================================\n');
+    fprintf(fid,'\n');
     pl = h_builder.plpar;
     
     if strcmp( pl.model , 'logdist' )
@@ -422,7 +529,20 @@ if ~isempty( h_builder.plpar )
         fprintf(fid,'%%    dBP = E * ( hBS-hE ) * ( hMS-hE ) * fGHz\n');
         fprintf(fid,'\n');
     end
-       
+    
+    if strcmp( pl.model , 'tripple_slope' ) 
+        fprintf(fid,'%% Formula for tripple-slope (LOS+GR) pathloss model:\n');
+        fprintf(fid,'%% (Distance in meters, frequency in GHz)\n');
+        fprintf(fid,'%%\n');
+        fprintf(fid,'%%     PL = PL1 for d2D <= dBP1 | PL2 for dBP1 < d2D <= dBP2 | PL3 for d2D > dBP2\n');
+        fprintf(fid,'%%    PL1 = A1 * log10( d3D ) + B + C * log10( fGHz ) + D * d3D\n');
+        fprintf(fid,'%%    PL2 = PL1( dBP1 ) + A2 * log10( d3D / dBP1 )\n');
+        fprintf(fid,'%%    PL3 = PL2( dBP2 ) + A3 * log10( d3D / dBP2 )\n');
+        fprintf(fid,'%%   dBP1 = E1 * ( hBS-hE1 ) * ( hMS-hE1 ) * fGHz\n');
+        fprintf(fid,'%%   dBP2 = E2 * ( hBS-hE2 ) * ( hMS-hE2 ) * fGHz\n');
+        fprintf(fid,'\n');
+    end
+    
     if strcmp( pl.model , 'nlos' )
         fprintf(fid,'%% Formula for 3GPP NLOS pathloss model:\n');
         fprintf(fid,'%% (Distances and heights in meters, frequency in GHz)\n');
@@ -439,59 +559,67 @@ if ~isempty( h_builder.plpar )
         fprintf(fid,'%%        + E2n * log10( hUT ) / hUT^2\n');
         fprintf(fid,'%%        + E3n * hUT\n');
         fprintf(fid,'%%        +  Fn * log10( hBS ) * log10( d3d )\n');
-        fprintf(fid,'%%        + G1n * log10^2( G2 * hUT )\n');
+        fprintf(fid,'%%        + G1n * log10^2( G2n * hUT )\n');
         fprintf(fid,'%%\n');
         fprintf(fid,'%%     PL = max( PL_LOS, PLn ) \n');
         fprintf(fid,'\n');
     end
-        
+    
     names = fieldnames( pl );
-    for n = 1:numel( names )
+    for n = 1 : numel( names )
         if strcmp( names{n},'A' )
-            write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of PL [dB/log10(m)]', pl.(names{n}), Inf );
-            
+            if strcmp( pl.model , 'constant' )
+                write_par_line( fid, ['PL_',names{n}], 'Reference PL in [dB]', pl.(names{n}), Inf );
+            else
+                write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of the PL [dB/log10(m)]', pl.(names{n}), Inf );
+            end
+                
+                
         elseif strcmp( names{n},'A1' )
             if strcmp( pl.model , 'nlos' )
-                write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of LOS-PL before breakpoint [dB/log10(m)]', pl.(names{n}), Inf );
+                write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of the LOS-PL before break-point [dB/log10(m)]', pl.(names{n}), Inf );
             else
-                write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of PL before breakpoint [dB/log10(m)]', pl.(names{n}), Inf );
+                write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of the PL before break-point [dB/log10(m)]', pl.(names{n}), Inf );
             end
             
         elseif strcmp( names{n},'A2' )
             if strcmp( pl.model , 'nlos' )
-                write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of LOS-PL after breakpoint [dB/log10(m)]', pl.(names{n}), Inf );
+                write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of the LOS-PL after break-point [dB/log10(m)]', pl.(names{n}), Inf );
             else
-                write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of PL after breakpoint [dB/log10(m)]', pl.(names{n}), Inf );
+                write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of the PL after break-point [dB/log10(m)]', pl.(names{n}), Inf );
             end
+            
+        elseif strcmp( names{n},'A3' ) 
+            write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of the PL after second break-point [dB/log10(m)]', pl.(names{n}), Inf );
             
         elseif strcmp( names{n},'An' )
             write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of NLOS-PL [dB/log10(m)]', pl.(names{n}), Inf );
             
         elseif strcmp( names{n},'B' )
             if strcmp( pl.model , 'nlos' )
-                write_par_line( fid, ['PL_',names{n}], 'reference LOS-PL in [dB]', pl.(names{n}), Inf, 1,0,1,0,0 );
+                write_par_line( fid, ['PL_',names{n}], 'Reference LOS-PL in [dB]', pl.(names{n}), Inf, 1,0,1,0,0 );
             else
-                write_par_line( fid, ['PL_',names{n}], 'reference PL in [dB]', pl.(names{n}), Inf, 1,0,1,0,0 );
+                write_par_line( fid, ['PL_',names{n}], 'Reference PL in [dB]', pl.(names{n}), Inf, 1,0,1,0,0 );
             end
             
         elseif strcmp( names{n},'Bn' )
-            write_par_line( fid, ['PL_',names{n}], 'reference NLOS-PL in [dB]', pl.(names{n}), Inf );
+            write_par_line( fid, ['PL_',names{n}], 'Reference NLOS-PL in [dB]', pl.(names{n}), Inf, 1,0,1,0,0 );
             
         elseif strcmp( names{n},'C' )
             if strcmp( pl.model , 'nlos' )
-                write_par_line( fid, ['PL_',names{n}], 'freq.-dep. of the LOS-PL in [dB/log10(GHz)]', pl.(names{n}), Inf ); 
+                write_par_line( fid, ['PL_',names{n}], 'Freq.-dep. of the LOS-PL in [dB/log10(GHz)]', pl.(names{n}), Inf );
             else
-                write_par_line( fid, ['PL_',names{n}], 'freq.-dep. of the PL in [dB/log10(GHz)]', pl.(names{n}), Inf );
+                write_par_line( fid, ['PL_',names{n}], 'Freq.-dep. of the PL in [dB/log10(GHz)]', pl.(names{n}), Inf );
             end
             
         elseif strcmp( names{n},'Cn' )
-            write_par_line( fid, ['PL_',names{n}], 'freq.-dep. of the NLOS-PL in [dB/log10(GHz)]', pl.(names{n}), Inf );
+            write_par_line( fid, ['PL_',names{n}], 'Freq.-dep. of the NLOS-PL in [dB/log10(GHz)]', pl.(names{n}), Inf );
             
         elseif strcmp( names{n},'D' )
             if strcmp( pl.model , 'nlos' )
-                write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of LOS-PL [dB/m]', pl.(names{n}), Inf ); 
+                write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of LOS-PL [dB/m]', pl.(names{n}), Inf );
             elseif strcmp( pl.model , 'satellite' )
-                write_par_line( fid, ['PL_',names{n}], 'Elevaion angle dep. of PL [dB/rad]', pl.(names{n}), Inf ); 
+                write_par_line( fid, ['PL_',names{n}], 'Elevaion angle dep. of PL [dB/rad]', pl.(names{n}), Inf );
             else
                 write_par_line( fid, ['PL_',names{n}], 'TX-RX 3D dist.-dep. of PL [dB/m]', pl.(names{n}), Inf );
             end
@@ -509,7 +637,13 @@ if ~isempty( h_builder.plpar )
             write_par_line( fid, ['PL_',names{n}], 'TX height-dep. of the NLOS-PL in [dB/m]', pl.(names{n}), Inf );
             
         elseif strcmp( names{n},'E' )
-            write_par_line( fid, ['PL_',names{n}], 'breakpoint scaling factor (4e9 / c = 13.34)', pl.(names{n}), Inf );
+            write_par_line( fid, ['PL_',names{n}], 'Breakpoint scaling factor', pl.(names{n}), Inf );
+            
+        elseif strcmp( names{n},'E1' )
+            write_par_line( fid, ['PL_',names{n}], 'Breakpoint scaling factor for first BP in [s/m]', pl.(names{n}), Inf );
+            
+        elseif strcmp( names{n},'E2' )
+            write_par_line( fid, ['PL_',names{n}], 'Breakpoint scaling factor for second BP in [s/m]', pl.(names{n}), Inf );
             
         elseif strcmp( names{n},'En' )
             write_par_line( fid, ['PL_',names{n}], 'RX height-dep. of the NLOS-PL in [dB/log10(m)]', pl.(names{n}), Inf );
@@ -524,16 +658,31 @@ if ~isempty( h_builder.plpar )
             write_par_line( fid, ['PL_',names{n}], 'RX height-dep. of the NLOS-PL in [dB/m]', pl.(names{n}), Inf );
             
         elseif strcmp( names{n},'Fn' )
-            write_par_line( fid, ['PL_',names{n}], 'Combined TX height-dep. and freq.-dep. of the NLOS-PL in [dB/(log10(m)*log10(GHz))]', pl.(names{n}), Inf );
+            write_par_line( fid, ['PL_',names{n}], 'Combined TX-height and freq.-dep. of the NLOS-PL in [dB/(log10(m)*log10(GHz))]', pl.(names{n}), Inf );
+            
+        elseif strcmp( names{n},'G1n' )
+            write_par_line( fid, ['PL_',names{n}], 'RX height-dep. of the NLOS-PL on the square of the MT height [dB/(log10(m))^2]', pl.(names{n}), Inf );
+            
+        elseif strcmp( names{n},'G2n' )
+            write_par_line( fid, ['PL_',names{n}], 'RX height-dep. factor', pl.(names{n}), Inf );
             
         elseif strcmp( names{n},'hE' )
-            write_par_line( fid, ['PL_',names{n}], 'environment height in [m]', pl.(names{n}), Inf );
+            write_par_line( fid, ['PL_',names{n}], 'Environment height in [m]', pl.(names{n}), Inf );
+            
+        elseif strcmp( names{n},'hE1' )
+            write_par_line( fid, ['PL_',names{n}], 'Environment height for first BP in [m]', pl.(names{n}), Inf );
+            
+        elseif strcmp( names{n},'hE2' )
+            write_par_line( fid, ['PL_',names{n}], 'Environment height for second BP in [m]', pl.(names{n}), Inf );
             
         elseif strcmp( names{n},'sig1' )
             write_par_line( fid, ['PL_',names{n}], 'Shadow Fading STD before breakpoint [dB]', pl.(names{n}), Inf );
             
         elseif strcmp( names{n},'sig2' )
             write_par_line( fid, ['PL_',names{n}], 'Shadow Fading STD after breakpoint [dB]', pl.(names{n}), Inf );
+            
+        elseif strcmp( names{n},'sig3' )
+            write_par_line( fid, ['PL_',names{n}], 'Shadow Fading STD after second breakpoint [dB]', pl.(names{n}), Inf );
             
         elseif strcmp( names{n},'usePLa' )
             write_par_line( fid, ['PL_',names{n}], 'Enable/disable attenuation by atmospheric gases', pl.(names{n}), Inf );
@@ -621,7 +770,13 @@ if value ~= default
     for n = 1 : 19 - numel(name)
         fprintf( fid, ' ' );
     end
-    v = num2str( value,'%1.5g' );
+    if isreal( value ) || imag( value ) == 0
+        v = num2str( value,'%1.5g' );
+    elseif imag(value) < 0
+        v = [num2str( real(value),'%1.5g' ),'-',num2str( abs(imag(value)),'%1.5g' ),'j'];
+    else
+        v = [num2str( real(value),'%1.5g' ),'+',num2str( imag(value),'%1.5g' ),'j'];
+    end
     if ~strcmp(v(1),'-')
         v = [' ',v];
     end
@@ -634,7 +789,7 @@ if value ~= default
         if exist('gamma','var')
             comment = [ comment, ' @ ' ];
             if gamma ~= 0
-                comment = [ comment, num2str( omega+1 ),' GHz, '];
+                comment = [ comment, num2str( 1-omega ),' GHz, '];
             end
             if epsilon ~= 0
                 comment = [ comment, '1 m TX-RX dist., '];

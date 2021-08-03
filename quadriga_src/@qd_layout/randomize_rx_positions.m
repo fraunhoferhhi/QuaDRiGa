@@ -130,7 +130,7 @@ end
 % Read some default variables
 rx_track = h_layout.rx_track;
 no_tx = h_layout.no_tx;
-samples_per_meter = h_layout.simpar.samples_per_meter;
+samples_per_meter = h_layout.simpar(1,1).samples_per_meter;
 sc = ( min_dist / max_dist )^2;
 
 % Generate random positions and tracks

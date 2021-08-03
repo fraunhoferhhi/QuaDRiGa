@@ -164,7 +164,7 @@ methods
     end
     function out = get.closed(h_track)
         if h_track.no_snapshots > 1 &&...
-                h_track.get_length > 0 &&...
+                get_length( h_track ) > 0 &&...
                 all( h_track.positions(:,1) == h_track.positions(:,end) ) &&...
                 ( isempty( h_track.orientation ) ||...
                 all( h_track.orientation(:,1) == h_track.orientation(:,end) ) )
@@ -216,7 +216,7 @@ methods
         end
         
         h_track.par = [];
-        h_track.Pno_snapshots = value;
+        h_track.Pno_snapshots = double( value );
     end
     
     function set.no_segments(h_track,value)
@@ -242,17 +242,17 @@ methods
             
             step    = floor( no_snap / (no_new_segments+1) );
             if value == h_track.Pno_snapshots
-                segment_index = 1 : h_track.Pno_snapshots;
+                Tsegment_index = 1 : h_track.Pno_snapshots;
             else
-                segment_index = [ h_track.Psegment_index, ...
+                Tsegment_index = [ h_track.Psegment_index, ...
                     h_track.Psegment_index(end) + (1:no_new_segments)*step  ];
-                segment_index( segment_index > h_track.Pno_snapshots ) = h_track.Pno_snapshots;
+                Tsegment_index( Tsegment_index > h_track.Pno_snapshots ) = h_track.Pno_snapshots;
             end
-            h_track.Psegment_index =  segment_index;
+            h_track.Psegment_index = Tsegment_index;
         end
         
         h_track.par = [];
-        h_track.Pno_segments = value;
+        h_track.Pno_segments = double( value );
     end
     
     function set.initial_position(h_track,value)
@@ -261,7 +261,7 @@ methods
         elseif ~all( size(value) == [3,1] )
             error('QuaDRiGa:qd_track:wrongInputValue','??? "initial_position" must have three rows.')
         end
-        h_track.Pinitial_position = value;
+        h_track.Pinitial_position = double( value );
     end
     
     function set.positions(h_track,value)
@@ -273,7 +273,7 @@ methods
         if size( value,2 ) ~= h_track.Pno_snapshots
             h_track.no_snapshots = size( value,2 );
         end
-        h_track.Ppositions = value;
+        h_track.Ppositions = double( value );
     end
     
     function set.movement_profile(h_track,value)
@@ -289,7 +289,7 @@ methods
             if ~issorted( value(1,:) )
                 error('QuaDRiGa:qd_track:wrongInputValue','??? time in "movement_profile" must be sorted');
             end
-            h_track.Pmovement_profile = value;
+            h_track.Pmovement_profile = double( value );
         end
     end
     
@@ -306,7 +306,7 @@ methods
                     '??? no. of elements in "orientation" does not match no. of snapshots');
             end
         end
-        h_track.Porientation = value;
+        h_track.Porientation = double( value );
     end
     
     function set.segment_index(h_track,value)

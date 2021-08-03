@@ -199,7 +199,7 @@ switch array_type
         [ h_qd_arrayant, par ] = gen_arrayant_custom( Ain, Bin, Cin );
         
     case 'patch'
-        h_qd_arrayant = gen_arrayant_custom(90,90,0);
+        [ h_qd_arrayant, par ] = gen_arrayant_custom( 90, 90, 0 );
         
     case 'parametric'
         h_qd_arrayant = gen_arrayant_parametric( Ain, Bin, Cin, Din );

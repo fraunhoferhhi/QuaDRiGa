@@ -26,10 +26,10 @@ properties(Dependent)
     
     % The number of samples per half-wave length
     % 	Sampling density describes the number of samples per half-wave length. To fulfill the
-    % 	sampling theorem, the minimum sample density must be 1 (single mobility) or 2 (dual
-    % 	mobility). For smaller values, interpolation of the  channel for variable speed is not
-    % 	possible. On the other hand, high values significantly increase the computing time
-    % 	significantly. A good value is around 1.2 for single-mobility and 2.5 for dual-mobility.
+    % 	sampling theorem, the minimum sample density must be be 1 (single mobility) or 2 (dual
+    % 	mobility). For  smaller values, interpolation of the channel for variable speed is not
+    % 	possible. On the other hand, high values increase the computing time significantly. A good
+    % 	value is around 1.2 for single-mobility and 2.5 for dual-mobility.    
     sample_density
     
     % Samples per one meter
@@ -64,7 +64,7 @@ properties(Dependent)
     %   * Multi-frequency simulations are not supported.
     %   * No polarization rotation is calculated. The polarization transfer matrix contains random
     %     phasors scaled to match the XPR. 
-    use_3GPP_baseline = false;
+    use_3GPP_baseline
 end
 
 properties
@@ -101,7 +101,7 @@ end
 
 properties(Constant)
     % Version number of the current QuaDRiGa release (constant)
-    version = '2.4.5-0';
+    version = '2.6.1-0';
 end
 
 properties(Constant)
@@ -149,7 +149,7 @@ methods
             error('QuaDRiGa:qd_simulation_parameters:sample_density',...
                 '??? Invalid sample density. The value must be real and > 0.');
         end
-        obj.Psample_density = value;
+        obj.Psample_density = double( value );
     end
     
     function set.samples_per_meter(obj,value)
@@ -157,7 +157,7 @@ methods
             error('QuaDRiGa:qd_simulation_parameters:samples_per_meter',...
                 '??? Invalid samples_per_meter. The value must be real and > 0.');
         end
-        obj.Psample_density = value*min(obj.wavelength)/2;
+        obj.Psample_density = double( value )*min(obj.wavelength)/2;
     end
     
     function set.center_frequency(obj,value)
@@ -169,7 +169,7 @@ methods
             warning('QuaDRiGa:qd_simulation_parameters:use_3GPP_baseline',...
                 'Multi-frequency simulations are not compatible with the 3GPP baseline model. Path parameters will be uncorrellated.');
         end
-        obj.Pcenter_frequency = reshape( value , 1 , [] );
+        obj.Pcenter_frequency = reshape( double( value ) , 1 , [] );
     end
     
     function set.use_3GPP_baseline(obj,value)

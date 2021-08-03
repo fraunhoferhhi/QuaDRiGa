@@ -63,6 +63,12 @@ else
 end
 elev = elev(indp);
 
+if min(diff(az)) < 3 || min(diff(el)) < 3
+    use_grid = 0;
+else
+    use_grid = 1;
+end
+
 [az_grid, elev_grid] = meshgrid(az, elev);
 [Xi, Yi, Zi] = sph2cart(az_grid, elev_grid, 1);
 
@@ -117,7 +123,11 @@ for n = 1:numel(i_element)
         Y = P .* Yi;
         Z = P .* Zi;
         
-        surf(X, Y, Z, Po,'Linewidth',0.1)
+        if use_grid
+            surf(X, Y, Z, Po,'Linewidth',0.1)
+        else
+            surf(X, Y, Z, Po,'Edgecolor','none')
+        end
         
         axis('square');
         axis(scaling.*[-1 1 -1 1 -1 1]);

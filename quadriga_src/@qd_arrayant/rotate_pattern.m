@@ -219,10 +219,17 @@ sin_gamma = sin(gamma);
 patV = zeros( numel(thetaN), numel(phiN), numel(i_element) );
 patH = patV;
 
+% If we interpolate the grid, we need to wrap the grid
+if ~h_qd_arrayant.is_wrapped && ( usage == 0 || usage == 1 ) && interpolate_grid
+    wrap_grid( h_qd_arrayant );
+end
+
 for n = 1 : numel(i_element)
     % Interpolate the pattern
     if usage == 0 || usage == 1
-        [ V,H ] = h_qd_arrayant.interpolate( phiL, thetaL , i_element(n) );
+        [ V,H ] = h_qd_arrayant.interpolate( reshape(phiL,1,[]), reshape(thetaL,1,[]), i_element(n), [], 1 );
+        V = reshape(V,size(phiL));
+        H = reshape(H,size(phiL));
     else
         V = h_qd_arrayant.Fa(:,:,i_element(n));
         H = h_qd_arrayant.Fb(:,:,i_element(n));
@@ -256,7 +263,7 @@ if interpolate_grid
     iPh(2:end)   = iPh(2:end) | iPh(1:end-1);
         
     % Set new angular grid
-    h_qd_arrayant.set_grid( phiN(iPh) , thetaN(iTh), 0 )
+    set_grid( h_qd_arrayant, phiN(iPh) , thetaN(iTh), 0 )
     
     % Store interpolated pattern
     h_qd_arrayant.Fa(:,:,i_element) = patV(iTh,iPh,:);

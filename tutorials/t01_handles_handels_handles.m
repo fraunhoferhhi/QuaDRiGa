@@ -41,7 +41,7 @@ set(0,'defaultAxesFontName','Times')               	    % Default Font Type
 set(0,'defaultTextFontName','Times')                 	% Default Font Type
 set(0,'defaultFigurePaperPositionMode','auto')       	% Default Plot position
 set(0,'DefaultFigurePaperType','<custom>')             	% Default Paper Type
-set(0,'DefaultFigurePaperSize',[14.5 7.7])            	% Default Paper Size
+set(0,'DefaultFigurePaperSize',[14.5 7.8])            	% Default Paper Size
 
 [ map,x_coords,y_coords] = l.power_map( '3GPP_38.901_UMa_LOS','quick',5,-500,500,-500,500,1.5 );
 P = 10*log10( sum(cat(3,map{:}),3));                    % Total received power

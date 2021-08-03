@@ -71,12 +71,12 @@ Wa = reshape( tmp.Fa, [], h_arrayant.no_elements );
 Wb = reshape( tmp.Fb, [], h_arrayant.no_elements );
 
 b = qd_builder('LOSonly');
-b.simpar.center_frequency = h_arrayant.center_frequency;
-b.simpar.show_progress_bars = 0;
+b.simpar(1,1).center_frequency = h_arrayant.center_frequency;
+b.simpar(1,1).show_progress_bars = 0;
 b.tx_array = tmp;
 b.rx_array = qd_arrayant('omni');
-b.rx_array.Fa(:) = Jp(1);
-b.rx_array.Fb(:) = Jp(2);
+b.rx_array(1,1).Fa(:) = Jp(1);
+b.rx_array(1,1).Fb(:) = Jp(2);
 b.tx_position = [0;0;0];
 b.rx_positions = [100;0;0];
 b.gen_parameters;

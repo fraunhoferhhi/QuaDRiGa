@@ -1,7 +1,6 @@
 function double( h_arrayant )
 %DOUBLE Set all properties to double precision
 %
-%
 % QuaDRiGa Copyright (C) 2011-2020
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
@@ -45,6 +44,7 @@ else
     h_arrayant.PFa = double( h_arrayant.PFa );
     h_arrayant.PFb = double( h_arrayant.PFb );
     h_arrayant.Pcoupling = double( h_arrayant.Pcoupling );
+    h_arrayant.Pphase_diff = double( h_arrayant.Pphase_diff );
 end
 
 end
