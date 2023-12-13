@@ -81,7 +81,7 @@ function indoor_rx = set_scenario( h_layout, scenario, rx, tx, indoor_frc, SC_la
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
 if numel( h_layout ) > 1
-    error('QuaDRiGa:qd_layout:set_scenario','set_scenario not definded for object arrays.');
+    error('QuaDRiGa:qd_layout:set_scenario','set_scenario not defined for object arrays.');
 else
     h_layout = h_layout(1,1); % workaround for octave
 end
@@ -210,7 +210,7 @@ else
         SC_lambda_tx = 0;   % Disable
     end
     
-    % Generate O2I penetration loss assuning that all users are indoor
+    % Generate O2I penetration loss assuming that all users are indoor
     if indoor_frc > 0
         switch scenario
             case { '3GPP_38.901_UMi', '3GPP_38.901_UMa' }
@@ -258,7 +258,7 @@ else
     rx_pos_3d = rx_pos_3d(:,:,ones(1,no_tx));
     no_rx_pos = size( rx_pos_3d,2 );
     
-    % Generate spatially consistent random variabels for the LOS / NLOS state
+    % Generate spatially consistent random variables for the LOS / NLOS state
     if SC_lambda_rx == 0 && SC_lambda_tx == 0       % LOS state is uncorrelated
         randC = rand(no_tx,no_rx_pos);
         
@@ -473,9 +473,9 @@ else
                 p_LOS = qf.interp( [-90,0:10:90], [], los_prob, elevation(:).'  ).';
                 p_LOS = reshape( p_LOS,[],nS );
                 
-                % Get the scnario index
+                % Get the scenario index
                 i_LOS = ( randR >= p_LOS/100 ) + 1;
-                i_LOS( h_tx<0 ) = 3;    % Satelite is below the horizon
+                i_LOS( h_tx<0 ) = 3;    % Satellite is below the horizon
                 
             case '5G-ALLSTAR_Urban'
                 % See: 3GPP TR 38.811 V15.2.0 (2019-09), pp 48, Table 6.6.1-1
@@ -492,9 +492,9 @@ else
                 p_LOS = qf.interp( [-90,0:10:90], [], los_prob, elevation(:).'  ).';
                 p_LOS = reshape( p_LOS,[],nS );
                 
-                % Get the scnario index
+                % Get the scenario index
                 i_LOS = ( randR >= p_LOS/100 ) + 1;
-                i_LOS( h_tx<0 ) = 3;    % Satelite is below the horizon
+                i_LOS( h_tx<0 ) = 3;    % Satellite is below the horizon
                 
             case '5G-ALLSTAR_Suburban'
                 % See: 3GPP TR 38.811 V15.2.0 (2019-09), pp 48, Table 6.6.1-1
@@ -511,9 +511,9 @@ else
                 p_LOS = qf.interp( [-90,0:10:90], [], los_prob, elevation(:).'  ).';
                 p_LOS = reshape( p_LOS,[],nS );
                 
-                % Get the scnario index
+                % Get the scenario index
                 i_LOS = ( randR >= p_LOS/100 ) + 1;
-                i_LOS( h_tx<0 ) = 3;    % Satelite is below the horizon
+                i_LOS( h_tx<0 ) = 3;    % Satellite is below the horizon
                 
             case '5G-ALLSTAR_Rural'
                 % See: 3GPP TR 38.811 V15.2.0 (2019-09), pp 48, Table 6.6.1-1
@@ -530,9 +530,9 @@ else
                 p_LOS = qf.interp( [-90,0:10:90], [], los_prob, elevation(:).'  ).';
                 p_LOS = reshape( p_LOS,[],nS );
                 
-                % Get the scnario index
+                % Get the scenario index
                 i_LOS = ( randR >= p_LOS/100 ) + 1;
-                i_LOS( h_tx<0 ) = 3;    % Satelite is below the horizon
+                i_LOS( h_tx<0 ) = 3;    % Satellite is below the horizon
                 
             case 'mmMAGIC_UMi'
                 % Same LOS probability model as in 3GPP is used

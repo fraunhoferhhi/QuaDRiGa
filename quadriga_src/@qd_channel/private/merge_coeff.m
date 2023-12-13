@@ -108,11 +108,11 @@ end
 cf = zeros( R,T,L,S );
 dl = zeros( R,T,L,S );
 
-% Copy the old data to the otput
+% Copy the old data to the output
 cf(:,:,ip1,:) = cf1;
 dl(:,:,ip1,:) = dl1;
 
-% The initial order of the paths. This is later updatred to find the optimal ramp up/down
+% The initial order of the paths. This is later updated to find the optimal ramp up/down
 % order that maintains the DS.
 o1 = 1:L1;
 o2 = 1:L2;
@@ -126,10 +126,10 @@ if no_subseg > 0
     weight = (1/(2*no_subseg) : 1/no_subseg : 1).';
     ds_target = single( ds1 + ( ds2-ds1 ) * weight );
     
-    % The power ramp for LOS, GR, and tpas without partner
+    % The power ramp for LOS, GR, and taps without partner
     ramp_opt = single( 0.5*(1+sin((weight-0.5)*pi)) );
     
-    % Find the optime order of the ramping down/up taps that maintain the DS
+    % Find the optimal order of the ramping down/up taps that maintain the DS
     pP = single( [ p1 ; p2 ]');
     dD = single( [ d1 ; d2 ] );
     for cc = 1:2
@@ -169,7 +169,7 @@ if no_subseg > 0
     ramp_down = sqrt( 1-ramp );
     ramp_up   = sqrt( ramp );
     
-    % Remove deterministic componenets from paring vectors
+    % Remove deterministic components from paring vectors
     o1 = o1( L1s : end );
     o2 = o2( L2s : end );
     
@@ -197,7 +197,7 @@ if no_subseg > 0
         % -1 gives priority to previously down taps
     end
 else
-    % Remove deterministic componenets from paring matrix
+    % Remove deterministic components from pairing matrix
     o1 = o1( L1s : end );
     o2 = o2( L2s : end );
 end
@@ -253,7 +253,7 @@ end
 % Return ramp for merging the positions and the PG
 ramp = reshape( ramp(1,1,1,:) , 1,S );
 
-% Remove zero-valued channels at the end of ther merger
+% Remove zero-valued channels at the end of the merge
 last_ip = find( ip ~= 0,1,'last' );
 cf = cf(:,:,1:last_ip,:);
 dl = dl(:,:,1:last_ip,:);
@@ -278,7 +278,7 @@ if 0 % For debugging
     plot( 1,ds1,'ms' )
     plot( S,ds2,'cs' )
     hold off
-    legend('First segment','Second segment','Target','Optimat Ramp','Output')
+    legend('First segment','Second segment','Target','Optimal Ramp','Output')
     xlabel('Snapshot number')
     ylabel('Delay Spread [s]')
     grid on

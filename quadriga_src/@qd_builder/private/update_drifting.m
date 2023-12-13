@@ -18,7 +18,7 @@ function [ phi_d_lms, theta_d_lms, phi_a_lms, theta_a_lms, psi_lms, tau_ls, ...
 %       Positions of the First-bounce scatterers in Global Cartesian Coordinates
 %
 %   lbs_pos         [ 3, n_paths ]
-%       Positions of the Lirst-bounce scatterers in Global Cartesian Coordinates
+%       Positions of the Last-bounce scatterers in Global Cartesian Coordinates
 %
 % Output variables:
 %   phi_d_lms       [ 1 , n_paths , n_tx ]
@@ -126,7 +126,7 @@ tx_pos = h_builder.tx_position(:,i_mobile_p);
 % The vector pointing from the origin to the initial rx-position
 rx_pos = h_builder.rx_positions(:,i_mobile_p);
 
-% Updathe the tx_variables
+% Update the tx_variables
 if update_tx_ant
     % The vector pointing from the tx-array center to the individual tx elements
     e_tx = h_builder.tx_array(1,i_mobile_p).element_position;
@@ -161,7 +161,7 @@ end
 phi_d_lms   = phi_d_lms_p;
 theta_d_lms = theta_d_lms_p;
 
-% Updathe the rx_variables
+% Update the rx_variables
 % The vector pointing from the tx-array center to the individual tx elements
 e_rx = h_builder.rx_array(1,i_mobile_p).element_position;
 n_rx = size( e_rx, 2 );

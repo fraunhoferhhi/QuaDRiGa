@@ -7,8 +7,8 @@ function [ ds, p, d ] = merging_avg_ds( cf, dl )
 %
 % Output: 
 %   ds          Average DS                      [ 1 x 1 ]
-%   p           Avergae normalized path-power   [ L x 1 ]
-%   d           Avergae normalized path-delay   [ L x 1 ]
+%   p           Average normalized path-power   [ L x 1 ]
+%   d           Average normalized path-delay   [ L x 1 ]
 %
 % 
 % QuaDRiGa Copyright (C) 2011-2019

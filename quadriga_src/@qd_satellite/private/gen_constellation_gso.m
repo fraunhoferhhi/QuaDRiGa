@@ -24,7 +24,7 @@ if ~exist('n_satellites','var') || isempty( n_satellites )
     n_satellites = 3;
 elseif numel( n_satellites ) ~= 1
     error('QuaDRiGa:qd_satellite:gen_constellation_gso',...
-        '??? "n_satellites" must be ascalar.');
+        '??? "n_satellites" must be a scalar.');
 end
 if ~exist('phase_offset','var') || isempty( phase_offset )
     phase_offset = 0;

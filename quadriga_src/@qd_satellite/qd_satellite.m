@@ -11,7 +11,7 @@ classdef qd_satellite < handle
 %    non-geostationary-satellite orbit fixed-satellite service systems or networks with limits
 %    contained in Article 22 of the Radio Regulations".
 %
-% Consructor:
+% Constructor:
 %
 %   h_qd_satellite = qd_satellite ( constellation, Ain, Bin, Cin, Din, Ein, Fin )
 %   
@@ -98,7 +98,7 @@ properties
 end
 
 properties(Constant, Hidden)
-    mu = 3.986012e5;                % Ggravitational parameter for Earth in [km^3/s^2] (G*M_e)
+    mu = 3.986012e5;                % Gravitational parameter for Earth in [km^3/s^2] (G*M_e)
     R_geo = 42164.1964;             % Radius of geostationary orbit in [km]
     R_e = 6378.137;                 % Radius of the Earth in [km] @ Equator
     c = 2.99792458e5;               % Speed of light in [km/s]
@@ -274,8 +274,8 @@ methods
             error('QuaDRiGa:qd_satellite:wrongInputValue',...
                 '??? "semimajor_axis" must be a real, numeric, row vector, having values greater than 6378.145 km');
         end
-        no = numel( h_qd_satellite.Pa );            % Number of exisiting satellites
-        ii = 1:min(no,numel( value ));              % Indices of exisiting satellites
+        no = numel( h_qd_satellite.Pa );            % Number of existing satellites
+        ii = 1:min(no,numel( value ));              % Indices of existing satellites
         init = zeros( 1,numel(value) );             % Initial values for all other variables
         h_qd_satellite.Pa = value;                  % Set new value
         if no > 0; init( 1,ii ) = h_qd_satellite.Pe( 1,ii ); end

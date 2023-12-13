@@ -171,8 +171,8 @@ for n = 1 : no_rx
 end
 h_channel_comb.par = struct('port_dsc',str);
 
-% We need to store the rx positions of the fastest moving user (this is needed for exporting the
-% channels to the Probsim emulator)
+% We need to store the Rx positions of the fastest moving user (this is needed for exporting the
+% channels to the Propsim emulator)
 if size(rx_position,2) ~= no_snap
     error('QuaDRiGa:qd_channel:combine_tx_rx','Number of Rx positions does not match number of snapshots.')
 end

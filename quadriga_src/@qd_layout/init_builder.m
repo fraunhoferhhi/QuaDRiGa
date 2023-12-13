@@ -49,7 +49,7 @@ function h_builder = init_builder( h_layout, check_parfiles, split_tx  )
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
 if numel( h_layout ) > 1
-    error('QuaDRiGa:qd_layout:init_builder','init_builder not definded for object arrays.');
+    error('QuaDRiGa:qd_layout:init_builder','init_builder not defined for object arrays.');
 else
     h_layout = h_layout(1,1); % workaround for octave
 end
@@ -66,7 +66,7 @@ else
 end
 
 if ~exist( 'split_tx' , 'var' ) || isempty( split_tx )
-    % If all Txs are staic, we create one builder per Tx. For dual-mobility scenarios, we merge all
+    % If all Txs are static, we create one builder per Tx. For dual-mobility scenarios, we merge all
     % transmitters into one builder per scenario.
     split_tx = ~h_layout.dual_mobility;
 end
@@ -102,7 +102,7 @@ for t = 1 : no_tx
     rx_track_bld{1,t} = {};
     for s = 1 : no_seg
         
-        % We only process links where there is an enrty in the pairing matrix
+        % We only process links where there is an entry in the pairing matrix
         if any( h_layout.pairing(1,:) == ind(3,s,t) & h_layout.pairing(2,:) == ind(1,s,t) )
             scenario = rx_track(s,t).scenario{1,end};        	% Read scenario from Rx track
             [ ~,si ] = ismember( scenario , scen_list );     	% Get the index in the builder list
@@ -138,7 +138,7 @@ for si = 1 : no_scen
     h_builder(si,1).name = regexprep(scen_list{1,si},'_','-');
     h_builder(si,1).simpar = h_layout.simpar;
     
-    % Create builder objects for additiona  Txs
+    % Create builder objects for additional  Txs
     for t = 2 : no_tx
         h_builder(si,t)         = qd_builder( scen_list{1,si}, false, h_builder(si,1).scenpar );
         h_builder(si,t).name    = h_builder(si,1).name;

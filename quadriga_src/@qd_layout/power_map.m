@@ -91,7 +91,7 @@ function [ map, x_coords, y_coords] = power_map( h_layout, scenario, usage, samp
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
 if numel( h_layout ) > 1 
-   error('QuaDRiGa:qd_layout:power_map','power_map not definded for object arrays.');
+   error('QuaDRiGa:qd_layout:power_map','power_map not defined for object arrays.');
 else
     h_layout = h_layout(1,1); % workaround for octave
 end

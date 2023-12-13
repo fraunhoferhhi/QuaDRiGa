@@ -1,5 +1,5 @@
 classdef qd_builder < handle
-%QD_BUILDER Class for generating the channel coefficients and the model pareters
+%QD_BUILDER Class for generating the channel coefficients and the model parameters
 % 
 % QuaDRiGa Copyright (C) 2011-2019
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
@@ -102,14 +102,14 @@ properties
     %   of frequencies.
     subpath_coupling = [];
     
-    ds = [];                    % The RMS delay spread in [s] for each receiver position
-    kf = [];                    % The Rician K-Factor [linear scale] for each receiver position
-    sf = [];                    % The shadow fading [linear scale] for each receiver position
-    asD = [];                   % The azimuth spread of departure in [deg] for each receiver position
-    asA = [];                   % The azimuth spread of arrival in [deg] for each receiver position
-    esD = [];                   % The elevation spread of departure in [deg] for each receiver position
-    esA = [];                   % The elevation spread of arrival in [deg] for each receiver position
-    xpr  = [];                  % The cross polarization ratio [linear scale] for each receiver position
+    ds = [];                    % The RMS delay spread in [s] for each receiver position with dimensions [n_freq, n_rx]
+    kf = [];                    % The Rician K-Factor [linear scale] for each receiver position with dimensions [n_freq, n_rx]
+    sf = [];                    % The shadow fading [linear scale] for each receiver position with dimensions [n_freq, n_rx]
+    asD = [];                   % The azimuth spread of departure in [deg] for each receiver position with dimensions [n_freq, n_rx]
+    asA = [];                   % The azimuth spread of arrival in [deg] for each receiver position with dimensions [n_freq, n_rx]
+    esD = [];                   % The elevation spread of departure in [deg] for each receiver position with dimensions [n_freq, n_rx]
+    esA = [];                   % The elevation spread of arrival in [deg] for each receiver position with dimensions [n_freq, n_rx]
+    xpr  = [];                  % The cross polarization ratio [linear scale] for each receiver position with dimensions [n_freq, n_rx]
     gr_epsilon_r = [];          % The relative permittivity for the ground reflection
     absTOA_offset = [];         % The absolute time-of-arrival offset in [s]
     
@@ -397,7 +397,7 @@ methods
                 error('QuaDRiGa:qd_builder:WrongInput',...
                     'Number of 3rd-dimension elements in "pow" must match number of frequencies in builder.')
             end
-            value = value ./ repmat( sum(value,2), [1,no_cl,1]);     % Normlaize to sum-power = 1
+            value = value ./ repmat( sum(value,2), [1,no_cl,1]);     % Normalize to sum-power = 1
             PL = h_builder.get_pl;
             SF = h_builder.sf;
             if isempty( SF )

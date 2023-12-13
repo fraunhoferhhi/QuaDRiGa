@@ -93,7 +93,7 @@ elseif isa(evaltrack, 'qd_track')
     % Add the initial position to the PL calculate as well
     rxpos = [ rxpos, initial_position ];
     
-    % There migth be a O2I penetration loss and a Indoor distance
+    % There might be a O2I penetration loss and a Indoor distance
     trk_par = evaltrack.par;
     if isempty( trk_par ) || ~isfield( trk_par,'o2i_loss' ) || isempty( trk_par.o2i_loss )
         o2i_loss = zeros(nF,1);
@@ -442,7 +442,7 @@ if isfield( par , 'model' )
             if ~isfield( par,'D' );   par.D = 0;             end
             if ~isfield( par,'usePLa' ); par.usePLa = 1;     end
             
-            % Athmospheric attenuation at zenith angle
+            % Atmospheric attenuation at zenith angle
             % Frequency values
             zenith_att(1,:) = [ 1, 1.99, 2.97, 3.96, 4.95, 5.92, 6.87, 7.87, 8.83, 9.77, 11.03, 12.32, 13.17, 14.44,...
                 15.65, 16.37, 17.18, 18.03, 18.8, 19.34, 19.91, 20.42, 20.71, 21.16, 21.49, 21.7, 22.09, 22.52, 22.99,...
@@ -464,7 +464,7 @@ if isfield( par , 'model' )
             % Elevation angle in [rad]
             alpha = asin( txpos(3,:)./d_3d );
             
-            % Calculate athmospheric attenuation
+            % Calculate atmospheric attenuation
             if par.usePLa
                PLa = qf.interp( zenith_att(1,:), 0, zenith_att(2,:), CenterFrequency ) ./ sin(alpha);
             else

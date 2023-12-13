@@ -121,7 +121,7 @@ if ~exist( 'in','var' )
         rx_array = copy( rx_array );
     end
     
-    % Assign coied array antennas to output builder array
+    % Assign copied array antennas to output builder array
     i_tx = 0;
     i_rx = 0;
     for n = 1 : prod( sic )

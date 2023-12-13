@@ -127,8 +127,8 @@ if ~h_channel.individual_delays
 end
 
 % Each delay is approximated by two taps, one below the target delay and one above.
-% The power weigthing exponenet must match the target bandwidth to maintain the desired channel
-% power. A value of 0.5 corresponds to the full sampling bandwidth (eg. when 200 MHZ at 5 ns tap
+% The power weighting exponent must match the target bandwidth to maintain the desired channel
+% power. A value of 0.5 corresponds to the full sampling bandwidth (e.g. when 200 MHZ at 5 ns tap
 % spacing).
 
 no_coeff = double(no_rxant*no_txant*no_snap);                   % Total number of coefficients
@@ -231,7 +231,7 @@ if ~already_quantized || fix_taps
         else
             iC = ismember( Di(:,ic), D(:,ic) );               	% Find interpolated taps
             iC = iC(iFloor) & iC(iCeil);                        % For interpolation, the upper and lower tap must be written
-            iN = iN & ~iC;                                      % Don't write non-interpolated taps that are interpolated
+            iN = iN & ~iC;                                      % Do not write non-interpolated taps that are interpolated
             iC = [ iC ; iC ];                                   % Expand vector
             coeff = accumarray( [ Di(iC,ic); Dn(iN,ic) ], [ Ci(iC,ic); Cn(iN,ic) ] );
         end
@@ -284,7 +284,7 @@ else                                                            % Already quanti
     end
 end
 
-% Copy remainig data from original channel
+% Copy remaining data from original channel
 h_channel_quant.name = h_channel.name;
 h_channel_quant.center_frequency = h_channel.center_frequency;
 h_channel_quant.par = h_channel.par;

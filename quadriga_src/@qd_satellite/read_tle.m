@@ -166,11 +166,11 @@ while any( upd(:) )                                     % Iterate until M == Mn
     dM(upd) = mod( M(upd) - Mn(upd), 360 );             % The angle difference
     dM( dM > 180 & upd ) = 360 - dM( dM > 180 & upd );
     
-    ii = dM < dMn & upd;                                % Estimte improved
+    ii = dM < dMn & upd;                                % Estimate improved
     E(ii) = En(ii);                                     % Update E
     dMn(ii) = dM(ii);                                   % Update dMn
 
-    ii = dM > dMn & upd;                                % Estimte got worse
+    ii = dM > dMn & upd;                                % Estimate got worse
     dE(ii) = -0.382 * dE(ii);                           % Change step size and direction
 
     upd(upd) = dMn(upd) > 1e-7;                         % Continue until M ~ Mn

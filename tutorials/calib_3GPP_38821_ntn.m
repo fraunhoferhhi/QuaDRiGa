@@ -58,23 +58,23 @@ ueant(1,3).center_frequency = 2e9;
 % where the 90 degree elevation angle target is achieved by adjusting the satellite orbit such that
 % the satellite is placed directly above that reference position. Furthermore, it is necessary to
 % adjust the satellite orientation such that the antenna is pointed towards the reference position
-% on Earth. This is done using the "calc_orientation" method of the "qd_track"-calass. The GSO
+% on Earth. This is done using the "calc_orientation" method of the "qd_track"-class. The GSO
 % antenna must face north at a 45 degree down-tilt angle, whereas the LEO antenna must be tilted
 % down by 90 degrees. 
 
 sat.GSO = qd_satellite( 'gso', 1, -5);                	% Satellite orbital position
 sat.GSO = sat.GSO.init_tracks( [-5,38.85] );           	% UE reference position on Earth
-sat.GSO.calc_orientation( [], -45*pi/180, 90*pi/180);  	% Satellite antenna orientaion
+sat.GSO.calc_orientation( [], -45*pi/180, 90*pi/180);  	% Satellite antenna orientation
 sat.GSO.name = 'GSO';
 
 sat.LEO600 = qd_satellite( 'custom', qd_satellite.R_e + 600, 0, 63.4, -28.8, 44.55, 0);
 sat.LEO600 = sat.LEO600.init_tracks( [-5,38.85] );   	% UE reference position on Earth
-sat.LEO600.calc_orientation( [], -90*pi/180 );        	% Satellite antenna orientaion
+sat.LEO600.calc_orientation( [], -90*pi/180 );        	% Satellite antenna orientation
 sat.LEO600.name = 'LEO600';
 
 sat.LEO1200 = qd_satellite( 'custom', qd_satellite.R_e + 1200, 0, 63.4, -28.8, 44.55, 0);
 sat.LEO1200 = sat.LEO1200.init_tracks( [-5,38.85] );  	% UE reference position on Earth
-sat.LEO1200.calc_orientation( [], -90*pi/180 );        	% Satellite antenna orientaion
+sat.LEO1200.calc_orientation( [], -90*pi/180 );        	% Satellite antenna orientation
 sat.LEO1200.name = 'LEO1200';
 
 
@@ -87,10 +87,10 @@ sat.LEO1200.name = 'LEO1200';
 % parameters which can be calculated from the parabolic antennas. Here, we define the beam-layout
 % and the frequency-reuse pattern.
 % 
-% The frequency-reuse pattern is defined in Table 6.1.1.1-5. There are three options: FR1 allocates
+% The frequency-reuse pattern is defined in Table 6.1.1.1-5. There are three options: FRF1 allocates
 % the whole system bandwidth in each beam, which will result in significant interference at the
-% edges of the beams. FR3 uses only 1/3 of the available spectrum in each beam, but interference is
-% reduced significantly. FR4 includes polarization-reuse (LHCP or RHCP beams). Hence, 1/2 of the
+% edges of the beams. FRF3 uses only 1/3 of the available spectrum in each beam, but interference is
+% reduced significantly. FRF4 includes polarization-reuse (LHCP or RHCP beams). Hence, 1/2 of the
 % total spectrum is available in each beam and interference is reduced at the same time. However,
 % UEs need to have dual-polarized antennas to separate the satellite signals. Also, multi-path
 % propagation and improper antenna alignment lead to cross-talk between the polarization
@@ -98,16 +98,16 @@ sat.LEO1200.name = 'LEO1200';
 % 
 % The following algorithm calculates the beam offsets and the frequency-reuse indicator for each
 % beam within six tiers (127 beams). The indicator is an integer number ranging from 1 to 4. The
-% FR3 beams can have numbers between 1 and 3 which are allocated such that neighboring beams cannot
-% have the same frequency. FR4 beams are set such that odd numbers (1 or 3) are RHCP and even
+% FRF3 beams can have numbers between 1 and 3 which are allocated such that neighboring beams cannot
+% have the same frequency. FRF4 beams are set such that odd numbers (1 or 3) are RHCP and even
 % numbers (2 and 4) are for LHCP beams. 
 
 Pb     = zeros( 1,127 );                                % Maximum number of beams is 127 (6 tiers)
 Pb(2)  = 1j;                                            % Second beam is at x = 0, y = 1
-FR1    = ones( 1,127 );                                 % Frequency reuse 1 index
-FR3    = FR1;                                           % Initialize FR3 index                       
-FR3(2) = 2;                                             % Second beam frequency index for FR3
-FR4    = FR3;                                           % Initialize FR4 index
+FRF1    = ones( 1,127 );                                % Frequency reuse 1 index
+FRF3    = FRF1;                                         % Initialize FRF3 index                       
+FRF3(2) = 2;                                            % Second beam frequency index for FRF3
+FRF4    = FRF3;                                         % Initialize FRF4 index
 d0     = 90;                                            % Walking direction from B1 to B2 = 90 deg
 for n = 3 : 127                                         % Loop for remaining beams
     dn = 120;                                           % Change direction by 120 deg clock-wise
@@ -117,16 +117,16 @@ for n = 3 : 127                                         % Loop for remaining bea
             Pb(n) = Pn;                                 % Add beam to list
             d0 = mod( d0-dn,360 );                      % Update moving direction
             NG = find( abs(Pb(1:n-1)-Pb(n))< 1.1 );     % Find all neighbors with dstance 1
-            FR3(n) = setdiff( 1:3, FR3(NG) );           % Neigbors must have different frequencies
-            FR4n = setdiff( 1:4, FR4(NG) );             % Get candidates for FR4 frequencies
-            if numel( FR4n ) == 1                       % Only one FR4 candidate (3 neighbors)
-                FR4(n) = FR4n;
+            FRF3(n) = setdiff( 1:3, FRF3(NG) );         % Neigbors must have different frequencies
+            FRF4n = setdiff( 1:4, FRF4(NG) );           % Get candidates for FRF4 frequencies
+            if numel( FRF4n ) == 1                      % Only one FRF4 candidate (3 neighbors)
+                FRF4(n) = FRF4n;
             elseif abs(d0-330)<1 || abs(d0-150)<1       % Keep parity
-                FR4(n) = FR4n( mod(FR4n,2) == mod(FR4(n-1),2) );
+                FRF4(n) = FRF4n( mod(FRF4n,2) == mod(FRF4(n-1),2) );
             elseif abs(d0-30)<1 || abs(d0-210)<1        % Use first value
-                FR4(n) = FR4n(1);
+                FRF4(n) = FRF4n(1);
             else                                        % Change parity
-                FR4(n) = FR4n( mod(FR4n,2) ~= mod(FR4(n-1),2) );
+                FRF4(n) = FRF4n( mod(FRF4n,2) ~= mod(FRF4(n-1),2) );
             end
             dn = -1;                                    % End while loop and find next beam
         else                                            % Beam exists already
@@ -157,10 +157,10 @@ end
 % NF_UL_KA = Nf + 10*log10(T0+(Ta-T0)*10^(-0.1*Nf) ) - 10*log10(T0)
 %          = 1.2 + 10*log10(290+(150-290)*10^(-0.1*1.2) ) - 10*log10(290) = -0.8 dB
 
-sc={};                                                      % Init. data sructure (cell array)
+sc={};                                                      % Init. data structure (cell array)
 noise_thermal = -228.6 + 10*log10(290) + 30;                % Thermal noise in [dBm/Hz]
 
-% Set 1 DL         Orbit, SAT, UE, FR,    ABS,  PTx,   NF,  BW
+% Set 1 DL         Orbit, SAT, UE,FRF,    ABS,  PTx,   NF,  BW
 sc(end+1,:) = {    'GSO',   3,  1,  1, 0.1527, 37.5,  1.2, 400   };
 sc(end+1,:) = {    'GSO',   3,  1,  2, 0.1527, 37.5,  1.2, 133.3 };
 sc(end+1,:) = {    'GSO',   3,  1,  3, 0.1527, 37.5,  1.2, 200   };
@@ -177,7 +177,7 @@ sc(end+1,:) = {'LEO1200',   4,  1,  3, 1.5260, 27.5,  1.2, 200   };
 sc(end+1,:) = {'LEO1200',   2,  3,  1, 3.8174, 54.8,  7.0,  30   };
 sc(end+1,:) = {'LEO1200',   2,  3,  2, 3.8174, 54.8,  7.0,  10   };
 
-% Set 2 DL         Orbit, SAT, UE, FR,    ABS,  PTx,   NF,  BW
+% Set 2 DL         Orbit, SAT, UE,FRF,    ABS,  PTx,   NF,  BW
 sc(end+1,:) = {    'GSO',   9,  1,  1, 0.3817, 37.5,  1.2, 400   };
 sc(end+1,:) = {    'GSO',   9,  1,  2, 0.3817, 37.5,  1.2, 133.3 };
 sc(end+1,:) = {    'GSO',   9,  1,  3, 0.3817, 37.5,  1.2, 200   };
@@ -194,7 +194,7 @@ sc(end+1,:) = {'LEO1200',  10,  1,  3, 3.8174, 27.5,  1.2, 200   };
 sc(end+1,:) = {'LEO1200',   8,  3,  1, 7.6397, 54.8,  7.0,  30   };
 sc(end+1,:) = {'LEO1200',   8,  3,  2, 7.6397, 54.8,  7.0,  10   };
 
-% Set 1 UL         Orbit, SAT, UE, FR,    ABS,  PTx,   NF,  BW
+% Set 1 UL         Orbit, SAT, UE,FRF,    ABS,  PTx,   NF,  BW
 sc(end+1,:) = {    'GSO',   5,  2,  1, 0.1524, 33.0, -0.8, 400   };
 sc(end+1,:) = {    'GSO',   5,  2,  2, 0.1524, 33.0, -0.8, 133.3 };
 sc(end+1,:) = {    'GSO',   5,  2,  3, 0.1527, 33.0, -0.8, 200   };
@@ -211,7 +211,7 @@ sc(end+1,:) = {'LEO1200',   6,  1,  3, 1.5260, 33.0, -0.8, 200   };
 sc(end+1,:) = {'LEO1200',   2,  3,  1, 3.8174, 23.0,  7.0,   0.4 };
 sc(end+1,:) = {'LEO1200',   2,  3,  2, 3.8174, 23.0,  7.0,   0.4 };
 
-% Set 2 UL         Orbit, SAT, UE, FR,    ABS,  PTx,   NF,  BW
+% Set 2 UL         Orbit, SAT, UE,FRF,    ABS,  PTx,   NF,  BW
 sc(end+1,:) = {    'GSO',  11,  2,  1, 0.3817, 33.0, -0.8, 400   };
 sc(end+1,:) = {    'GSO',  11,  2,  2, 0.3817, 33.0, -0.8, 133.3 };
 sc(end+1,:) = {    'GSO',  11,  2,  3, 0.3817, 33.0, -0.8, 200   };
@@ -240,9 +240,9 @@ for isc = 1 : size(sc,1)
     l(1,isc).simpar(1,1).show_progress_bars = 0;            % Disable Progress bars
     
     if sc{isc,4} == 1                                       % Set number of beams
-        l(1,isc).no_tx = 61;                                % FR1: Two tiers of interfering beams
+        l(1,isc).no_tx = 61;                                % FRF1: Two tiers of interfering beams
     else
-        l(1,isc).no_tx = 127;                               % FR3/4: Four tiers of interfering beams
+        l(1,isc).no_tx = 127;                               % FRF3/4: Four tiers of interfering beams
     end
     
     for itx = 1 : l(1,isc).no_tx                                        % Set satellite position
@@ -260,9 +260,9 @@ end
 % the strongest (serving) beam for each UE and assigning users to their serving beams until the
 % beams have reached their set number of UEs. 
 %
-% Then, we assign the antennas to the beams and the UEs. For FR4, a distinction must be made for the
-% RHCP and LHCP beams. In the KA-band, the UE use directional parabolic antennas. Those antennas
-% must be pointed towards the satellite in order to allow communication. We read the satallite and
+% Then, we assign the antennas to the beams and the UEs. For FRF4, a distinction must be made for the
+% RHCP and LHCP beams. In the KA-band, the UEs use directional parabolic antennas. Those antennas
+% must be pointed towards the satellite in order to allow communication. We read the satellite and
 % the UE positions from the qd_layout object, calculate the ideal pointing angle and apply this
 % orientation to the UE.  
 
@@ -299,23 +299,23 @@ for isc = 1 : size(sc,1)
     l(1,isc).set_scenario('QuaDRiGa_NTN_Rural_LOS');        % Set propagation conditions
 
     % Antenna assignment
-    if sc{isc,4} ~= 3                                       % FR1 and FR3 use single polarization
+    if sc{isc,4} ~= 3                                       % FRF1 and FRF3 use single polarization
         l(1,isc).tx_array = sub_array( satant(1,sc{isc,2}),1 );
         l(1,isc).rx_array = sub_array(  ueant(1,sc{isc,3}),1 );
-    else                                                    % FR4 uses dual polarization
+    else                                                    % FRF4 uses dual polarization
         satant1 = sub_array( satant(1,sc{isc,2}),1 );       % RHCP @ satellite
         satant2 = sub_array( satant(1,sc{isc,2}),2 );       % LHCP @ satellite
         ueant1  = sub_array(  ueant(1,sc{isc,3}),1 );       % RHCP @ UE
         ueant2  = sub_array(  ueant(1,sc{isc,3}),2 );       % LHCP @ UE
         for itx = 1 : l(1,isc).no_tx
-            if mod( FR4(itx), 2) == 1                       % FR4 index is an odd number
+            if mod( FRF4(itx), 2) == 1                      % FRF4 index is an odd number
                 l(1,isc).tx_array(1,itx) = satant1;         % ... use RHCP
-            else                                            % FR4 index is an even number
+            else                                            % FRF4 index is an even number
                 l(1,isc).tx_array(1,itx) = satant2;         % ... use LHCP
             end
         end
         for irx = 1 : l(1,isc).no_rx                        % Set the corresponding UE antennas
-            if mod( FR4( ceil((irx-0.5)/no_ms_per_beam) ), 2 ) == 1
+            if mod( FRF4( ceil((irx-0.5)/no_ms_per_beam) ), 2 ) == 1
                 l(1,isc).rx_array(1,irx) = ueant1;
             else
                 l(1,isc).rx_array(1,irx) = ueant2;
@@ -342,7 +342,7 @@ end
 %% Show layout plots
 % Here, we visualize the layout for the GSO and the LEO600 cases. The method "qd_layout.power_map"
 % projects the beams onto a 2D map, including the antenna gains and the path gain. Hence, the
-% variable "map" in the following code block contains the received power for the three tires of
+% variable "map" in the following code block contains the received power for the three tiers of
 % beams relative to 0 dBm transmit power. We then calculate the geometry factor (GF), i.e. the ratio
 % of the strongest (serving) beam to the interfering beams plus noise. The generated plots show
 % the positions of the terminals and the GF.
@@ -360,9 +360,9 @@ show_id = [1,6];                                            % Select cases to pl
 for iid = 1 : numel(show_id)
     isc = show_id(iid);
     
-    if sc{isc,4} == 1; FR = FR1;                            % Select FR1
-    elseif sc{isc,4} == 2; FR = FR3;                        % Select FR3
-    else; FR = FR4;                                         % Select FR4
+    if sc{isc,4} == 1; FRF = FRF1;                          % Select FRF1
+    elseif sc{isc,4} == 2; FRF = FRF3;                      % Select FRF3
+    else; FRF = FRF4;                                       % Select FRF4
     end
     
     ls = copy( l(1,isc) );                                  % Copy layout to local variable
@@ -371,10 +371,10 @@ for iid = 1 : numel(show_id)
     dst = beam_separation(isc)/18;                          % Map resolution (distance btw. pixels)
     cov = beam_separation(isc)*5;                           % Area of interest
     [ map,x_coords,y_coords ] = ls.power_map( '5G-ALLSTAR_Rural_LOS',...
-        'quick',dst,-cov,cov,-cov,cov,1.5 );                % Genearte coverage maps for each beam
+        'quick',dst,-cov,cov,-cov,cov,1.5 );                % Generate coverage maps for each beam
     
     Ns   = noise_thermal + 10*log10(sc{isc,8}*1e6) + sc{isc,7} - sc{isc,6}; % Noise
-    P    = cat(3,map{FR(1:ls.no_tx)==1});                   % Path gain map for each beam
+    P    = cat(3,map{FRF(1:ls.no_tx)==1});                  % Path gain map for each beam
     Pmax = max(P,[],3);                                     % Serving beam power for each map pixel
     GF   = Pmax ./ ( sum(P,3) - Pmax + 10.^(Ns/10) );       % Geometry factor for each pixel
     GF   = 10*log10(GF);                                    % Logarithmic scale
@@ -383,19 +383,19 @@ for iid = 1 : numel(show_id)
     hold on
     imagesc( x_coords, y_coords, GF );                      % Plot the Geometry Factor
     hold off
-    axis([-1 1 -1 1]*cov)                                   % Adjust ap size to coverage area
-    caxis( max(ceil(GF(:)))+[-25 0])                        % Adjust colormat range
+    axis([-1 1 -1 1]*cov)                                   % Adjust map size to coverage area
+    caxis( max(ceil(GF(:)))+[-25 0])                        % Adjust colormap range
     colmap = colormap;
     colormap( colmap*0.7 + 0.3 );                           % Adjust colors to be "lighter"
     set(gca,'layer','top')                                  % Show grid on top of the map
-    colorbar('south')                                       % Position of the colormar
+    colorbar('south')                                       % Position of the colormap
     title(['Beam Geometry - ',sc{isc,1}])                   % Title
 end
 
 %%
 % Note that the power_map function uses the antenna of the first UE as receive antenna, including
 % its orientation, but it does not update the antenna orientation. In the simulation setup, the
-% first UE is at a random location within the coverage area of the first beam. The power-map
+% first UE is at a random location within the coverage area of the first beam. The power_map
 % function moves this antenna to each pixel in the map to obtain a receive power value at this
 % location. Hence, only at the true position of the first UE within the first beams is the terminal
 % antenna pointed directly towards the satellite. All other map positions show less power due to the
@@ -407,7 +407,7 @@ end
 
 
 %% Run simulations and return results
-% Based on the system-level simulation assumptions for described in 3GPP TR 38.821 Table 6.1.1.1-5,
+% Based on the system-level simulation assumptions as described in 3GPP TR 38.821 Table 6.1.1.1-5,
 % the results of the coupling loss, geometry SIR and geometry SINR are calculated. The 3GPP TR
 % 38.821 results are reported in Table 6.1.1.2-1 for the DL and in Table 6.1.1.2-1 for the UL. These
 % results are representative of the average performance reported by the different companies. Here,
@@ -428,9 +428,9 @@ for isc = 1 : size(sc,1)
     
     c = l(1,isc).get_channels;                              % Obtain channels for all UE positions
     
-    if sc{isc,4} == 1; FR = FR1;                            % Select FR1
-    elseif sc{isc,4} == 2; FR = FR3;                        % Select FR3
-    else; FR = FR4;                                         % Select FR4
+    if sc{isc,4} == 1; FRF = FRF1;                          % Select FRF1
+    elseif sc{isc,4} == 2; FRF = FRF3;                      % Select FRF3
+    else; FRF = FRF4;                                       % Select FRF4
     end
     
     Ns = noise_thermal + 10*log10(sc{isc,8}*1e6) + sc{isc,7} - sc{isc,6}; % Noise
@@ -448,26 +448,26 @@ for isc = 1 : size(sc,1)
     
     CPL = -10*log10(pow_srv);                               % Coupling loss
     [Sh,bins] = qf.acdf( CPL );                             % Calculate coupling loss CDF
-    results(isc,1) = bins(find(Sh>=0.05,1));                % 5th percintile
+    results(isc,1) = bins(find(Sh>=0.05,1));                % 5th percentile
     results(isc,2) = median(CPL);                           % Median
     results(isc,3) = bins(find(Sh>=0.95,1));                % 95th percentile
     
     SIR = []; SINR = [];                                    % Init. SIR and SINR
     for n = 1:4
-        ii_mt  = FR(b_srv) == n;                            % Find all UEs that use the same freq.
-        ii_sat = FR(1:l(1,isc).no_tx) == n;                 % Find all beams that use the same freq.
+        ii_mt  = FRF(b_srv) == n;                           % Find all UEs that use the same freq.
+        ii_sat = FRF(1:l(1,isc).no_tx) == n;                % Find all beams that use the same freq.
         SIR    = [SIR;  10*log10( pow_srv(ii_mt)./(sum(pow(ii_mt,ii_sat),2)-pow_srv(ii_mt))) ];
         SINR   = [SINR; 10*log10( pow_srv(ii_mt)./...
             (sum(pow(ii_mt,ii_sat),2)-pow_srv(ii_mt)+10.^(Ns/10)))];
     end
     
     [Sh,bins] = qf.acdf( SIR );                             % Calculate SIR CDF
-    results(isc,4) = bins(find(Sh>=0.05,1));                % 5th percintile
+    results(isc,4) = bins(find(Sh>=0.05,1));                % 5th percentile
     results(isc,5) = median(SIR);                           % Median
     results(isc,6) = bins(find(Sh>=0.95,1));
     
     [Sh,bins] = qf.acdf( SINR );
-    results(isc,7) = bins(find(Sh>=0.05,1));                % 5th percintile
+    results(isc,7) = bins(find(Sh>=0.05,1));                % 5th percentile
     results(isc,8) = median(SINR);                          % Median
     results(isc,9) = bins(find(Sh>=0.95,1));                % 95th percentile
     

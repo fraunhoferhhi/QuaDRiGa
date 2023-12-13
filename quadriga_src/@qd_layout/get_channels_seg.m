@@ -69,7 +69,7 @@ end
 
 % Parse the input variables
 if numel( h_layout ) > 1
-    error('QuaDRiGa:qd_layout:get_channels:object_array','set_scenario not definded for object arrays.');
+    error('QuaDRiGa:qd_layout:get_channels:object_array','set_scenario not defined for object arrays.');
 else
     h_layout = h_layout(1,1); % workaround for octave
 end
@@ -177,7 +177,7 @@ if sum( builder_index(rx,tx,:) ~= 0 ) == 1                              % Only o
         h_builder(1,ib).gen_parameters;                                 % Generate parameters
     end
     if n_freq > 1
-        h_builder_tmp = split_multi_freq( h_builder(1,ib) );            % Split builders for multipel frequencies
+        h_builder_tmp = split_multi_freq( h_builder(1,ib) );            % Split builders for multiple frequencies
     else
         h_builder_tmp = h_builder(1,ib);                                % Copy handle
     end
@@ -204,7 +204,7 @@ else    % Multiple segments
             end
         else                                                            % Build channels
             if n_freq > 1                                               % Multiple frequencies ?
-                h_builder_tmp = split_multi_freq( h_builder(1,ib) ); 	% Split builders for multipel frequencies
+                h_builder_tmp = split_multi_freq( h_builder(1,ib) ); 	% Split builders for multiple frequencies
             else
                 h_builder_tmp = h_builder(1,ib);                        % Copy handle
             end
@@ -232,7 +232,7 @@ else    % Multiple segments
             h_builder(1,ib).gen_parameters;                             % Generate parameters
         end
         if n_freq > 1                                                   % Multiple frequencies ?
-            h_builder_tmp = split_multi_freq( h_builder(1,ib) );        % Split builders for multipel frequencies
+            h_builder_tmp = split_multi_freq( h_builder(1,ib) );        % Split builders for multiple frequencies
         else
             h_builder_tmp = h_builder(1,ib);                            % Copy handle
         end
@@ -262,7 +262,7 @@ else    % Multiple segments
         for iF = 1 : numel( freq )
             
             % The current channel might come from the cache. In this case, we must create a copy
-            % here to prevent atering the cache.
+            % here to prevent altering the cache.
             if ~isempty( h_channel_cache ) && qf.eqo( h_channel_curr(1,iF), h_channel_cache(1,iF ) )
                 h_channel_curr(1,iF) = copy( h_channel_curr(1,iF) );
             end
@@ -360,7 +360,7 @@ if use_channel_interpolation
     % Channel interpolation points relative to channel start
     i_int = dist_int > dist_track(i_chan_first) - 1e-14;                % Always include first point
     if i_chan_last ~= h_layout.rx_track(1,rx).no_snapshots
-        i_int = i_int & dist_int < dist_track(i_chan_last) - 1e-14;     % Do not include end point (part of next segent)
+        i_int = i_int & dist_int < dist_track(i_chan_last) - 1e-14;     % Do not include end point (part of next segment)
     else
         i_int = i_int & dist_int < dist_track(i_chan_last) + 1e-14;     % Include last point only in the last segment
     end
@@ -380,7 +380,7 @@ if use_channel_interpolation
     end
 end
 
-if numel( h_channel ) == 1 % Needed for Ocatve
+if numel( h_channel ) == 1 % Needed for Octave
     h_channel = h_channel(1,1);
 end
 

@@ -102,7 +102,7 @@ for n = 1 : h_layout.no_tx
     end
 end
 
-% Optional visualizeation of LOS and NLOS
+% Optional visualization of LOS and NLOS
 tx_has_los = false( 1,numel(tx) );
 if numel(rx) == 1 && numel(tx) > 1 && h_layout.rx_track(1,1).no_segments == 1 && ...
         numel( h_layout.rx_track(1,1).scenario ) == numel(tx)

@@ -31,32 +31,32 @@ function gen_parameters( h_builder, usage, vb_dots )
 %   Controls the working mode of the method. The allowed options are:
 %
 %   * usage = 0
-%     Clears all exisiting LSF and SSF parameters including the SOS random generators.
+%     Clears all existing LSF and SSF parameters including the SOS random generators.
 %
 %   * usage = 1
-%     Generates only the LSF parameters. Exisiting LSF parameters will be overwritten and all SSF
+%     Generates only the LSF parameters. Existing LSF parameters will be overwritten and all SSF
 %     parameters will be cleared. If the SOS generators are not initialized, they are initialized
 %     first. Existing SOS generators in "qd_builder.sos" are reused. This leads to identical results
 %     when calling the method multiple times.
 %
 %   * usage = 2
-%     Generates the SSF parameters. Exisiting SSF parameters will be overwritten. Existing SOS
+%     Generates the SSF parameters. Existing SSF parameters will be overwritten. Existing SOS
 %     generators and LSF parameters will be reused.
 %
 %   * usage = 3
-%     Calculates the scattering cluster positions from the exisiting SSF parameters. In some cases,
+%     Calculates the scattering cluster positions from the existing SSF parameters. In some cases,
 %     this may lead to changes in the departure angles (AoD, EoD). If LSF or SSF parameters are not
 %     initialized, they are initialized first.
 %
 %   * usage = 4 (default)
-%     Clears exisiting LSF parameters, SSF parameters and cluster positions and calculates new ones.
+%     Clears existing LSF parameters, SSF parameters and cluster positions and calculates new ones.
 %     Existing SOS generators are reused.
 %
 %   * usage = 5 
 %     Keeps all existing parameters and creates new parameters only if they are missing.
 %
 %
-% QuaDRiGa Copyright (C) 2011-2020
+% QuaDRiGa Copyright (C) 2011-2023
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -138,10 +138,10 @@ else
     else
         
         % Initialize the random generators.
-        % If they are already initialized, the exisiting values will not be changed.
+        % If they are already initialized, the existing values will not be changed.
         init_sos( h_builder,2 );
         
-        % Delete exisiting values
+        % Delete existing values
         switch usage
             case 2
                 gen_fbs_lbs( h_builder, 0 );

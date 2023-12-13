@@ -74,7 +74,7 @@ function [ h_channel, h_builder ] = get_channels( h_layout, check_parfiles, over
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 if numel( h_layout ) > 1
-    error('QuaDRiGa:qd_layout:get_channels:object_array','set_scenario not definded for object arrays.');
+    error('QuaDRiGa:qd_layout:get_channels:object_array','set_scenario not defined for object arrays.');
 else
     h_layout = h_layout(1,1); % workaround for octave
 end
@@ -199,8 +199,8 @@ if isempty( h_layout.h_qd_builder_init ) || init_builder
         end
         
         % When using dynamic simulations, the channel observation time must be identical for all
-        % transceivers. This makes sure that all channels get interpolatoed to the same number of
-        % snapshots in the next step. Here, wech check this criteria.
+        % transceivers. This makes sure that all channels get interpolated to the same number of
+        % snapshots in the next step. Here, we check this criteria.
         if h_layout.dual_mobility
             tmp = mean(simulation_time( simulation_time>0 ));
             tmp(2:3) = tmp(1) + [-0.5 0.5]./sr;
@@ -332,7 +332,7 @@ if isempty( h_layout.h_qd_builder_init ) || init_builder
         h_layout.track_checksum = checksum( rx_track ) + checksum( tx_track ) + checksum( h_layout.simpar );
     end
     
-else % Use esisting channel builder objects
+else % Use existing channel builder objects
     h_builder = h_layout.h_qd_builder_init;
     use_channel_interpolation = h_layout.use_channel_interpolation;
     if isempty( use_channel_interpolation ) || ~islogical( use_channel_interpolation )
@@ -441,7 +441,7 @@ else % Generate all channel objects
         fprintf('Formatting output channels')
     end
     if numel(h_channel) == no_rx * no_tx * n_freq
-        % Reorder the channels such that thex match the order in the layout
+        % Reorder the channels such that they match the order in the layout
         h_channel = qf.reshapeo( h_channel, [ no_rx, no_tx, n_freq ] );
         
         rx_name = cell(1,size( h_channel,1 ));                  % Get the correct RX order
@@ -486,7 +486,7 @@ end
 
 % Enable warnings
 warning('on','QuaDRiGa:qd_builder:use_baseline_ground_reflection');
-warning('on','QuaDRiGa:qd_builder:gen_parameters:exisitng');
+warning('on','QuaDRiGa:qd_builder:gen_parameters:existing');
 
 % Restore the original tracks in the layout
 if restore_tracks_in_layout && ~use_channel_interpolation

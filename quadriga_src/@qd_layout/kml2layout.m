@@ -14,7 +14,7 @@ function [ h_layout, ReferenceCoord ] = kml2layout( fn, split_seg, ForceRefCoord
 %   found in the KML-File is interpreted as a Rx-track. As for the Tx, all paths must contain a
 %   unique name. Segments of a Rx-Track are determined by placemarks in close proximity to the
 %   track. The name of the placemark contains the scenario. The naming convention for segments is
-%   "seg_Scen" where 'Scen' determines the scenaio of the segment. For example, you can create a
+%   "seg_Scen" where 'Scen' determines the scenario of the segment. For example, you can create a
 %   path with the name "rx_GPS1". In order so assign the scenario "WINNER_UMa_C2_LOS" to the path,
 %   you need to add a placemark at the beginning of the track with the name:
 %   "seg_WINNER_UMa_C2_LOS". It also possible to specify a different scenario for each transmitter
@@ -337,7 +337,7 @@ trk( 1, end+1 : end+numel( h_layout.rx_track ) ) = h_layout.rx_track;
 
 % Process track contents
 for n = 1 : numel( trk )
-    % Copy the orientations. If theey were not secified, the variable will contain NaNs
+    % Copy the orientations. If they were not specified, the variable will contain NaNs
     orientation = trk(1,n).orientation;
     
     % Convert the positions from WGS84 to Cartesian
@@ -388,7 +388,7 @@ for n = 1 : seg_cnt
     pos = Segment(n).Coordinates;
     pos = trans_global2ue( pos(1), pos(2), pos(3), ReferenceCoord );
         
-    % Extract scenario namestring
+    % Extract scenario name string
     scenario = {};
     ii = [ 4, regexp( Segment(n).Name,':' ), numel(Segment(n).Name)+1 ];
     for m = 1 : numel( ii )-1
@@ -480,7 +480,7 @@ if isempty( antenna_ind ) && h_layout.simpar(1,1).show_progress_bars
     fprintf('no antennas found, using omni\n')
 else
     
-    % Placehold for the antennas
+    % Placeholder for the antennas
     a = [];
     
     % Process embedded antennas
@@ -528,7 +528,7 @@ if ~isempty( antenna_ind )
     end
     n_freq = numel( h_layout.simpar(1,1).center_frequency );
     for n = 1 : h_layout.no_tx
-        % Duplicate handles in existeng rx_array to match the number of frequencies
+        % Duplicate handles in existing rx_array to match the number of frequencies
         ii = find( antenna_ind(:,3) == n );
         if n_freq > 1 && numel( ii ) == n_freq && size( h_layout.tx_array,1 ) == 1
             a_omni = qd_arrayant('omni');
@@ -542,7 +542,7 @@ if ~isempty( antenna_ind )
         end
     end
     for n = 1 : h_layout.no_rx
-        % Duplicate handles in existeng rx_array to match the number of frequencies
+        % Duplicate handles in existing rx_array to match the number of frequencies
         ii = find( antenna_ind(:,4) == n );
         if n_freq > 1 && numel( ii ) == n_freq && size( h_layout.rx_array,1 ) == 1
             a_omni = qd_arrayant('omni');

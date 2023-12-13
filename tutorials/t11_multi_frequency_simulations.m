@@ -108,7 +108,7 @@ title('Received power [dBm] for 2.6 GHz band')
 
 %%
 % For the 28 GHz, we get the complex-valued phases for each antenna element in order
-% to calculate a MRT beamformer that points the towards the ground at coordinates x = 200 m and 
+% to calculate a MRT beamformer that points the towards the ground at coordinates x = 200 m and
 % y = 100 m.
 
 tx_power        = 10;                                   % Tx-power in [dBm] per antenna element

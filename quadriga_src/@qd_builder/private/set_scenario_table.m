@@ -1,5 +1,5 @@
 function file_name = set_scenario_table( h_builder, scenario, check )
-%SET_SCENARIO_TABLE Parse conf files and load values into matlab
+%SET_SCENARIO_TABLE Parse conf files and load values into MATLAB
 % 
 % QuaDRiGa Copyright (C) 2011-2019
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
@@ -58,7 +58,7 @@ if ischar(scenario)
         'NumClusters' , 6 , ...            % Number of Paths
         'NumSubPaths' , 20 , ...           % Sub-paths per cluster
         'DS_mu' , -6 , ...                 % Reference value [log10(s)]
-        'DS_sigma' , 0.5 , ...             % Referenece STD [log10(s)]
+        'DS_sigma' , 0.5 , ...             % Reference STD [log10(s)]
         'DS_lambda' , 20 , ...             % Decorrelation distance [m]
         'DS_omega' , 0 , ...               % Reference frequency offset [GHz]
         'DS_gamma' , 0 , ...               % Freq.-dep. [log10(s)/log10(GHz)]
@@ -70,7 +70,7 @@ if ischar(scenario)
         'DS_tau' , 0 , ...                 % BS-height-dep. of STD [log10(s)/log10(m)]
         'DS_beta' , 0 , ...                % TX-elevation-dep. of STD [log10(s)/log10(rad)]
         'AS_D_mu' , 1 , ...                % Reference value [log10(deg)]
-        'AS_D_sigma' , 0.2 , ...           % Referenece STD [log10(deg)]
+        'AS_D_sigma' , 0.2 , ...           % Reference STD [log10(deg)]
         'AS_D_lambda' , 20 , ...           % Decorrelation distance [m]
         'AS_D_omega' , 0 , ...             % Reference frequency offset [GHz]
         'AS_D_gamma' , 0 , ...             % Freq.-dep. [log10(deg)/log10(GHz)]
@@ -82,7 +82,7 @@ if ischar(scenario)
         'AS_D_tau' , 0 , ...               % BS-height-dep. of STD [log10(deg)/log10(m)]
         'AS_D_beta' , 0 , ...              % TX-elevation-dep. of STD [log10(deg)/log10(rad)]
         'AS_A_mu' , 1 , ...                % Reference value [log10(deg)]
-        'AS_A_sigma' , 0.2 , ...           % Referenece STD [log10(deg)]
+        'AS_A_sigma' , 0.2 , ...           % Reference STD [log10(deg)]
         'AS_A_lambda' , 20 , ...           % Decorrelation distance [m]
         'AS_A_omega' , 0 , ...             % Reference frequency offset [GHz]
         'AS_A_gamma' , 0 , ...             % Freq.-dep. [log10(deg)/log10(GHz)]
@@ -94,7 +94,7 @@ if ischar(scenario)
         'AS_A_tau' , 0 , ...               % BS-height-dep. of STD [log10(deg)/log10(m)]
         'AS_A_beta' , 0 , ...              % TX-elevation-dep. of STD [log10(deg)/log10(rad)]
         'ES_D_mu' , 0.3 , ...              % Reference value [log10(deg)]
-        'ES_D_sigma' , 0.2 , ...           % Referenece STD [log10(deg)]
+        'ES_D_sigma' , 0.2 , ...           % Reference STD [log10(deg)]
         'ES_D_lambda' , 20 , ...           % Decorrelation distance [m]
         'ES_D_omega' , 0 , ...             % Reference frequency offset [GHz]
         'ES_D_gamma' , 0 , ...             % Freq.-dep. [log10(deg)/log10(GHz)]
@@ -108,7 +108,7 @@ if ischar(scenario)
         'ES_D_mu_A' , 0 , ...              % departure elevation spread distance dependency (legacy)
         'ES_D_mu_min' , -Inf , ...         % departure elevation spread minimum value
         'ES_A_mu' , 0.3 , ...              % Reference value [log10(deg)]
-        'ES_A_sigma' , 0.2 , ...           % Referenece STD [log10(deg)]
+        'ES_A_sigma' , 0.2 , ...           % Reference STD [log10(deg)]
         'ES_A_lambda' , 20 , ...           % Decorrelation distance [m]
         'ES_A_omega' , 0 , ...             % Reference frequency offset [GHz]
         'ES_A_gamma' , 0 , ...             % Freq.-dep. [log10(deg)/log10(GHz)]
@@ -119,7 +119,7 @@ if ischar(scenario)
         'ES_A_kappa' , 0 , ...             % Dist.-dep. of STD [log10(deg)/log10(m)]
         'ES_A_tau' , 0 , ...               % BS-height-dep. of STD [log10(deg)/log10(m)]
         'ES_A_beta' , 0 , ...              % TX-elevation-dep. of STD [log10(deg)/log10(rad)]
-        'SF_sigma' , 8 , ...               % Referenece STD [log10(s)]
+        'SF_sigma' , 8 , ...               % Reference STD [log10(s)]
         'SF_lambda' , 20 , ...             % Decorrelation distance [m]
         'SF_omega' , 0 , ...               % Reference frequency offset [GHz]
         'SF_delta' , 0 , ...               % Freq.-dep. of STD [log10(s)/log10(GHz)]
@@ -127,7 +127,7 @@ if ischar(scenario)
         'SF_tau' , 0 , ...                 % BS-height-dep. of STD [log10(s)/log10(m)]
         'SF_beta' , 0 , ...                % TX-elevation-dep. of STD [log10(s)/log10(rad)]
         'KF_mu' , 0 , ...                  % Reference value [log10(s)]
-        'KF_sigma' , 0 , ...               % Referenece STD [log10(s)]
+        'KF_sigma' , 0 , ...               % Reference STD [log10(s)]
         'KF_lambda' , 20 , ...             % Decorrelation distance [m]
         'KF_omega' , 0 , ...               % Reference frequency offset [GHz]
         'KF_gamma' , 0 , ...               % Freq.-dep. [log10(s)/log10(GHz)]
@@ -139,7 +139,7 @@ if ischar(scenario)
         'KF_tau' , 0 , ...                 % BS-height-dep. of STD [log10(s)/log10(m)]
         'KF_beta' , 0 , ...                % TX-elevation-dep. of STD [log10(s)/log10(rad)]
         'XPR_mu' , 0 , ...                 % Reference value [log10(s)]
-        'XPR_sigma' , 10 , ...             % Referenece STD [log10(s)]
+        'XPR_sigma' , 10 , ...             % Reference STD [log10(s)]
         'XPR_lambda' , 20 , ...            % Decorrelation distance [m]
         'XPR_omega' , 0 , ...              % Reference frequency offset [GHz]
         'XPR_gamma' , 0 , ...              % Freq.-dep. [log10(s)/log10(GHz)]
@@ -159,7 +159,7 @@ if ischar(scenario)
         'PerClusterES_D' , 0 , ...         % Per cluster BS elevation spread [deg]
         'PerClusterES_A' , 0 , ...         % Per cluster MS elevation spread [deg]
         'absTOA_mu' , -100 , ...           % Absolute time of arrival offset reference value [log10(s)]
-        'absTOA_sigma' , 0 , ...           % Absolute time of arrival offset referenece STD [log10(s)]
+        'absTOA_sigma' , 0 , ...           % Absolute time of arrival offset reference STD [log10(s)]
         'absTOA_lambda' , 0 , ...          % Absolute time of arrival offset decorrelation distance [m]
         'SubpathMethod', 'legacy', ...     % Subpath-generation method
         'LOS_scatter_radius', 0, ...       % Scattering around the LOS cluster
@@ -232,7 +232,7 @@ if ischar(scenario)
                             end
                             p3 = regexp( tmp,'[0-9.-]+','match');         % Check for numbers
                             if ~isempty( p3 )
-                                p3 = regexp( tmp,'[0-9Eeji.+-]+','match'); % Include exponenetials and comlex numbers
+                                p3 = regexp( tmp,'[0-9Eeji.+-]+','match'); % Include exponentials and complex numbers
                                 scen.( names{ind} ) = str2double( p3{1} );
                             else
                                 p3 = regexp( tmp,'[A-Za-z]+' ,'match');   % Check for strings

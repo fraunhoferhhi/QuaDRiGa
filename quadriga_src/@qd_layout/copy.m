@@ -63,7 +63,7 @@ else
     % The list of properties that need to be copied
     prop = {'name','update_rate','Ppairing','ReferenceCoord'};
     
-    % Empty outout
+    % Empty out
     out = [];
     
     % Copy the data

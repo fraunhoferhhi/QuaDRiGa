@@ -2,7 +2,7 @@ function [ R, phiL, thetaL, gamma ] = calc_ant_rotation( zrot, yrot, xrot, phi, 
 %CALC_ANT_ROTATION Calculates the polarimetric antenna rotation in geographic coordinates
 %
 %   This function implements the antenna rotation, including the polarization. For each rotation
-%   angle "zrot", "yrot", and "xrot", a 3D rotation matrix (Rz, Ry, Ry) is calculated (assuming a
+%   angle "zrot", "yrot", and "xrot", a 3D rotation matrix (Rz, Ry, Rx) is calculated (assuming a
 %   right-handed Cartesian coordinate system). The matrices are combined in the order "Rz * Ry *
 %   Rx", i.e. the x-rotation is applied first and the z-rotation is applied last. The input angles
 %   "phi" (azimuth) and "theta" (elevation) are relative to the global coordinate system. They are

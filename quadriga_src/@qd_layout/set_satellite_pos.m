@@ -49,7 +49,7 @@ function pos = set_satellite_pos( h_layout, rx_latitude, sat_el, sat_az, sat_hei
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
 if numel( h_layout ) > 1 
-   error('QuaDRiGa:qd_layout:set_scenario','set_scenario not definded for object arrays.');
+   error('QuaDRiGa:qd_layout:set_scenario','set_scenario not defined for object arrays.');
 else
     h_layout = h_layout(1,1); % workaround for octave
 end

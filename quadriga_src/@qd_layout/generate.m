@@ -84,7 +84,7 @@ if ~exist( 'sec_orientation','var' ) || isempty( sec_orientation )      % First 
     sec_orientation = 0;
 end
 
-% Doplicate antenna elements for each sector
+% Duplicate antenna elements for each sector
 no_el = h_array.no_elements;
 for n = 2 : no_sectors
     for m = 1:no_el

@@ -159,7 +159,7 @@ else
         '"parameters" must be a string, qd_builder object or empty variable.');
 end
 
-% Assemble exisiting Tx and Rx positions to generate LSF and SSF with the new builder
+% Assemble existing Tx and Rx positions to generate LSF and SSF with the new builder
 tx_pos = [];
 rx_pos = [];
 iB = [];
@@ -177,7 +177,7 @@ for i_cb = 1 : numel(h_builder)
         % Entries in iB:
         % (1) First Builder Index
         % (2) Second Builder Index
-        % (3) Number of exisiting paths
+        % (3) Number of existing paths
         % (4) LOS state
         % (5) Position index within builder
         
@@ -207,7 +207,7 @@ init_sos( h_bld, 2 );             % Reuse existing SOS parameters
 gen_lsf_parameters( h_bld, 2 );   % Reuse existing LSF parameters
 gen_ssf_parameters( h_bld, 1 );   % Create new SSF parameters
 
-% Split builder such that each object only hase one link
+% Split builder such that each object only has one link
 h_bld = split_rx( h_bld );
 
 % Add new clusters to input builders
@@ -226,15 +226,15 @@ for iN = 1 : numel( h_bld )
     i1 = iB(1,iP);                                  % First Builder Index
     i2 = iB(2,iP);                                  % Second Builder Index
     iMT = iB(5,iP);                                 % Position index within builder
-    isLOSe = iB(4,iP);                              % LOS state of exisiting builder
+    isLOSe = iB(4,iP);                              % LOS state of existing builder
     isLOSn = h_bld(1,iN).check_los;                 % LOS state of added paths
-    n_exist = iB(3,iP);                             % Number of exisiting paths
+    n_exist = iB(3,iP);                             % Number of existing paths
     n_new = h_bld(1,iN).NumClusters;                % Number of added paths
     n_mobiles = h_builder(i1,i2).no_rx_positions;   % Number of mobiles in "h_builder"
     n_freq = h_builder(i1,i2).no_freq;              % Number of frequencies in "h_builder"
     
     % Add zero-power LOS path to the builder, set "n_exist" to 1
-    if isLOSe == -1                 % There are no exisiting paths
+    if isLOSe == -1                 % There are no existing paths
         h_builder(i1,i2).NumSubPaths = 1;
         h_builder(i1,i2).NumClusters = 1;
         h_builder(i1,i2).gain = zeros(n_mobiles,1,n_freq);
@@ -263,7 +263,7 @@ for iN = 1 : numel( h_bld )
         iB(4,tmp) = isLOSe; %#ok!
     end
     
-    % Add zero-power ground reflection to exisiting builder
+    % Add zero-power ground reflection to existing builder
     if isLOSe < 1.5 && isLOSn > 1.5
         tx_pos_tmp = h_builder(i1,i2).tx_position;
         rx_pos_tmp = h_builder(i1,i2).rx_positions;
@@ -308,7 +308,7 @@ for iN = 1 : numel( h_bld )
     
     % Determine the indices of the NLOS paths in "h_bld" and "h_builder"
     if isLOSn > 1.5 % There is a GR path
-        % A zero-power GR was already added to the exisiting builder, so "isLOSe > 1.5" is true as well
+        % A zero-power GR was already added to the existing builder, so "isLOSe > 1.5" is true as well
         n_add  = n_exist + n_new - h_builder(i1,i2).NumClusters - 2;
         i_clst = 3 : n_new;
         i_path = 3 : sum( h_bld(1,iN).NumSubPaths );
@@ -324,7 +324,7 @@ for iN = 1 : numel( h_bld )
         j_path = j_path + 1 : j_path + sum(h_bld(1,iN).NumSubPaths(2:end));
     end
     
-    % Enlarge exisiting data structures
+    % Enlarge existing data structures
     if n_add > 0
         NumSubPaths = h_bld(1,iN).NumSubPaths( end-n_add+1:end );
         h_builder(i1,i2).NumSubPaths = [ h_builder(i1,i2).NumSubPaths, NumSubPaths ];
@@ -339,8 +339,8 @@ for iN = 1 : numel( h_bld )
         h_builder(i1,i2).xprmat = cat( 2, h_builder(i1,i2).xprmat, zeros(4,NumSubPaths,n_mobiles,n_freq) );
         h_builder(i1,i2).pin = cat( 2, h_builder(i1,i2).pin, zeros(n_mobiles,NumSubPaths,n_freq) );
         
-        % Add antries to "subpath_coupling"
-        n_subpath_coupling = size(h_builder(i1,i2).subpath_coupling,2);     % Size of exisitng "subpath_coupling"
+        % Add entries to "subpath_coupling"
+        n_subpath_coupling = size(h_builder(i1,i2).subpath_coupling,2);     % Size of existing "subpath_coupling"
         NumSubPaths = sum( h_builder(i1,i2).NumSubPaths );                  % Number of subpaths in the builder after adding new paths
         if NumSubPaths > n_subpath_coupling
             n_add = NumSubPaths - n_subpath_coupling;                       % Values to be added to "subpath_coupling"
@@ -379,7 +379,7 @@ for iN = 1 : numel( h_bld )
         h_builder(i1,i2).pin(iMT,1,:) = h_bld(1,iN).pin(1,1,:);
     end
     if isLOSe == 2 || isLOSe == 3   % Existing builder has a GR path?
-        if isLOSn == 1              % New builder has no GR - clear GR path from exisiting builder
+        if isLOSn == 1              % New builder has no GR - clear GR path from existing builder
             h_builder(i1,i2).gain(iMT,2,:) = 0;
         elseif isLOSn == 2          % Copy GR path from new builder and overwrite existing GR
             h_builder(i1,i2).gain(iMT,2,:) = h_bld(1,iN).gain(1,2,:);
@@ -398,20 +398,20 @@ for i_cb = 1 : numel(h_builder)
         if isempty( h_builder(i1,i2).lbs_pos ) || isempty( h_builder(i1,i2).fbs_pos )
             gen_fbs_lbs( h_builder(i1,i2) );       	% Update FBS / LBS positions
         elseif h_builder(i1,i2).NumClusters > n_exist && size( h_builder(i1,i2).fbs_pos,2 ) >= n_rays_exisit
-            fbs_pos = h_builder(i1,i2).fbs_pos;     % Exisiting FBS-Pos. should not change
-            lbs_pos = h_builder(i1,i2).lbs_pos;     % Exisiting LBS-Pos. should not change
+            fbs_pos = h_builder(i1,i2).fbs_pos;     % Existing FBS-Pos. should not change
+            lbs_pos = h_builder(i1,i2).lbs_pos;     % Existing LBS-Pos. should not change
             gen_fbs_lbs( h_builder(i1,i2) );       	% Update FBS / LBS positions
             h_builder(i1,i2).fbs_pos(:,1:n_rays_exisit,:,:) = fbs_pos;
             h_builder(i1,i2).lbs_pos(:,1:n_rays_exisit,:,:) = lbs_pos;
         end
         if h_builder(i1,i2).NumClusters > n_exist && size( h_builder(i1,i2).fbs_pos,2 ) == sum( h_builder(i1,i2).NumSubPaths )
-            taus = h_builder(i1,i2).taus(:,1:n_exist,:);    % Store exisiting
+            taus = h_builder(i1,i2).taus(:,1:n_exist,:);    % Store existing
             AoD = h_builder(i1,i2).AoD(:,1:n_exist);
             AoA = h_builder(i1,i2).AoA(:,1:n_exist);
             EoD = h_builder(i1,i2).EoD(:,1:n_exist);
             EoA = h_builder(i1,i2).EoA(:,1:n_exist);
             gen_ssf_from_scatterers( h_builder(i1,i2), 1e-9 );    % Update
-            h_builder(i1,i2).taus(:,1:n_exist,:) = taus;    % Restore exisiting
+            h_builder(i1,i2).taus(:,1:n_exist,:) = taus;    % Restore existing
             h_builder(i1,i2).AoD(:,1:n_exist) = AoD;
             h_builder(i1,i2).AoA(:,1:n_exist) = AoA;
             h_builder(i1,i2).EoD(:,1:n_exist) = EoD;

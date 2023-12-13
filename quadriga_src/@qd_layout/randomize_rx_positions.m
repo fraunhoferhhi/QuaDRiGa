@@ -32,7 +32,7 @@ function randomize_rx_positions( h_layout, max_dist, min_height, max_height, tra
 %   The minimum distance from the layout center in [m]. Scalar value, default 0 m
 %
 %   orientation
-%   The fixed heading angle (direction of movement) in [rad] for all user terminals in mathematic
+%   The fixed heading angle (direction of movement) in [rad] for all user terminals in mathematical
 %   sense (0 points east, pi/2 points north). Scalar value. If no orientation is provided, all
 %   tracks get assigned with a random heading angle. 
 %
@@ -63,7 +63,7 @@ function randomize_rx_positions( h_layout, max_dist, min_height, max_height, tra
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 if numel( h_layout ) > 1 
-   error('QuaDRiGa:qd_layout:randomize_rx_positions','randomize_rx_positions not definded for object arrays.');
+   error('QuaDRiGa:qd_layout:randomize_rx_positions','randomize_rx_positions not defined for object arrays.');
 else
     h_layout = h_layout(1,1); % workaround for octave
 end

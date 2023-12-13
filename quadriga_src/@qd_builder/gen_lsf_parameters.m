@@ -119,7 +119,7 @@ else
     end
     if ~h_builder.lsp_xcorr_chk
         error('QuaDRiGa:qd_builder:gen_lsf_parameters',...
-            ['LSP cross-correlation matix of "',h_builder.name,'" is not positive definite.']);
+            ['LSP cross-correlation matrix of "',h_builder.name,'" is not positive definite.']);
     end
     
     % Get required variables
@@ -253,7 +253,7 @@ else
         mu(6,:,:) = mu(6,:,:) + ES_D_mu_A .* d2D(1,:,oF)/1000;
     end
     
-    % Apply mimimum value for the ESD
+    % Apply minimum value for the ESD
     mu( 6, mu(6,:) < ES_D_mu_min ) = ES_D_mu_min;
     
     % Calculate STD
@@ -323,7 +323,7 @@ else
             g_med = 30.4 * f_GHz.^-0.47 + 1j * 0.18 * f_GHz.^1.05;
             g_wet = 31.3 * f_GHz.^-0.48 + 1j * 0.63 * f_GHz.^0.77;
             
-            % The reulting permittivity is obtained by a linear interpolation of the ground type
+            % The resulting permittivity is obtained by a linear interpolation of the ground type
             % depending on the random variable "randC". A value of 0 means "dry", 0.5 means "medium"
             % and 1 means "wet".
             gr_epsilon_r = zeros(n_freq,n_mobiles);

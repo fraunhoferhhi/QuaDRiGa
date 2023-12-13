@@ -65,7 +65,7 @@ function [ xyzI, xyzR, r, lat, lonI, lonR, pq, Omega, omega, v ] = orbit_predict
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 if numel( h_qd_satellite ) > 1
-    error('QuaDRiGa:h_qd_satellite:orbit_predictor','orbit_predictor not definded for object arrays.');
+    error('QuaDRiGa:h_qd_satellite:orbit_predictor','orbit_predictor not defined for object arrays.');
 else
     h_qd_satellite = h_qd_satellite(1,1); % workaround for octave
 end
@@ -76,7 +76,7 @@ if ~exist('t','var')
 elseif ischar(t) && numel(t) == 6 && strcmp(t(1:3),'utc') && ~isempty( h_qd_satellite.epoch )
     t = ( now - str2double(t(4:6))/24 - h_qd_satellite.epoch)*86400;
 elseif ~( isnumeric(t) && isreal(t) )
-    error('QuaDRiGa:h_qd_satellite:orbit_predictor','Invalit time offset or epoch not given.');
+    error('QuaDRiGa:h_qd_satellite:orbit_predictor','Invalid time offset or epoch not given.');
 else
     t = reshape( t,[],1 );
 end
@@ -124,11 +124,11 @@ while any( upd(:) )                                     % Iterate until M == Mn
     dM(upd) = mod( M(upd) - Mn(upd), 360 );             % The angle difference
     dM( dM > 180 & upd ) = 360 - dM( dM > 180 & upd );
     
-    ii = dM < dMn & upd;                                % Estimte improved
+    ii = dM < dMn & upd;                                % Estimate improved
     E(ii) = En(ii);                                     % Update E
     dMn(ii) = dM(ii);                                   % Update dMn
 
-    ii = dM > dMn & upd;                                % Estimte got worse
+    ii = dM > dMn & upd;                                % Estimate got worse
     dE(ii) = -0.382 * dE(ii);                           % Change step size and direction
 
     upd(upd) = dMn(upd) > 1e-7;                         % Continue until M ~ Mn
@@ -184,7 +184,7 @@ else % Take Earths reference orientation into account
     GMST = h_qd_satellite.Omega_e*t.' + h_qd_satellite.Omega_e*dT + h_qd_satellite.Omega_eR;
 end
     
-% Calaculate the longitude and latitude positions 
+% Calculate the longitude and latitude positions 
 lat  = atand( xyzI(3,:,:)./sqrt( sum( xyzI(1:2,:,:).^2,1) )); 	% Latitude
 lonI = angle( xyzI(1,:,:) + xyzI(2,:,:)*1j )*180/pi;            % Longitude (inertial frame)
 lonR = lonI - GMST(:,:,oS);                                    	% Longitude (rotating frame)

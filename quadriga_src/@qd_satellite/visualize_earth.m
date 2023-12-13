@@ -41,7 +41,7 @@ function visualize_earth( h_qd_satellite, observation_time, i_sat )
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 if numel( h_qd_satellite ) > 1
-    error('QuaDRiGa:h_qd_satellite:visualize_earth','visualize_earth not definded for object arrays.');
+    error('QuaDRiGa:h_qd_satellite:visualize_earth','visualize_earth not defined for object arrays.');
 else
     h_qd_satellite = h_qd_satellite(1,1); % workaround for octave
 end
@@ -51,7 +51,7 @@ if ~exist('i_sat','var') || isempty( i_sat )
 end
 nS = numel( i_sat );
 
-% If observation time is not given, use the smalles orbital period
+% If observation time is not given, use the smallest orbital period
 if ~exist('observation_time','var') || isempty( observation_time )
     tmp = min(h_qd_satellite.orbit_period(i_sat));
     observation_time = (0:0.01:1)*tmp;

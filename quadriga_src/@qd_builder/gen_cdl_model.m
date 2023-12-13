@@ -26,7 +26,7 @@ function h_builder = gen_cdl_model( cdl_model, center_frequency, mobile_speed, d
 %   Tapped Delay Line (TDL) models are
 %   used tor simplified evaluations, e.g., for non-MIMO evaluations. The Doppler spectrum for each
 %   tap is characterized by a classical (Jakes) spectrum shape and a maximum Doppler shift fD =
-%   v/lambdaλ. Due to the presence of a LOS path, the first tap in NR-TDL-D and NR-TDL-E follows a
+%   v/lambda. Due to the presence of a LOS path, the first tap in NR-TDL-D and NR-TDL-E follows a
 %   Ricean fading distribution. For those taps the Doppler spectrum additionally contains a peak at
 %   the Doppler shift fS = -0.7 fD with an amplitude such that the resulting fading distribution has
 %   the specified K-factor. This is equivalent to a MT moving away from the BS at a 45 degree
@@ -159,7 +159,7 @@ else
     end
 end
 
-% Check center freuency
+% Check center frequency
 if ~exist( 'center_frequency', 'var' ) || isempty( center_frequency )
     center_frequency = qd_simulation_parameters.speed_of_light;  % 300 MHz, wavelength = 1 m
 end
@@ -175,7 +175,7 @@ end
 % Check parameter scaling variables
 as_desired = NaN(4,1);
 if ~exist( 'ds', 'var' ) || isempty(ds)
-    ds = []; % Dont scale
+    ds = []; % Do not scale
 end
 if exist( 'asd', 'var' ) && ~isempty(asd)
     as_desired(1,1) = asd*pi/180;
@@ -190,10 +190,10 @@ if exist( 'esa', 'var' ) && ~isempty(esa)
     as_desired(4) = esa*pi/180;
 end
 if ~exist( 'kf', 'var' ) || isempty( kf )
-    kf = []; % Dont scale
+    kf = []; % Do not scale
 end
 if ~exist( 'cas_factor', 'var' ) || isempty( cas_factor )
-    cas_factor = 1; % Dont scale
+    cas_factor = 1; % Do not scale
 end
 if ~exist( 'sample_density', 'var' ) || isempty( sample_density )
     sample_density = 2.5; % Default value
@@ -473,13 +473,13 @@ end
 
 % Configure channel builder
 h_builder = qd_builder('LOSonly');
-h_builder.simpar(1,1).center_frequency = center_frequency;
-h_builder.simpar(1,1).sample_density = sample_density;
-h_builder.simpar(1,1).use_3GPP_baseline = true;
-h_builder.simpar(1,1).show_progress_bars = false;
-h_builder.simpar(1,1).autocorrelation_function = 'Disable';
+h_builder.simpar.center_frequency = center_frequency;
+h_builder.simpar.sample_density = sample_density;
+h_builder.simpar.use_3GPP_baseline = true;
+h_builder.simpar.show_progress_bars = false;
+h_builder.simpar.autocorrelation_function = 'Disable';
 
-% Default omni-antennas, vertial polarization
+% Default omni-antennas, vertical polarization
 h_builder.tx_array = qd_arrayant('omni');
 h_builder.rx_array = qd_arrayant('omni');
 
@@ -546,7 +546,7 @@ h_builder.plpar         = plpar;
 h_builder.gen_parameters;
 h_builder.sos           = [];
 
-% Write cluster parameterts to the file
+% Write cluster parameters to the file
 h_builder.taus      = taus;
 h_builder.pow       = powL/sum(powL);
 h_builder.AoD       = ang(1,:);
@@ -563,6 +563,9 @@ end
 h_builder.name = ['ch_',cdl_model];
 h_builder.rx_track.name = 'RX';
 h_builder.tx_track.name = 'TX';
+
+% Fix for Octave
+h_builder = h_builder(1,1);
 
 end
 

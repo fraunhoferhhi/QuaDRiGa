@@ -108,7 +108,7 @@ else
     filename = varargin{1};
 end
 
-% Get the filesize
+% Get the file size
 file = dir( filename );
 if numel( file ) ~=1
     error('QuaDRiGa:qd_channel:mat_load',['??? File ''',filename,''' does not exist.'])
@@ -157,7 +157,7 @@ else
     groups = 1:max_channel;
 end
 
-% Dimensiosn of Channel object
+% Dimension of Channel object
 try
     if ~has_all_data
         load(filename,'ChannelDims');

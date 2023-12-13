@@ -32,7 +32,7 @@ if isempty( p1 )
     error('QuaDRiGa:qd_layout:kmlread:no_xml_found','No XML file.');
 end
 
-while ischar(l)                                                 % Do untile file ends
+while ischar(l)                                                 % Do until file ends
     
     if ~isempty( regexp(l,'<Placemark>', 'once') )              % Check for <Placemark>
         nPlacemark = nPlacemark + 1;                            % Increase Placemark counter
@@ -182,7 +182,7 @@ while iDescription
         l = fgets( file );  % Read next line
     else
         iDescription = false;
-        l = l(p2+14:end);   % Return rest of line for furteher processing
+        l = l(p2+14:end);   % Return rest of line for further processing
     end
 end
 

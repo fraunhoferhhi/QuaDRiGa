@@ -117,7 +117,7 @@ h_layout.rx_track = rx_track_all;
 h_layout.simpar(1,1).center_frequency = double( h_layout.simpar.center_frequency );
 
 % Process antennas
-a = qd_arrayant([]);                                            % Empy array of qd_arrayant objects
+a = qd_arrayant([]);                                            % Empty array of qd_arrayant objects
 a_cnt = 0;                                                      % Counter
 a_txind = zeros( size( h_layout.tx_array) );                    % Index list for the Tx
 a_rxind = zeros( size( h_layout.rx_array) );                    % Index list for the Tx

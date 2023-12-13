@@ -134,7 +134,7 @@ for i_trk = 1 : numel( trk_names )          % Do for each track
     n_seg = numel(seg_ind);
     
     if n_seg == 1
-        % If there is only one segment in the channel, we dont need to do anything.
+        % If there is only one segment in the channel, we do not need to do anything.
         
         % Copy the channel
         c(1,i_trk) = copy( h_channel(1, seg_ind(1) ) );
@@ -210,7 +210,7 @@ for i_trk = 1 : numel( trk_names )          % Do for each track
                 tx_position( :,isn ) = h_channel( 1,ic1 ).tx_position( :,is1n );
             end
             
-            % Merge the two segments. This is only neccesary, if there is an overlapping segment.
+            % Merge the two segments. This is only necessary, if there is an overlapping segment.
             if ~isempty( ic2 )
                 
                 % Get the coefficients and delays from the two overlapping segments

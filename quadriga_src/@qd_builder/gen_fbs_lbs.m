@@ -7,7 +7,7 @@ function gen_fbs_lbs( h_builder, usage, PerClusterAS )
 % Description:
 %   This method calculates the positions of the first-bounce scatterer (FBS) and the last-bounce-
 %   scatterer (LBS) in 3D Cartesian coordinates. This is done by splitting each path into two
-%   bounces and mimizing the distance between FBS and LBS. If resulting optimization problem has no
+%   bounces and minimizing the distance between FBS and LBS. If resulting optimization problem has no
 %   solution, a single-bounce model is used where FBS = LBS. The generation of scatterer positions
 %   requires that the LSF parameters are initialized first. The output of this method is written to
 %   the object properties.
@@ -222,7 +222,7 @@ else
             dist = clst_expand( taus(:,:,iF), NumSubPaths );  % Delay for each sub-path
             dist = dist * speed_of_light + norm_r(:,o_paths);
         elseif iF > 1 && size( taus,3 ) ~= 1
-            error('QuaDRiGa:qd_builder:generate_fbs_lbs','Size of "taus" does not match numer of frequencies.')
+            error('QuaDRiGa:qd_builder:generate_fbs_lbs','Size of "taus" does not match number of frequencies.')
         end
         
         phi_d_lm    = As(:,:,1,iF); % AoD [ n_mobiles x n_paths ]

@@ -135,15 +135,15 @@ else
         lsf_sos(1,8).sos_phase(:,2) = lsf_sos(1,8).sos_phase(:,1);  % XPR (is identical if Tx and Rx positions are swapped)
         
         lsf_sos(1,4).sos_phase(:,1) = lsf_sos(1,5).sos_phase(:,2);  % Azimuth angles 
-        lsf_sos(1,5).sos_phase(:,1) = lsf_sos(1,4).sos_phase(:,2);  % (depature become arrival angles if positions are swapped)
+        lsf_sos(1,5).sos_phase(:,1) = lsf_sos(1,4).sos_phase(:,2);  % (departure become arrival angles if positions are swapped)
         
         lsf_sos(1,6).sos_phase(:,1) = lsf_sos(1,7).sos_phase(:,2);  % Elevation angles 
-        lsf_sos(1,7).sos_phase(:,1) = lsf_sos(1,6).sos_phase(:,2);  % (depature become arrival angles if positions are swapped)
+        lsf_sos(1,7).sos_phase(:,1) = lsf_sos(1,6).sos_phase(:,2);  % (departure become arrival angles if positions are swapped)
         
         h_builder.sos = lsf_sos;
     end
     
-    % SOS geneator for spatially correlated absolute time-of-arrival
+    % SOS generator for spatially correlated absolute time-of-arrival
     if ~h_builder.simpar(1,1).use_3GPP_baseline && absTOA_lambda > 0 && isempty( h_builder.absTOA_sos )
         
         % Delay offsets (are identical if Tx and Rx positions are swapped)
@@ -165,7 +165,7 @@ else
         h_builder.gr_sos.sos_phase(:,2) = h_builder.gr_sos.sos_phase(:,1);
     end
     
-    % Initialize SOS genrators for the geneation of multipath components
+    % Initialize SOS generators for the generation of multipath components
     if ~h_builder.simpar(1,1).use_3GPP_baseline && SC_lambda > 0 && isempty( h_builder.path_sos )
         path_sos = qd_sos([]);
         for i_cluster = 1 : Ln
@@ -173,13 +173,13 @@ else
             path_sos(i_cluster,1) = qd_sos( acf, 'Uniform', SC_lambda ); % Delays
             path_sos(i_cluster,1).sos_phase(:,2) = path_sos(i_cluster,1).sos_phase(:,1);
             
-            % Azimuth angles (depature become arrival angles if positions are swapped)
+            % Azimuth angles (departure become arrival angles if positions are swapped)
             path_sos(i_cluster,2) = qd_sos( acf, 'Uniform', SC_lambda ); % ASD
             path_sos(i_cluster,3) = qd_sos( acf, 'Uniform', SC_lambda ); % ASA
             path_sos(i_cluster,2).sos_phase(:,1) = path_sos(i_cluster,3).sos_phase(:,2);
             path_sos(i_cluster,3).sos_phase(:,1) = path_sos(i_cluster,2).sos_phase(:,2);
             
-            % Elevation angles (depature become arrival angles if positions are swapped)
+            % Elevation angles (departure become arrival angles if positions are swapped)
             path_sos(i_cluster,4) = qd_sos( acf, 'Uniform', SC_lambda ); % ASD
             path_sos(i_cluster,5) = qd_sos( acf, 'Uniform', SC_lambda ); % ASA
             path_sos(i_cluster,4).sos_phase(:,1) = path_sos(i_cluster,5).sos_phase(:,2);
@@ -188,7 +188,7 @@ else
         h_builder.path_sos = path_sos;
     end
     
-    % Initialize SOS genrators for the XPR
+    % Initialize SOS generators for the XPR
     if ~h_builder.simpar(1,1).use_3GPP_baseline && SC_lambda > 0 && isempty( h_builder.xpr_sos )
         xpr_sos = qd_sos([]);
         for i_freq = 1 : F
@@ -206,7 +206,7 @@ else
         h_builder.xpr_sos = xpr_sos;
     end
     
-    % Initialize SOS genrators for initial phases
+    % Initialize SOS generators for initial phases
     if ~h_builder.simpar(1,1).use_3GPP_baseline && SC_lambda > 0 && isempty( h_builder.pin_sos )
         pin_sos = qd_sos([]);
         for i_freq = 1 : F
@@ -224,7 +224,7 @@ else
         h_builder.pin_sos = pin_sos;
     end
     
-    % Initialize SOS genrators for mmMAGIC intra-cluster delay offsets
+    % Initialize SOS generators for mmMAGIC intra-cluster delay offsets
     if ~h_builder.simpar(1,1).use_3GPP_baseline && SC_lambda > 0 && isempty( h_builder.clst_dl_sos )
         clst_dl_sos = qd_sos([]);
         for i_cluster = 1 : Ln

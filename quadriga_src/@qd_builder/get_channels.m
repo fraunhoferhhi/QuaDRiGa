@@ -1,4 +1,4 @@
-function h_channel = get_channels( h_builder, vb_dots, use_gpu )
+function h_channel = get_channels( h_builder, vb_dots, use_gpu, only_coeff )
 %GET_CHANNELS Calculate the channel coefficients
 %
 % Calling object:
@@ -26,18 +26,31 @@ function h_channel = get_channels( h_builder, vb_dots, use_gpu )
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
+if ~exist( 'vb_dots','var' ) || isempty( vb_dots )
+    vb_dots = [];
+end
+
 if ~exist( 'use_gpu','var' ) || isempty( use_gpu )
     use_gpu = qd_simulation_parameters.has_gpu;
 elseif logical( use_gpu ) && ~qd_simulation_parameters.has_gpu
     use_gpu = 0;
 end
 
+if ~exist( 'only_coeff','var' ) || isempty( only_coeff )
+    only_coeff = 0;
+elseif numel(h_builder) > 1
+    error('QuaDRiGa:qd_builder:get_channels','Coefficient only output does not support dq_builder arrays.');
+end
+
 % Array indexing is needed for Octave
 verbose = h_builder(1,1,1,1).simpar(1,1).show_progress_bars;
-if verbose && nargin == 1
+if verbose && isempty( vb_dots )
     fprintf('Channels     [');
     vb_dots = 50;
     tStart = clock;
+    show_progress = true;
+else
+    show_progress = false;
 end
 m0=0;
 
@@ -65,7 +78,7 @@ if numel(h_builder) > 1
         vb_dots = init_progress_dots(vb_dots);
     end
     
-    % Call each builder in the builder array and concatinate the output channels
+    % Call each builder in the builder array and concatenate the output channels
     cnt = 1;
     h_channel = qd_channel;
     for i_cb = 1 : numel(h_builder)
@@ -83,12 +96,12 @@ else
     
     % Check if we have a single-frequency builder
     if numel( h_builder.simpar(1,1).center_frequency ) > 1
-        error('QuaDRiGa:qd_builder:get_channels','get_channels only works for single-freqeuncy simulations.');
+        error('QuaDRiGa:qd_builder:get_channels','get_channels only works for single-frequency simulations.');
     end
     
     % Check if SSF parameters have been generated already
     if isempty( h_builder.taus )
-        error('QuaDRiGa:qd_builder:get_channels','Small-scale fading parametes have not been generated yet.');
+        error('QuaDRiGa:qd_builder:get_channels','Small-scale fading parameters have not been generated yet.');
     end
     
     % Check if the builder is a dual-mobility builder and that the inputs are correctly formatted
@@ -101,18 +114,26 @@ else
     n_mobiles = h_builder.no_rx_positions;
     
     % These variables are often needed. Pre-computing them saves a lot of time
-    use_3GPP_baseline = h_builder.simpar(1,1).use_3GPP_baseline; % logical
-    use_ground_reflection = h_builder.check_los > 1.5; % logical
-    if use_3GPP_baseline && use_ground_reflection
-        % For 3GPP-Baseline, GR is just another path. No need for GR-drfting
+    if only_coeff
+        if any( h_builder.NumSubPaths > 1 )
+            error('QuaDRiGa:qd_builder:get_channels','Sub-paths are not supported in coefficients-only mode.');
+        end
+        use_3GPP_baseline = false;
         use_ground_reflection = false;
+    else
+        use_3GPP_baseline = h_builder.simpar(1,1).use_3GPP_baseline; % logical
+        use_ground_reflection = h_builder.check_los > 1.5; % logical
+        if use_3GPP_baseline && use_ground_reflection
+            % For 3GPP-Baseline, GR is just another path. No need for GR-drifting
+            use_ground_reflection = false;
+        end
     end
     wave_no = 2*pi/h_builder.simpar(1,1).wavelength;
     
     % If Laplacian PAS is used, the intra-cluster angles are increased by a factor of sqrt(2). To
-    % compensate, the intra-cluster powers must be adjusted. This is done by a weighting the path
-    % amplitudes, depending on the number of subpath per cluster. The weigths are set here.
-    if strcmp( h_builder.scenpar.SubpathMethod, 'Laplacian' )
+    % compensate, the intra-cluster powers must be adjusted. This is done by weighting the path
+    % amplitudes, depending on the number of subpaths per cluster. The weights are set here.
+    if ~only_coeff && strcmp( h_builder.scenpar.SubpathMethod, 'Laplacian' )
         use_laplacian_pas = true;
         laplacian_weights = {1, [1.18 0.78], ...
             [0.60 1.05 1.24], ...
@@ -138,7 +159,13 @@ else
     end
     
     % Create new channel object
-    h_channel = qd_channel;
+    if only_coeff
+        h_channel = zeros(h_builder.rx_array(1,1).no_elements, ...
+            h_builder.tx_array(1,1).no_elements, ...
+            h_builder.NumClusters, h_builder.no_rx_positions, 'single');
+    else
+        h_channel = qd_channel;
+    end
     
     % The loop for each user position
     for i_mobile = 1 : n_mobiles
@@ -153,7 +180,7 @@ else
         end
         
         % Get the list of zero-power paths - we do not return paths with zero-power
-        iClst       = h_builder.pow(i_mobile,:) ~= 0;
+        iClst       = h_builder.gain(i_mobile,:) ~= 0;
         iClst(1)    = true;
         if use_ground_reflection
             iClst(2) = true;
@@ -194,8 +221,8 @@ else
         pin = h_builder.pin(i_mobile,iPath); % double
         
         if use_3GPP_baseline
-            % If we don't use drifting and have a linear track, then the Doppler component is only
-            % dependent on the rotating phases of the taps. So, we don't recalculate the antenna
+            % If we do not use drifting and have a linear track, then the Doppler component is only
+            % dependent on the rotating phases of the taps. So, we do not recalculate the antenna
             % response for each snapshot.
             
             % Get the angles of the subpaths and perform random coupling.
@@ -223,8 +250,22 @@ else
             % using the distance from the initial position.
             tmp = h_builder.rx_track(1,i_mobile).positions;
             dist_rx = sqrt( sum([ tmp(1,:) - tmp(1,1) ; tmp(2,:) - tmp(2,1) ; tmp(3,:) - tmp(3,1)   ].^2 ) );
-            no_snap_process = 1;       % Only process the first snapshot, everyting else is approximated
+            no_snap_process = 1;       % Only process the first snapshot, everything else is approximated
             update_tx_ant = true;      % Interpolate Tx array response
+            
+        elseif only_coeff
+            % Initialize the path delays
+            aod = h_builder.AoD(i_mobile,iClst);
+            eod = h_builder.EoD(i_mobile,iClst);
+            aoa = h_builder.AoA(i_mobile,iClst);
+            eoa = h_builder.EoA(i_mobile,iClst);
+            delay = h_builder.taus(i_mobile,iClst);
+            
+            lambda  = h_builder.simpar(1,1).wavelength;
+            d_lms   = h_builder.simpar(1,1).speed_of_light * delay;
+            phase   = 2*pi/lambda * mod(d_lms, lambda);
+            
+            no_snap_process = 1;
             
         else
             % Calculate the scatterer positions
@@ -271,27 +312,9 @@ else
         % Do for each snapshot
         for i_snapshot = 1 : no_snap_process          % Track positions
             
-            % Update the drifting angles, phases and delays.
-            if ~use_3GPP_baseline
-                if i_snapshot == 1 % Initialize
-                    [ aod, eod, aoa, eoa, phase, delay(i_snapshot,:,:,:),...
-                        aod_los, eod_los, aoa_los, eoa_los, theta_r, update_tx_ant ] =...
-                        update_drifting( h_builder(1,1), i_snapshot, i_mobile, fbs_pos, lbs_pos );
-                    
-                else % Update
-                    [ aod, eod, aoa, eoa, phase, delay(i_snapshot,:,:,:),...
-                        aod_los, eod_los, aoa_los, eoa_los, theta_r, update_tx_ant ] =...
-                        update_drifting( h_builder(1,1), i_snapshot );
-                end
-                aod = permute(aod,[4,2,1,3]);
-                eod = permute(eod,[4,2,1,3]);
-                aoa = permute(aoa,[3,2,1,4]);
-                eoa = permute(eoa,[3,2,1,4]);
-            end
-            
-            % Interpolate the antenna patterns for thr NLOS paths
-            if use_3GPP_baseline % Planar waves
-
+            % Interpolate the antenna patterns for the NLOS paths
+            if use_3GPP_baseline || only_coeff % Planar waves
+                
                 % Interpolate the receive antenna patterns
                 [ gVr, gHr, Pr, aoa, eoa ] = interpolate( h_builder.rx_array(1,i_mobile), aoa, eoa, [], ...
                     rx_orientation(:,i_snapshot), 14.3239, use_gpu(use_gpu~=0)+2 );
@@ -310,6 +333,21 @@ else
                 doppler = cos(aoa+pi).*cos(eoa);
                 
             else
+                if i_snapshot == 1 % Initialize drifting
+                    [ aod, eod, aoa, eoa, phase, delay(i_snapshot,:,:,:),...
+                        aod_los, eod_los, aoa_los, eoa_los, theta_r, update_tx_ant ] =...
+                        update_drifting( h_builder(1,1), i_snapshot, i_mobile, fbs_pos, lbs_pos );
+                    
+                else % Update drifting
+                    [ aod, eod, aoa, eoa, phase, delay(i_snapshot,:,:,:),...
+                        aod_los, eod_los, aoa_los, eoa_los, theta_r, update_tx_ant ] =...
+                        update_drifting( h_builder(1,1), i_snapshot );
+                end
+                aod = permute(aod,[4,2,1,3]);
+                eod = permute(eod,[4,2,1,3]);
+                aoa = permute(aoa,[3,2,1,4]);
+                eoa = permute(eoa,[3,2,1,4]);
+                
                 % Interpolate the receive antenna patterns
                 [ gVr, gHr ] = interpolate( h_builder.rx_array(1,i_mobile), aoa, eoa, [], ...
                     rx_orientation(:,i_snapshot), 14.3239, use_gpu(use_gpu~=0)+2 );
@@ -331,8 +369,8 @@ else
                 repmat(gHr,[1,n_txant,1]) .* repmat( gM(:,:,:,2),[n_rxant,n_txant,1] ) .* repmat(gVt,[n_rxant,1,1]) + ...
                 repmat(gHr,[1,n_txant,1]) .* repmat( gM(:,:,:,4),[n_rxant,n_txant,1] ) .* repmat(gHt,[n_rxant,1,1]);
             
-            if ~use_3GPP_baseline
-
+            if ~use_3GPP_baseline && ~only_coeff
+                
                 % Calculate the RX antenna response for the LOS and GR path
                 aoa_los = reshape( permute( aoa_los, [3,4,2,1] ) ,n_rxant,[] );
                 eoa_los = reshape( permute( eoa_los, [3,4,2,1] ) ,n_rxant,[] );
@@ -346,7 +384,7 @@ else
                 eod_los = reshape( permute( eod_los, [4,3,2,1] ) ,n_txant,[] );
                 [ gVLt,gHLt ] = interpolate( h_builder.tx_array(1,i_mobile), aod_los, eod_los, [], ...
                     tx_orientation(:,i_snapshot), 14.3239, use_gpu(use_gpu~=0)+2 );
-                if use_ground_reflection 
+                if use_ground_reflection
                     gVLt = reshape( gVLt, n_txant, n_rxant, [] );   % Warning: wrong order!
                     gHLt = reshape( gHLt, n_txant, n_rxant, [] );   % Warning: wrong order!
                 else
@@ -405,9 +443,9 @@ else
             end
             
             % The phases
-            if use_3GPP_baseline
+            if use_3GPP_baseline || only_coeff
                 % In drifting mode, we have to update the coefficient matrix with the time-variant
-                % Doppler profile. 
+                % Doppler profile.
                 ccp = gG .* exp( -1j*( repmat(permute(pin,[1,3,2]),n_rxant,n_txant) + ...
                     wave_no*( repmat(Pt,[n_rxant,1,1]) + repmat(Pr,[1,n_txant,1]) ) + ...
                     repmat(permute(phase(1,:),[1,3,2]),n_rxant,n_txant) ) );
@@ -420,23 +458,25 @@ else
             
             % Sum over the sub-paths in a cluster. This changes the cluster power due to the random
             % phases. This is corrected later.
-            ls = 1;
-            for l = 1 : n_clusters
-                le = ls + n_subpaths(l) - 1;
-                if le ~= ls
-                    if use_laplacian_pas
-                        tmp = ccp(:,ls:le) .* (ones(n_rxant*n_txant,1) * laplacian_weights{n_subpaths(l)});
-                        ppat(:,l,i_snapshot) = sum( abs(tmp).^2,2 );
-                        cn(:,l,i_snapshot)   = sum( tmp,2 );
+            if ~only_coeff
+                ls = 1;
+                for l = 1 : n_clusters
+                    le = ls + n_subpaths(l) - 1;
+                    if le ~= ls
+                        if use_laplacian_pas
+                            tmp = ccp(:,ls:le) .* (ones(n_rxant*n_txant,1) * laplacian_weights{n_subpaths(l)});
+                            ppat(:,l,i_snapshot) = sum( abs(tmp).^2,2 );
+                            cn(:,l,i_snapshot)   = sum( tmp,2 );
+                        else
+                            ppat(:,l,i_snapshot) = sum( abs(ccp(:,ls:le)).^2,2 );
+                            cn(:,l,i_snapshot)   = sum( ccp(:,ls:le),2 );
+                        end
                     else
-                        ppat(:,l,i_snapshot) = sum( abs(ccp(:,ls:le)).^2,2 );
-                        cn(:,l,i_snapshot)   = sum( ccp(:,ls:le),2 );
+                        ppat(:,l,i_snapshot) = abs(ccp(:,ls)).^2;
+                        cn(:,l,i_snapshot)   = ccp(:,ls);
                     end
-                else
-                    ppat(:,l,i_snapshot) = abs(ccp(:,ls)).^2;
-                    cn(:,l,i_snapshot)   = ccp(:,ls);
+                    ls = le + 1;
                 end
-                ls = le + 1;
             end
         end
         
@@ -444,12 +484,12 @@ else
             % Only one snapshot is calculated, the others are
             % emulated by phase rotation.
             
-            % Combine pattern and phase for the first snapshopt
+            % Combine pattern and phase for the first snapshot
             %c = c.*cp;
             c = ccp;
             
             for i_snapshot = 2 : n_snapshots
-                % Generate rotating Dopplers for the sucessive snapshots
+                % Generate rotating Doppler for the successive snapshots
                 cp = exp( -1j * wave_no * doppler * dist_rx(i_snapshot) );
                 cp = cp( ones(1,n_links) , : );
                 
@@ -479,94 +519,101 @@ else
             end
         end
         
-        % The path powers
-        p_cl = h_builder.pow(i_mobile*ones(1,n_links),iClst );
-        
-        % The powers of the antenna patterns at the given angles (power-sum)
-        p_pat = sum( ppat,3 ) ./ size(ppat,3);
-        
-        % The powers in the current channel coefficients (complex sum)
-        p_coeff = sum( abs(cn).^2, 3 ) ./ size(cn,3);
-        
-        % Correct the powers
-        p_correct = sqrt( p_cl .* p_pat ./ p_coeff ./ n_subpaths(o_links,:) );
-        p_correct( p_pat < 1e-30 ) = 0; % Fix NaN caused by 0/0
-        cn = p_correct(:,:,ones(1,n_snapshots)) .* cn;
-        
-        % Now we apply the K-Factor and the shadowing profile
-        if use_3GPP_baseline || isempty( h_builder.sos )
-            
-            % Get the PL for the initial position only
-            [ ~, ~, path_loss , scale_sf ] = h_builder.get_pl( h_builder.rx_track(1,i_mobile),...
-                [],h_builder.tx_track(1,i_mobile) );
-            rx_power = -path_loss + 10*log10( h_builder.sf(1,i_mobile) ) .* scale_sf;
-            rx_power = sqrt( 10.^( 0.1 * rx_power ) );
-            
-            % The initial KF is already applied in path powers. Here,
-            % we only need to apply the SF and the path loss.
-            cn = cn * rx_power;
-            
+        if only_coeff
+            % The path powers already contain the path gain
+            p_cl = sqrt( h_builder.gain(i_mobile,iClst ) );
+            cn =  repmat(p_cl,n_links,1) .* ccp;
         else
             
-            % Calculate the path gain along the track segment
-            path_gain = -h_builder.get_pl( h_builder.rx_track(1,i_mobile), [], h_builder.tx_track(1,i_mobile) );
+            % The path powers
+            p_cl = h_builder.pow(i_mobile*ones(1,n_links),iClst );
             
-            % We have a dynamic SF and KF profile that varies over the positions on the track.
-            % Get shadowing profile along the track from the SOS generators. 
-            [sf,kf] = h_builder.get_sf_profile( h_builder.rx_track(1,i_mobile), h_builder.tx_track(1,i_mobile) );
+            % The powers of the antenna patterns at the given angles (power-sum)
+            p_pat = sum( ppat,3 ) ./ size(ppat,3);
             
-            % When changing the cluster powers (e.g., by "add_paths"), the SF changes as well. We
-            % obtain the difference of the SF by readig the initial SF values from the builder and
-            % the dynamic SF profile.
-            sf_init_builder = h_builder.sf(1,i_mobile);
-            sf_init_sos     = sf( initial_pos );
+            % The powers in the current channel coefficients (complex sum)
+            p_coeff = sum( abs(cn).^2, 3 ) ./ size(cn,3);
             
-            % We now correct the dynamic SF values (linear scale).
-            sf = sf .* sf_init_builder/sf_init_sos;
+            % Correct the powers
+            p_correct = sqrt( p_cl .* p_pat ./ p_coeff ./ n_subpaths(o_links,:) );
+            p_correct( p_pat < 1e-30 ) = 0; % Fix NaN caused by 0/0
+            cn = p_correct(:,:,ones(1,n_snapshots)) .* cn;
             
-            % Calculate the Rx power (sum-power of all clusters)
-            rx_power = path_gain + 10*log10( sf );
-            rx_power = 10.^( 0.1 * rx_power );
-            rx_power = permute( rx_power, [1,3,2] );
-            
-            % Get the KF scaling
-            if kf( initial_pos ) < 1e-10 
-                kf_scale = ones( size( kf ) );
-            else
-                kf_scale = kf ./ kf( initial_pos );
-            end
-            kf_scale = permute( kf_scale, [1,3,2] );
-            
-            % Get the normalized power for the LOS and NLOS componenets ( p_los + p_nlos = 1 )
-            if use_ground_reflection
-                p_los  = h_builder.pow( i_mobile,1 ) + h_builder.pow( i_mobile,2 );
-                p_nlos = sum( h_builder.pow(i_mobile,3:end) );
-            else
-                p_los  = h_builder.pow( i_mobile,1 );
-                p_nlos = sum( h_builder.pow(i_mobile,2:end) );
-            end
-            
-            % Adjust the path powers to apply the varying KF along the track segment
-            if p_los > 1e-4 && p_nlos > 1e-4 && any(kf_scale(:) ~= 1)
+            % Now we apply the K-Factor and the shadowing profile
+            if use_3GPP_baseline || isempty( h_builder.sos )
                 
-                % Adjust the power of the LOS component to match the target KF
-                cn(:,1,:) = cn(:,1,:) .* repmat( sqrt(kf_scale),[n_links,1,1] );
+                % Get the PL for the initial position only
+                [ ~, ~, path_loss , scale_sf ] = h_builder.get_pl( h_builder.rx_track(1,i_mobile),...
+                    [],h_builder.tx_track(1,i_mobile) );
+                rx_power = -path_loss + 10*log10( h_builder.sf(1,i_mobile) ) .* scale_sf;
+                rx_power = sqrt( 10.^( 0.1 * rx_power ) );
+                
+                % The initial KF is already applied in path powers. Here,
+                % we only need to apply the SF and the path loss.
+                cn = cn * rx_power;
+                
+            else
+                
+                % Calculate the path gain along the track segment
+                path_gain = -h_builder.get_pl( h_builder.rx_track(1,i_mobile), [], h_builder.tx_track(1,i_mobile) );
+                
+                % We have a dynamic SF and KF profile that varies over the positions on the track.
+                % Get shadowing profile along the track from the SOS generators.
+                [sf,kf] = h_builder.get_sf_profile( h_builder.rx_track(1,i_mobile), h_builder.tx_track(1,i_mobile) );
+                
+                % When changing the cluster powers (e.g., by "add_paths"), the SF changes as well. We
+                % obtain the difference of the SF by reading the initial SF values from the builder and
+                % the dynamic SF profile.
+                sf_init_builder = h_builder.sf(1,i_mobile);
+                sf_init_sos     = sf( initial_pos );
+                
+                % We now correct the dynamic SF values (linear scale).
+                sf = sf .* sf_init_builder/sf_init_sos;
+                
+                % Calculate the Rx power (sum-power of all clusters)
+                rx_power = path_gain + 10*log10( sf );
+                rx_power = 10.^( 0.1 * rx_power );
+                rx_power = permute( rx_power, [1,3,2] );
+                
+                % Get the KF scaling
+                if kf( initial_pos ) < 1e-10
+                    kf_scale = ones( size( kf ) );
+                else
+                    kf_scale = kf ./ kf( initial_pos );
+                end
+                kf_scale = permute( kf_scale, [1,3,2] );
+                
+                % Get the normalized power for the LOS and NLOS components ( p_los + p_nlos = 1 )
                 if use_ground_reflection
-                    cn(:,2,:) = cn(:,2,:) .* repmat( sqrt(kf_scale),[n_links,1,1] );
+                    p_los  = h_builder.pow( i_mobile,1 ) + h_builder.pow( i_mobile,2 );
+                    p_nlos = sum( h_builder.pow(i_mobile,3:end) );
+                else
+                    p_los  = h_builder.pow( i_mobile,1 );
+                    p_nlos = sum( h_builder.pow(i_mobile,2:end) );
                 end
                 
-                % The power adjustment of the LOS component changes the total RX power
-                % This needs to be compensated in the total RX power
-                rx_power = rx_power ./ ( p_los .* kf_scale + p_nlos );
+                % Adjust the path powers to apply the varying KF along the track segment
+                if p_los > 1e-4 && p_nlos > 1e-4 && any(kf_scale(:) ~= 1)
+                    
+                    % Adjust the power of the LOS component to match the target KF
+                    cn(:,1,:) = cn(:,1,:) .* repmat( sqrt(kf_scale),[n_links,1,1] );
+                    if use_ground_reflection
+                        cn(:,2,:) = cn(:,2,:) .* repmat( sqrt(kf_scale),[n_links,1,1] );
+                    end
+                    
+                    % The power adjustment of the LOS component changes the total RX power
+                    % This needs to be compensated in the total RX power
+                    rx_power = rx_power ./ ( p_los .* kf_scale + p_nlos );
+                end
+                
+                % Adjust the overall power of the channel coefficients
+                rx_power = sqrt( rx_power );
+                cn = cn .* rx_power(o_txrxant,o_clusters,:);
             end
-            
-            % Adjust the overall power of the channel coefficients
-            rx_power = sqrt( rx_power );
-            cn = cn .* rx_power(o_txrxant,o_clusters,:);
         end
         
         % Apply antenna coupling
-        Ct = h_builder.tx_array(1,1).coupling;
+        Ct = h_builder.tx_array(1,i_mobile).coupling;
         Cr = h_builder.rx_array(1,i_mobile).coupling.';
         
         % Reshape objects
@@ -581,8 +628,12 @@ else
         end
         clear cn
         
-        if use_3GPP_baseline
+        if only_coeff
+            h_channel(:,:,iClst,i_mobile) = c;
+            
+        elseif use_3GPP_baseline
             h_channel(1,i_mobile) = qd_channel( c , delay' , initial_pos );
+            
         else
             % When we use high precision, the delays on all elements are different. However, antenna
             % coupling will merge the coefficients of different antennas. This needs to be
@@ -613,81 +664,85 @@ else
         clear c
         
         % Store the channel name
-        % This is important because the merger uses the name string to connect the channels.
-        channel_name = h_builder.name;
-        if isempty( channel_name ) || isempty( regexp( channel_name , '_', 'once' ) )
-            channel_name = 'Scen_*';
+        if ~only_coeff
+            % This is important because the merger uses the name string to connect the channels.
+            channel_name = h_builder.name;
+            if isempty( channel_name ) || isempty( regexp( channel_name , '_', 'once' ) )
+                channel_name = 'Scen_*';
+            end
+            % The "*" is added when there are multiple tx positions in the builder
+            tmp = regexp( channel_name , '\*' );
+            if ~isempty( tmp )
+                channel_name = [ channel_name(1:tmp-1), h_builder.tx_track(1,i_mobile).name ];
+            end
+            channel_name = [ channel_name ,'_', h_builder.rx_track(1,i_mobile).name ]; %#ok
+            h_channel(1,i_mobile).name = channel_name;
+            h_channel(1,i_mobile).rx_position = h_builder.rx_track(1,i_mobile).positions_abs;
+            h_channel(1,i_mobile).tx_position = h_builder.tx_track(1,i_mobile).positions_abs;
+            h_channel(1,i_mobile).center_frequency = h_builder.simpar(1,1).center_frequency(1,1);
+            
+            % Save Additional LSF and SSF information
+            clear par_struct
+            try
+                if use_ground_reflection
+                    par_struct.has_ground_reflection = 1;
+                end
+                par_struct.ds_parset = h_builder.ds( i_mobile ); % [s]
+                par_struct.kf_parset = 10*log10( h_builder.kf( i_mobile ) ); % [dB]
+                if use_3GPP_baseline
+                    par_struct.pg_parset = 10*log10( rx_power.^2 ); % [dB]
+                else
+                    par_struct.pg_parset = 10*log10( mean(rx_power(:)).^2 ); % [dB]
+                    par_struct.pg = 10*log10(abs( reshape( mean(mean(rx_power,1),2) , 1,[] ) ).^2);
+                end
+                par_struct.sf_parset = 10*log10( h_builder.sf( i_mobile ));
+                par_struct.asD_parset = h_builder.asD( i_mobile ); % [deg]
+                par_struct.asA_parset = h_builder.asA( i_mobile ); % [deg]
+                par_struct.esD_parset = h_builder.esD( i_mobile ); % [deg]
+                par_struct.esA_parset = h_builder.esA( i_mobile ); % [deg]
+                if ~isempty(h_builder.xpr)
+                    par_struct.XPR_parset = 10*log10( h_builder.xpr( i_mobile ) ); % [dB]
+                end
+                
+                % Save the individual per-path values
+                par_struct.AoD_cb = h_builder.AoD( i_mobile,iClst ) * 180/pi; % [deg]
+                par_struct.AoA_cb = h_builder.AoA( i_mobile,iClst ) * 180/pi; % [deg]
+                par_struct.EoD_cb = h_builder.EoD( i_mobile,iClst ) * 180/pi; % [deg]
+                par_struct.EoA_cb = h_builder.EoA( i_mobile,iClst ) * 180/pi; % [deg]
+                par_struct.pow_cb = h_builder.pow( i_mobile,iClst );          % [W]
+                par_struct.gain_cb = h_builder.gain( i_mobile,iClst );          % [W]
+                
+                % Calculate the spreads at the output of the builder
+                par_struct.ds_cb  = qf.calc_delay_spread( h_builder.taus( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) );
+                par_struct.asD_cb = qf.calc_angular_spreads( h_builder.AoD( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
+                par_struct.asA_cb = qf.calc_angular_spreads( h_builder.AoA( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
+                par_struct.esD_cb = qf.calc_angular_spreads( h_builder.EoD( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
+                par_struct.esA_cb = qf.calc_angular_spreads( h_builder.EoA( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
+                
+                if ~use_3GPP_baseline
+                    par_struct.NumSubPaths = h_builder.NumSubPaths(1,iClst);
+                    par_struct.fbs_pos = fbs_pos;
+                    par_struct.lbs_pos = lbs_pos;
+                end
+                
+                % Save update rate
+                mp = h_builder.rx_track(1,i_mobile).movement_profile;
+                if n_snapshots > 1 && all(size(mp)==[2,2]) && mp(1,1)==0 && mp(2,1)==0 && ...
+                        abs(mp(2,2)-get_length(h_builder.rx_track(1,i_mobile))) < 1e-6
+                    par_struct.update_rate = mp(1,2)/n_snapshots;
+                end
+                h_channel(1,i_mobile).par = par_struct;
+            end
         end
-        % The "*" is added when there are multiple tx positions in the builder
-        tmp = regexp( channel_name , '\*' );
-        if ~isempty( tmp )
-            channel_name = [ channel_name(1:tmp-1), h_builder.tx_track(1,i_mobile).name ];
-        end
-        channel_name = [ channel_name ,'_', h_builder.rx_track(1,i_mobile).name ]; %#ok
-        h_channel(1,i_mobile).name = channel_name;
-        h_channel(1,i_mobile).rx_position = h_builder.rx_track(1,i_mobile).positions_abs;
-        h_channel(1,i_mobile).tx_position = h_builder.tx_track(1,i_mobile).positions_abs;
-        h_channel(1,i_mobile).center_frequency = h_builder.simpar(1,1).center_frequency(1,1);
-        
-        % Save Additional LSF and SSF information
-        clear par_struct
-        if use_ground_reflection
-            par_struct.has_ground_reflection = 1;
-        end
-        par_struct.ds_parset = h_builder.ds( i_mobile ); % [s]
-        par_struct.kf_parset = 10*log10( h_builder.kf( i_mobile ) ); % [db]
-        if use_3GPP_baseline
-            par_struct.pg_parset = 10*log10( rx_power.^2 ); % [db]
-        else
-            par_struct.pg_parset = 10*log10( mean(rx_power(:)).^2 ); % [db]
-            par_struct.pg = 10*log10(abs( reshape( mean(mean(rx_power,1),2) , 1,[] ) ).^2);
-        end
-        par_struct.sf_parset = 10*log10( h_builder.sf( i_mobile ));
-        par_struct.asD_parset = h_builder.asD( i_mobile ); % [deg]
-        par_struct.asA_parset = h_builder.asA( i_mobile ); % [deg]
-        par_struct.esD_parset = h_builder.esD( i_mobile ); % [deg]
-        par_struct.esA_parset = h_builder.esA( i_mobile ); % [deg]
-        if ~isempty(h_builder.xpr) 
-            par_struct.XPR_parset = 10*log10( h_builder.xpr( i_mobile ) ); % [db]
-        end
-        
-        % Save the individual per-path values
-        par_struct.AoD_cb = h_builder.AoD( i_mobile,iClst ) * 180/pi; % [deg]
-        par_struct.AoA_cb = h_builder.AoA( i_mobile,iClst ) * 180/pi; % [deg]
-        par_struct.EoD_cb = h_builder.EoD( i_mobile,iClst ) * 180/pi; % [deg]
-        par_struct.EoA_cb = h_builder.EoA( i_mobile,iClst ) * 180/pi; % [deg]
-        par_struct.pow_cb = h_builder.pow( i_mobile,iClst );          % [W]
-        par_struct.gain_cb = h_builder.gain( i_mobile,iClst );          % [W]
-        
-        % Calculate the spreads at the output of the builder
-        par_struct.ds_cb  = qf.calc_delay_spread( h_builder.taus( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) );
-        par_struct.asD_cb = qf.calc_angular_spreads( h_builder.AoD( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
-        par_struct.asA_cb = qf.calc_angular_spreads( h_builder.AoA( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
-        par_struct.esD_cb = qf.calc_angular_spreads( h_builder.EoD( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
-        par_struct.esA_cb = qf.calc_angular_spreads( h_builder.EoA( i_mobile,iClst ), h_builder.pow( i_mobile, iClst ) ) * 180/pi;
-        
-        if ~use_3GPP_baseline
-            par_struct.NumSubPaths = h_builder.NumSubPaths(1,iClst);
-            par_struct.fbs_pos = fbs_pos;
-            par_struct.lbs_pos = lbs_pos;
-        end
-        
-        % Save update rate
-        mp = h_builder.rx_track(1,i_mobile).movement_profile;
-        if n_snapshots > 1 && all(size(mp)==[2,2]) && mp(1,1)==0 && mp(2,1)==0 && ...
-                abs(mp(2,2)-get_length(h_builder.rx_track(1,i_mobile))) < 1e-6
-            par_struct.update_rate = mp(1,2)/n_snapshots;
-        end
-        h_channel(1,i_mobile).par = par_struct;
     end
 end
 
 % Fix for octave
-if numel( h_channel ) == 1
+if ~only_coeff && numel( h_channel ) == 1
     h_channel = h_channel(1,1);
 end
 
-if verbose && nargin == 1
+if show_progress
     fprintf('] %5.0f seconds\n',round( etime(clock, tStart) ));
 end
 

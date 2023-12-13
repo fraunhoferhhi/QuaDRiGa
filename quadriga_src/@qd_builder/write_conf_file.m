@@ -136,7 +136,7 @@ end
 
 if ( h_builder.scenpar.NumClusters == 1 || ...
         ( h_builder.scenpar.NumClusters == 2 && h_builder.scenpar.GR_enabled == 1 ) ) && write_defaults == 0
-    % Don't write
+    % Do not write
 else
     fprintf(fid,'\n%% ==================================================================================================\n');
     fprintf(fid,'%% Large scale distributions\n');
@@ -458,7 +458,7 @@ else
     
     write_par_line( fid, 'PerClusterDS', 'cluster delay spread [ns]', h_builder.scenpar.PerClusterDS, write_defaults );
     write_par_line( fid, 'PerClusterDS_gamma', 'freq.-dep. of cluster delay spread [ns/log10(GHz)]', h_builder.scenpar.PerClusterDS_gamma, write_defaults );
-    write_par_line( fid, 'PerClusterDS_min', 'minumum cluster delay spread [ns]', h_builder.scenpar.PerClusterDS_min, write_defaults );
+    write_par_line( fid, 'PerClusterDS_min', 'minimum cluster delay spread [ns]', h_builder.scenpar.PerClusterDS_min, write_defaults );
     
     write_par_line( fid, 'PerClusterAS_D', 'cluster azimuth of departure angle spread [deg]', h_builder.scenpar.PerClusterAS_D, write_defaults );
     write_par_line( fid, 'PerClusterAS_A', 'cluster azimuth of arrival angle spread [deg]', h_builder.scenpar.PerClusterAS_A, write_defaults );
@@ -497,7 +497,7 @@ if h_builder.scenpar.absTOA_mu > -99 || write_defaults ~= 0
     fprintf(fid,'%% ==================================================================================================\n\n');
     
     write_par_line( fid, 'absTOA_mu', 'absolute time of arrival offset reference value [log10(s)]', h_builder.scenpar.absTOA_mu, write_defaults );
-    write_par_line( fid, 'absTOA_sigma', 'absolute time of arrival offset referenece STD [log10(s)]', h_builder.scenpar.absTOA_sigma, write_defaults );
+    write_par_line( fid, 'absTOA_sigma', 'absolute time of arrival offset reference STD [log10(s)]', h_builder.scenpar.absTOA_sigma, write_defaults );
     write_par_line( fid, 'absTOA_lambda', 'absolute time of arrival offset decorrelation distance [m]', h_builder.scenpar.absTOA_lambda, write_defaults );
 end
 
@@ -531,7 +531,7 @@ if ~isempty( h_builder.plpar )
     end
     
     if strcmp( pl.model , 'tripple_slope' ) 
-        fprintf(fid,'%% Formula for tripple-slope (LOS+GR) pathloss model:\n');
+        fprintf(fid,'%% Formula for triple-slope (LOS+GR) pathloss model:\n');
         fprintf(fid,'%% (Distance in meters, frequency in GHz)\n');
         fprintf(fid,'%%\n');
         fprintf(fid,'%%     PL = PL1 for d2D <= dBP1 | PL2 for dBP1 < d2D <= dBP2 | PL3 for d2D > dBP2\n');

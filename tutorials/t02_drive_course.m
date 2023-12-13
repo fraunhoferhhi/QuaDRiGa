@@ -3,7 +3,7 @@
 % This tutorial is a step-by-step walk through of the example given in section 1.6 of the
 % documentation. A 800 m long drive course is covered by a S-band satellite. A car moves along the
 % trajectory where it experiences different reception conditions. The tutorial coverers:
-% 
+%
 % * Setting up the trajectory
 % * Assigning propagation environments to different sections of the track
 % * Modeling stops at traffic lights
@@ -12,8 +12,8 @@
 % * Analyzing the received power and the cross-polarization ratio
 %
 % A figure illustrating the scenario can be found in the documentation in Section 1.6. There are 12
-% significant points along the track that describe an event. 
-% 
+% significant points along the track that describe an event.
+%
 % # Start environment: Urban, LOS reception of satellite signal
 % # LOS to NLOS transition
 % # NLOS to LOS change
@@ -22,10 +22,10 @@
 % # Turning off with change of reception condition (LOS to NLOS)
 % # Crossing side street (NLOS to short LOS to NLOS)
 % # Structural change in the environment without a change in the environment type (higher density of
-%   buildings but still the environment remains urban)  
+%   buildings but still the environment remains urban)
 % # Stopping at traffic lights (NLOS)
 % # Houses have the same characteristics as before but are further away from the street (urban
-%   environment with different reception characteristics)  
+%   environment with different reception characteristics)
 % # Change of environment (Urban to Forest)
 % # Turning off without change of environment (NLOS)
 
@@ -36,7 +36,7 @@
 % following code example shows how the track can be created. In the last step, the track is plotted.
 
 clear all
-close all 
+close all
 
 t = qd_track('linear',200,pi/4);                        % P1-P4: 200 m segment, direction NE
 t.name = 'Terminal';                                    % Set track name
@@ -200,9 +200,9 @@ figure('Position',[ 100 , 100 , 1200 , 400]);           % New figure
 a = area(time,ar,'FaceColor',[0.7 0.9 0.7],'LineStyle','none'); % Area shading
 hold on; plot(time,pow'+50); hold off;
 xlabel('Simulation Time (s)'); ylabel('RX power (dBm)'); grid on; axis([0,100,[-150,-80]]);
-legend('Event','RX LHCP','RX RHCP'); set(gca,'layer','top')  
+legend('Event','RX LHCP','RX RHCP'); set(gca,'layer','top')
 
-text( 7,-85,'P2' ); text( 11,-85,'P3' ); text( 8,-145,'NLOS' ); text( 20,-85,'P4' ); 
-text( 33,-85,'P5' ); text( 32,-145, 'Stop' ); text( 45.5,-85,'P6' ); text( 50.5,-85,'P7' ); 
-text( 44,-145,'NLOS' ); text( 57,-85,'P8' ); text( 53,-145,'NLOS' ); text( 69,-85,'P9' ); 
+text( 7,-85,'P2' ); text( 11,-85,'P3' ); text( 8,-145,'NLOS' ); text( 20,-85,'P4' );
+text( 33,-85,'P5' ); text( 32,-145, 'Stop' ); text( 45.5,-85,'P6' ); text( 50.5,-85,'P7' );
+text( 44,-145,'NLOS' ); text( 57,-85,'P8' ); text( 53,-145,'NLOS' ); text( 69,-85,'P9' );
 text( 68,-145, 'Stop' ); text( 77,-85,'P10' ); text( 80,-145, 'Urban' );text( 92,-145, 'Rural' );

@@ -49,7 +49,7 @@ R_e = 6378.137*1e3;
 % Get the UE positions in XYZ coordinates
 xyzUE = (R_e + hnnUE).*[  cosd(lonUE).*cosd(latUE); sind(lonUE).*cosd(latUE); sind(latUE) ];
 
-% QuaDRiGa X-Y-Z coordintes (east = 0, counter-clockwise) with WGS 84 coordinates
+% QuaDRiGa X-Y-Z coordinates (east = 0, counter-clockwise) with WGS 84 coordinates
 Rzz = [cosd(90) -sind(90) 0; sind(90) cosd(90) 0; 0 0 1];
 Ry = [cosd(-latUE+90) 0 sind(-latUE+90); 0 1 0; -sind(-latUE+90) 0 cosd(-latUE+90)];
 Rz = [cosd(lonUE) -sind(lonUE) 0; sind(lonUE) cosd(lonUE) 0; 0 0 1];
@@ -59,7 +59,7 @@ Rr = Rz*Ry*Rzz;
 xyzG = Rr * pos;
 xyzG = xyzG + xyzUE(:,oP);
 
-% Calculate Latidude and Longitude
+% Calculate Latitude and Longitude
 lat = atand( xyzG(3,:,:)./sqrt( sum( xyzG(1:2,:,:).^2,1) )); 	% Latitude
 lon = angle( xyzG(1,:,:) + xyzG(2,:,:)*1j )*180/pi;             % Longitude (inertial frame)
 

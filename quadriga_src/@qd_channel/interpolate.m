@@ -161,7 +161,7 @@ else
     sample_density = 2.5; % Default value
 end
 
-% The treshold for the delay difference between two snapshots. If the MT is moving towards the BS at
+% The threshold for the delay difference between two snapshots. If the MT is moving towards the BS at
 % maximum velocity, the delay shortens. The additional factor of 2 takes into account that the LOS
 % delay might be normalized out. 
 if sample_density < 100

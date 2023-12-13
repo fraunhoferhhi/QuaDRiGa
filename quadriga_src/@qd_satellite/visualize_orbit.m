@@ -33,7 +33,7 @@ function visualize_orbit( h_qd_satellite, i_sat )
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 if numel( h_qd_satellite ) > 1
-    error('QuaDRiGa:h_qd_satellite:visualize_orbit','visualize_orbit not definded for object arrays.');
+    error('QuaDRiGa:h_qd_satellite:visualize_orbit','visualize_orbit not defined for object arrays.');
 else
     h_qd_satellite = h_qd_satellite(1,1); % workaround for octave
 end

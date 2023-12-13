@@ -20,7 +20,7 @@ function visualize_clusters( h_builder, i_mobile , i_cluster, create_figure )
 %   create_figure
 %   If set to 1 (default), a new figure is created. If set to 0, the last figure is updated
 %
-% 
+%
 % QuaDRiGa Copyright (C) 2011-2019
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
@@ -34,9 +34,9 @@ function visualize_clusters( h_builder, i_mobile , i_cluster, create_figure )
 % contributors "AS IS" and WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES, including but not limited to
 % the implied warranties of merchantability and fitness for a particular purpose.
 %
-% You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for 
+% You can redistribute it and/or modify QuaDRiGa under the terms of the Software License for
 % The QuaDRiGa Channel Model. You should have received a copy of the Software License for The
-% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
+% QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 
 if numel( h_builder ) > 1
@@ -179,37 +179,40 @@ plot3( [tx_pos(1) bhat_x(i_cl)],[tx_pos(2) bhat_y(i_cl)],[tx_pos(3) bhat_z(i_cl)
 
 if i_cluster == 0
     for i_cl = 3:nNLOS
-        
-        % Plot First LBS and FBS position
-        plot3( fbs_center(1,i_cl),fbs_center(2,i_cl),fbs_center(3,i_cl) ,...
-            '+r','Linewidth',2,'Markersize',7 );
-        plot3( lbs_center(1,i_cl),lbs_center(2,i_cl),lbs_center(3,i_cl) ,...
-            'ob','Linewidth',2,'Markersize',7 );
-        
-        % Plot path from Tx to FBS
-        plot3( [tx_pos(1),fbs_center(1,i_cl)],...
-            [tx_pos(2),fbs_center(2,i_cl)],...
-            [tx_pos(3),fbs_center(3,i_cl)] ,'-.r','Linewidth',1 );
-        
-        % Plot path from Rx to LBS
-        plot3( [rx_pos(1),lbs_center(1,i_cl)],...
-            [rx_pos(2),lbs_center(2,i_cl)],...
-            [rx_pos(3),lbs_center(3,i_cl)] ,'-.b','Linewidth',1 );
-        
-        % Plot path from FBS to LBS
-        if show_FBS_LBS_path
-            plot3( [fbs_center(1,i_cl),lbs_center(1,i_cl)],...
-                [fbs_center(2,i_cl),lbs_center(2,i_cl)],...
-                [fbs_center(3,i_cl),lbs_center(3,i_cl)] ,'-.m','Linewidth',1 );
+        if h_builder.gain(i_mobile,i_cl) > 0
+            % Plot First LBS and FBS position
+            plot3( fbs_center(1,i_cl),fbs_center(2,i_cl),fbs_center(3,i_cl) ,...
+                '+r','Linewidth',2,'Markersize',7 );
+            plot3( lbs_center(1,i_cl),lbs_center(2,i_cl),lbs_center(3,i_cl) ,...
+                'ob','Linewidth',2,'Markersize',7 );
+            
+            % Plot path from Tx to FBS
+            plot3( [tx_pos(1),fbs_center(1,i_cl)],...
+                [tx_pos(2),fbs_center(2,i_cl)],...
+                [tx_pos(3),fbs_center(3,i_cl)] ,'-.r','Linewidth',1 );
+            
+            % Plot path from Rx to LBS
+            plot3( [rx_pos(1),lbs_center(1,i_cl)],...
+                [rx_pos(2),lbs_center(2,i_cl)],...
+                [rx_pos(3),lbs_center(3,i_cl)] ,'-.b','Linewidth',1 );
+            
+            % Plot path from FBS to LBS
+            if show_FBS_LBS_path
+                plot3( [fbs_center(1,i_cl),lbs_center(1,i_cl)],...
+                    [fbs_center(2,i_cl),lbs_center(2,i_cl)],...
+                    [fbs_center(3,i_cl),lbs_center(3,i_cl)] ,'-.m','Linewidth',1 );
+            end
         end
     end
     
     % Plot the arrival angles
     for i_cl = [ 1,3:nNLOS ]
-        plot3( [rx_pos(1) ahat_x(i_cl)],[rx_pos(2) ahat_y(i_cl)],[rx_pos(3) ahat_z(i_cl)],...
-            '-ob','Linewidth',2,'Markersize',10,'Markerfacecolor','y' );
-        plot3( [tx_pos(1) bhat_x(i_cl)],[tx_pos(2) bhat_y(i_cl)],[tx_pos(3) bhat_z(i_cl)],...
-            '-sr','Linewidth',2,'Markersize',10,'Markerfacecolor','y' );
+        if h_builder.gain(i_mobile,i_cl) > 0
+            plot3( [rx_pos(1) ahat_x(i_cl)],[rx_pos(2) ahat_y(i_cl)],[rx_pos(3) ahat_z(i_cl)],...
+                '-ob','Linewidth',2,'Markersize',10,'Markerfacecolor','y' );
+            plot3( [tx_pos(1) bhat_x(i_cl)],[tx_pos(2) bhat_y(i_cl)],[tx_pos(3) bhat_z(i_cl)],...
+                '-sr','Linewidth',2,'Markersize',10,'Markerfacecolor','y' );
+        end
     end
     
 else
@@ -217,29 +220,31 @@ else
         i_cl = i_cluster( i_path );
         fbs_pos_cl = clst_extract( fbs_pos, NumSubPaths, i_cl );
         lbs_pos_cl = clst_extract( lbs_pos, NumSubPaths, i_cl );
-
-        for i_sub = 1:NumSubPaths( i_cl )
-            
-            % Plot First LBS and FBS position
-            plot3( fbs_pos_cl(1,i_sub),fbs_pos_cl(2,i_sub),fbs_pos_cl(3,i_sub) ,...
-                '+r','Linewidth',2,'Markersize',7 );
-            plot3( lbs_pos_cl(1,i_sub),lbs_pos_cl(2,i_sub),lbs_pos_cl(3,i_sub) ,...
-                'ob','Linewidth',2,'Markersize',7 );
-            
-            % Plot path from Tx to FBS
-            plot3( [tx_pos(1),fbs_pos_cl(1,i_sub)],...
-                [tx_pos(2),fbs_pos_cl(2,i_sub)],...
-                [tx_pos(3),fbs_pos_cl(3,i_sub)] ,':r' );
-            
-            % Plot path from Tx to FBS
-            plot3( [rx_pos(1),lbs_pos_cl(1,i_sub)],...
-                [rx_pos(2),lbs_pos_cl(2,i_sub)],...
-                [rx_pos(3),lbs_pos_cl(3,i_sub)] ,':b' );
-            
-            % Plot path from Tx to FBS
-            plot3( [fbs_pos_cl(1,i_sub),lbs_pos_cl(1,i_sub)],...
-                [fbs_pos_cl(2,i_sub),lbs_pos_cl(2,i_sub)],...
-                [fbs_pos_cl(3,i_sub),lbs_pos_cl(3,i_sub)] ,':m' );
+        
+        if h_builder.gain(i_mobile,i_cl) > 0
+            for i_sub = 1:NumSubPaths( i_cl )
+                
+                % Plot First LBS and FBS position
+                plot3( fbs_pos_cl(1,i_sub),fbs_pos_cl(2,i_sub),fbs_pos_cl(3,i_sub) ,...
+                    '+r','Linewidth',2,'Markersize',7 );
+                plot3( lbs_pos_cl(1,i_sub),lbs_pos_cl(2,i_sub),lbs_pos_cl(3,i_sub) ,...
+                    'ob','Linewidth',2,'Markersize',7 );
+                
+                % Plot path from Tx to FBS
+                plot3( [tx_pos(1),fbs_pos_cl(1,i_sub)],...
+                    [tx_pos(2),fbs_pos_cl(2,i_sub)],...
+                    [tx_pos(3),fbs_pos_cl(3,i_sub)] ,':r' );
+                
+                % Plot path from Tx to FBS
+                plot3( [rx_pos(1),lbs_pos_cl(1,i_sub)],...
+                    [rx_pos(2),lbs_pos_cl(2,i_sub)],...
+                    [rx_pos(3),lbs_pos_cl(3,i_sub)] ,':b' );
+                
+                % Plot path from Tx to FBS
+                plot3( [fbs_pos_cl(1,i_sub),lbs_pos_cl(1,i_sub)],...
+                    [fbs_pos_cl(2,i_sub),lbs_pos_cl(2,i_sub)],...
+                    [fbs_pos_cl(3,i_sub),lbs_pos_cl(3,i_sub)] ,':m' );
+            end
         end
     end
 end
@@ -288,7 +293,7 @@ if a(1)/clmix > 20; a(1)=clmix; end
 if a(2)/clmax > 20; a(2)=clmax; end
 if a(3)/clmiy > 20; a(3)=clmiy; end
 if a(4)/clmay > 20; a(4)=clmay; end
-if numel(a) > 4.5 
+if numel(a) > 4.5
     if a(5)/clmiz > 20; a(5)=clmiz; end
     if a(6)/clmaz > 20; a(6)=clmaz; end
 end
@@ -299,13 +304,13 @@ dy = a(4)-a(3);
 my = a(3)+0.5*dy;
 
 if dx > dy
-    if numel(a) > 4.5 
+    if numel(a) > 4.5
         axis([a(1) a(2) my-0.5*dx my+0.5*dx a(5) a(6)]);
     else
         axis([a(1) a(2) my-0.5*dx my+0.5*dx]);
     end
 else
-    if numel(a) > 4.5 
+    if numel(a) > 4.5
         axis([mx-0.5*dy mx+0.5*dy a(3) a(4) a(5) a(6)]);
     else
         axis([mx-0.5*dy mx+0.5*dy a(3) a(4)]);

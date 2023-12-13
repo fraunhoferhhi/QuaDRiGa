@@ -88,7 +88,7 @@ function [ trans_ab , trans_ba ] = coordinate_transform(ref_a,ref_b)
 ref_a_conv = ref_a(:,1) + ref_a(:,2)*1j;    % We need complex values
 ref_b_conv = ref_b(:,1) + ref_b(:,2)*1j;
 
-% Calculatoin of the transform matrix
+% Calculation of the transform matrix
 P = [real(ref_a_conv.'); imag(ref_a_conv.'); ones(1,length(ref_a)) ];
 G = ref_b_conv';
 trans_ab = G*pinv(P);
@@ -101,7 +101,7 @@ end
 
 % ----- Subfunction distance -----
 function d = distance(a,b)
-% Calculates the distance in [m] between two WGS84 coordinte points
+% Calculates the distance in [m] between two WGS84 coordinate points
 
 %bs1 = [13.324953942 52.516367424 89.1];
 %bs2 = [13.320010821 52.512927240 108.4];

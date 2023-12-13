@@ -42,7 +42,7 @@ function [ xyzU, visible, orientation ] = ue_perspective( h_qd_satellite, ue_pos
 %   principal axes is used. The first value describes the "bank angle", i.e. the orientation around
 %   an axis drawn through the body of the satellite from tail to nose. The second value describes
 %   the "tilt angle", i.e. the vertical angle relative to the horizontal plane. The third value
-%   describes the bearing or "heading angle", in mathematic sense. All values are given in
+%   describes the bearing or "heading angle", in mathematical sense. All values are given in
 %   [degree]; Dimensions: [ 3 x T x S ]
 %
 %
@@ -64,7 +64,7 @@ function [ xyzU, visible, orientation ] = ue_perspective( h_qd_satellite, ue_pos
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 if numel( h_qd_satellite ) > 1
-    error('QuaDRiGa:h_qd_satellite:ue_perspective','ue_perspective not definded for object arrays.');
+    error('QuaDRiGa:h_qd_satellite:ue_perspective','ue_perspective not defined for object arrays.');
 else
     h_qd_satellite = h_qd_satellite(1,1); % workaround for octave
 end
@@ -81,7 +81,7 @@ if ~exist('t','var') || isempty( t )
 elseif ischar(t) && numel(t) == 6 && strcmp(t(1:3),'utc') && ~isempty( h_qd_satellite.epoch )
     t = ( now - str2double(t(4:6))/24 - h_qd_satellite.epoch)*86400;
 elseif ~( isnumeric(t) && isreal(t) )
-    error('QuaDRiGa:h_qd_satellite:init_layout','Invalit time offset or epoch not given.');
+    error('QuaDRiGa:h_qd_satellite:init_layout','Invalid time offset or epoch not given.');
 else
     t = reshape( t,[],1 );
 end
@@ -99,7 +99,7 @@ oS = ones( 1,nS );
 xyzUE = qd_satellite.R_e.*[  cosd(lonUE).*cosd(latUE); sind(lonUE).*cosd(latUE); sind(latUE) ];
 
 % Rotate to north pole around y-axis and by longitude angle around z-axis
-% Align with QuaDRiGa X-Y-Z coordintes (east = 0, counter-clockwise)
+% Align with QuaDRiGa X-Y-Z coordinates (east = 0, counter-clockwise)
 sLo = sind( lonUE );
 cLo = cosd( lonUE );
 sLa = sind( latUE );
@@ -120,7 +120,7 @@ xyzU = reshape( xyzU, 3, nT, nS );
 % Determine visibility
 visible = reshape( xyzU(3,:,:) > 0 , nT,nS );
 
-if nargout > 2                                  % Get the orienation
+if nargout > 2                                  % Get the orientation
     
     % Calculate the satellite positions 0.1 seconds later (inertial frame)
     DxyzI = orbit_predictor( h_qd_satellite, t+0.1, i_sat );

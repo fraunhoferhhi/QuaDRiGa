@@ -11,7 +11,7 @@ function [ pairs, power ] = set_pairing( h_layout, method, threshold, tx_power, 
 %   away from this area, it will receive only noise from this particular BS. In this case, the
 %   channel coefficients will have very little power and do not need to be calculated. Disabling
 %   those links can reduce the computation time and the storage requirements for the channel
-%   coefficients significantly. There are several methods to du this which can be selected by the
+%   coefficients significantly. There are several methods to do this which can be selected by the
 %   input variable 'method'.
 %
 % Methods:
@@ -76,7 +76,7 @@ function [ pairs, power ] = set_pairing( h_layout, method, threshold, tx_power, 
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
 if numel( h_layout ) > 1 
-   error('QuaDRiGa:qd_layout:set_scenario','set_scenario not definded for object arrays.');
+   error('QuaDRiGa:qd_layout:set_scenario','set_scenario not defined for object arrays.');
 else
     h_layout = h_layout(1,1); % workaround for octave
 end
@@ -161,7 +161,7 @@ switch method
         h_builder = [];
         
     case 'power'
-        % Get the parameter sets, but don't create the maps
+        % Get the parameter sets, but do not create the maps
         h_builder = h_layout.init_builder( check_parfiles );
 end
 

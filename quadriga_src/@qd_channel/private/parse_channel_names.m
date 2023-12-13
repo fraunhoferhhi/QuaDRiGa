@@ -2,11 +2,11 @@ function [ trk_names, seg_ind, order, trk_has_gr, seg_has_gr, tx_ind, rx_ind, tx
     = parse_channel_names( h_channel )
 %PARSE_CHANNEL_NAMES Parses the channel names
 %
-% The cannel names can have different formats:
+% The channel names can have different formats:
 %   "Scen_Tx_Rx_Seg", "Scen_Tx_Rx" or "Tx_Rx"
 %
 % This function parses all the names and extracts the unique track names and the segments
-% that belong to a track. The channel objects  are reordered in alphabetich order to match
+% that belong to a track. The channel objects  are reordered in alphabetical order to match
 % the order in "Tx_Rx_Seg".
 %   
 % Input:
@@ -15,20 +15,20 @@ function [ trk_names, seg_ind, order, trk_has_gr, seg_has_gr, tx_ind, rx_ind, tx
 %
 % Output:
 %   trk_names
-%   A { T x 1 } cell array containing the unique track names. "T" is the numer of tracks.
-%   Thrack names are ordered alphapetically.
+%   A { T x 1 } cell array containing the unique track names. "T" is the number of tracks.
+%   Track names are ordered alphabetically.
 %
 %   seg_ind
 %   A [ N x 1 ] uint32 array indicating which channel object links to which track.
 %
 %   order
-%   A [ N x 1 ] index list containging correct order of the channel objects.
+%   A [ N x 1 ] index list containing correct order of the channel objects.
 %
 %   trk_has_gr
-%   A [ T x 1 ] logical array indicating if the track has a ground reflection componenet.
+%   A [ T x 1 ] logical array indicating if the track has a ground reflection component.
 %
 %   seg_has_gr
-%   A [ N x 1 ] logical array indicating if the segment has a ground reflection componenet.
+%   A [ N x 1 ] logical array indicating if the segment has a ground reflection component.
 %
 % 
 % QuaDRiGa Copyright (C) 2011-2019
@@ -99,7 +99,7 @@ for i_channel = 1 : n_channel                   % Do for each channel
     tx_names{i_channel}  = tx; 
     rx_names{i_channel}  = rx; 
     
-    % Check if the channel object has a ground reflection componenet
+    % Check if the channel object has a ground reflection component
     % This is stored in the par-struct
     chan_par = h_channel(1,i_channel).par;
     if ~isempty( chan_par ) && isfield( chan_par , 'has_ground_reflection' ) && chan_par.has_ground_reflection == 1
@@ -116,7 +116,7 @@ single_seg   = single_seg( order );
 tx_names     = tx_names( order );
 rx_names     = rx_names( order );
 
-% Idicator if the track has a GR componenet
+% Indicator if the track has a GR component
 trk_has_gr = false(1,1);
 
 % Get the unique track names

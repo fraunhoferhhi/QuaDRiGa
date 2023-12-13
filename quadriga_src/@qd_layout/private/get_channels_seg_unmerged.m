@@ -1,5 +1,5 @@
 function  chan = get_channels_seg_unmerged( h_cb, is, ip )
-%GET_CHANELS_SEG_UNMERGES Extracts a single chanel segment from a builder object
+%GET_CHANNELS_SEG_UNMERGED Extracts a single channel segment from a builder object
 %
 % Input:
 %   is      MT number

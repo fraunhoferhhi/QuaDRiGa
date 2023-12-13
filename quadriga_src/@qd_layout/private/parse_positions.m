@@ -63,7 +63,7 @@ function [ rx_pos, tx_pos, rx_ind, rx_track, tx_track ] = parse_positions( h_lay
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
 if numel( h_layout ) > 1
-    error('QuaDRiGa:qd_layout:parse_positions','parse_positions not definded for object arrays.');
+    error('QuaDRiGa:qd_layout:parse_positions','parse_positions not defined for object arrays.');
 else
     h_layout = h_layout(1,1); % workaround for octave
 end
@@ -308,7 +308,7 @@ for r = 1 : no_seg
                 tx_track(r,t) = txT(1,it);                % Copy handle
             end
             
-            % Get the relaive Tx positions
+            % Get the relative Tx positions
             track_position = [ 0;0;0 ];
         end
         tx_pos(:,r,t) = initial_position + track_position;

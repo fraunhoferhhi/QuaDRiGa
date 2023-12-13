@@ -327,8 +327,6 @@ methods
                 error('QuaDRiGa:Channel:wrongInputValue','??? "rx_position" must consist of real numbers')
             elseif ~all( size(value,1) == 3 )
                 error('QuaDRiGa:Channel:wrongInputValue','??? "rx_position" must have three rows.')
-            elseif size( value,2 ) ~= h_channel(1,1).no_snap
-                error('QuaDRiGa:Channel:wrongInputValue','??? "rx_position" must match the number of snapshots.')
             end
             h_channel(1,1).Prx_position = value;
         end

@@ -51,7 +51,7 @@ properties
     name = 'Layout';          	% Name of the layout
     simpar = qd_simulation_parameters;  	% Handle of a 'simulation_parameters' object
     update_rate = [];           % Channel update rate in seconds
-    ReferenceCoord = [];        % Reference coordiantes for KML read/write
+    ReferenceCoord = [];        % Reference coordinates for KML read/write
 end
 
 properties(Dependent)
@@ -451,7 +451,7 @@ methods
         value_new = unique( value(1,:) + size(value,2) * value(2,:) );
         if numel( value_new ) < size(value,2)
             value = [ rem( value_new, size(value,2) ) ; fix(value_new./size(value,2)) ];
-            warning('QuaDRiGa:qd_layout:WrongInput','removed multiple entires from "pairing".');
+            warning('QuaDRiGa:qd_layout:WrongInput','removed multiple entries from "pairing".');
         end
         h_layout.Ppairing = value;
     end
@@ -466,7 +466,7 @@ methods
     end
     
     function names_are_unique = has_unique_track_names( h_layout )
-        % HAS_UNIQUE_TRACK_NAMES Cheks if all names are unique
+        % HAS_UNIQUE_TRACK_NAMES Checks if all names are unique
         names_are_unique = true;
         id = h_layout.rx_name;
         for n = 2 : numel( id )

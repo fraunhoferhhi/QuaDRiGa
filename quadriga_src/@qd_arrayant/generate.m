@@ -26,7 +26,7 @@ function [ h_qd_arrayant, par ] = generate( array_type, Ain, Bin, Cin, Din, Ein,
 %
 %   parametric
 %   An antenna with the radiation pattern set to
-%        E-theta = A·sqrt( B+(1-B)·(cos(theta))^C ·(-D·phi^2))
+%        E_theta = A·sqrt(B+(1-B)·(cos(theta))^C·exp(-D·phi^2))
 %
 %   multi
 %   A multi-element antenna with adjustable electric downtilt.

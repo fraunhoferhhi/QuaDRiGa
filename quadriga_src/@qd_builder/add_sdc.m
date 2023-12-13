@@ -279,7 +279,7 @@ if ~isempty( NumSubPaths )
     NumSubPaths = reshape( NumSubPaths, 1, n_sdc );
 end
 
-% Assemble exisiting Tx and Rx positions to generate LSF and SSF with the new builder
+% Assemble existing Tx and Rx positions to generate LSF and SSF with the new builder
 tx_pos = [];
 rx_pos = [];
 tx_orientation = [];
@@ -315,7 +315,7 @@ for i_cb = 1 : numel(h_builder)
         % Entries in iB:
         % (1) First Builder Index
         % (2) Second Builder Index
-        % (3) Number of exisiting paths
+        % (3) Number of existing paths
         % (4) LOS state
         % (5) Position index within builder
         
@@ -331,13 +331,13 @@ for iP = 1 : size( iB,2 )
     i1 = iB(1,iP);                                  % First Builder Index
     i2 = iB(2,iP);                                  % Second Builder Index
     iMT = iB(5,iP);                                 % Position index within builder
-    isLOSe = iB(4,iP);                              % LOS state of exisiting builder
-    n_exist = iB(3,iP);                             % Number of exisiting clusters
+    isLOSe = iB(4,iP);                              % LOS state of existing builder
+    n_exist = iB(3,iP);                             % Number of existing clusters
     n_mobiles = h_builder(i1,i2).no_rx_positions;   % Number of mobiles in "h_builder"
     n_freq = h_builder(i1,i2).no_freq;              % Number of frequencies in "h_builder"
     
     % Add zero-power LOS path to the builder, set "n_exist" to 1
-    if isLOSe == -1                 % There are no exisiting paths
+    if isLOSe == -1                 % There are no existing paths
         h_builder(i1,i2).NumSubPaths = 1;
         h_builder(i1,i2).NumClusters = 1;
         h_builder(i1,i2).gain = zeros(n_mobiles,1,n_freq);
@@ -378,7 +378,7 @@ for iP = 1 : size( iB,2 )
     j_clst = i_nlos : i_los + n_sdc;
     j_path = i_nlos : i_los + sum( NumSubPaths );
         
-    % Enlarge exisiting data structures
+    % Enlarge existing data structures
     if n_add > 0
         h_builder(i1,i2).NumSubPaths = [ h_builder(i1,i2).NumSubPaths(1:i_los), NumSubPaths, h_builder(i1,i2).NumSubPaths(i_nlos:end) ];
         h_builder(i1,i2).NumClusters = numel( h_builder(i1,i2).NumSubPaths );
@@ -401,8 +401,8 @@ for iP = 1 : size( iB,2 )
         h_builder(i1,i2).lbs_pos = cat( 2, h_builder(i1,i2).lbs_pos(:,1:i_los,:,:),...
             zeros(3,NumSubPathsS,n_mobiles,n_freq), h_builder(i1,i2).lbs_pos(:,i_nlos:end,:,:) );
         
-        % Add antries to "subpath_coupling"
-        n_subpath_coupling = size(h_builder(i1,i2).subpath_coupling,2);      % Size of exisitng "subpath_coupling"
+        % Add entries to "subpath_coupling"
+        n_subpath_coupling = size(h_builder(i1,i2).subpath_coupling,2);      % Size of existing "subpath_coupling"
         NumSubPathsS = sum( h_builder(i1,i2).NumSubPaths );                  % Number of subpaths in the builder after adding new paths
         if NumSubPathsS > n_subpath_coupling
             n_add = NumSubPathsS - n_subpath_coupling;                       % Values to be added to "subpath_coupling"
@@ -428,25 +428,25 @@ for iP = 1 : size( iB,2 )
         switch pos_reference
             case { 'absolute','rx_abs','rx_heading','rx_full' }
                 if isempty( azimuth )
-                    mu  = 10^(mean( h_builder(i1,i2).lsp_vals(5,1,:) ));    % Mean ASD in [deg]
-                    tmp = 3.465 * (rand( 1,n_sdc )-0.5);                    % Random variable with zero-mena, unit STD
+                    mu  = 10^(mean( h_builder(i1,i2).lsp_vals(5,1,:) ));    % Mean ASA in [deg]
+                    tmp = 3.465 * (rand( 1,n_sdc )-0.5);                    % Random variable with zero-mean, unit STD
                     azimuth = mu * tmp * pi/180;                            % Azimuth angle in [rad]
                 end
                 if isempty( elevation )
-                    mu  = 10^(mean( h_builder(i1,i2).lsp_vals(7,1,:) ));    % Mean ASD in [deg]
-                    tmp = 3.465 * (rand( 1,n_sdc )-0.5);                    % Random variable with zero-mena, unit STD
-                    elevation = mu * tmp * pi/180;                            % Azimuth angle in [rad]
+                    mu  = 10^(mean( h_builder(i1,i2).lsp_vals(7,1,:) ));    % Mean ESA in [deg]
+                    tmp = 3.465 * (rand( 1,n_sdc )-0.5);                    % Random variable with zero-mean, unit STD
+                    elevation = mu * tmp * pi/180;                          % Elevation angle in [rad]
                 end
             otherwise % Tx is reference
                 if isempty( azimuth )
                     mu  = 10^(mean( h_builder(i1,i2).lsp_vals(4,1,:) ));    % Mean ASD in [deg]
-                    tmp = 3.465 * (rand( 1,n_sdc )-0.5);                    % Random variable with zero-mena, unit STD
+                    tmp = 3.465 * (rand( 1,n_sdc )-0.5);                    % Random variable with zero-mean, unit STD
                     azimuth = mu * tmp * pi/180;                            % Azimuth angle in [rad]
                 end
                 if isempty( elevation )
-                    mu  = 10^(mean( h_builder(i1,i2).lsp_vals(6,1,:) ));    % Mean ASD in [deg]
-                    tmp = 3.465 * (rand( 1,n_sdc )-0.5);                    % Random variable with zero-mena, unit STD
-                    elevation = mu * tmp * pi/180;                            % Azimuth angle in [rad]
+                    mu  = 10^(mean( h_builder(i1,i2).lsp_vals(6,1,:) ));    % Mean ESD in [deg]
+                    tmp = 3.465 * (rand( 1,n_sdc )-0.5);                    % Random variable with zero-mean, unit STD
+                    elevation = mu * tmp * pi/180;                          % Elevation angle in [rad]
                 end
         end
         
@@ -584,7 +584,7 @@ for iP = 1 : size( iB,2 )
         xpr_bld = repmat( xpr_dB, n_freq, 1 );
     end
     
-    % Calculate the polarizaion transfer matrix
+    % Calculate the polarization transfer matrix
     xprmat = zeros( 4, sum(NumSubPaths), n_freq );
     for iF = 1 : n_freq
         xpr_sigma = 0.1 * h_builder(i1,i2).lsp_vals(8,2,iF);                % Random XPR variations

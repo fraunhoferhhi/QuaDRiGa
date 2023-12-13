@@ -69,7 +69,7 @@ nP = evaltrack.no_snapshots;
 oP = ones( 1,nP );
 
 % Get the tx_position(s)
-% The readout of the tx-poitions must match the readout in "get_lsp_val". Otherwise, results may
+% The readout of the tx-positions must match the readout in "get_lsp_val". Otherwise, results may
 % differ.
 if h_builder.dual_mobility == -1
     h_builder.check_dual_mobility;

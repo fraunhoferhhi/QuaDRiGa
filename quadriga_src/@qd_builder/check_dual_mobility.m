@@ -89,7 +89,7 @@ else
                 'You must provide valid simulation parameters.');
         end
         
-        n_freq = numel( h_builder.simpar(1,1).center_frequency );                    % Read the number of drequencies
+        n_freq = numel( h_builder.simpar(1,1).center_frequency );                    % Read the number of frequencies
         o_freq = ones(1,n_freq);
         o_mobiles = ones(1,n_mobiles);
         
@@ -107,7 +107,7 @@ else
             end
             single_rx_track = true;                                             % Indicate that there is only one Rx track
             
-        elseif size( h_builder.rx_track,2 ) == 1 && n_mobiles > 1               % Single rx-track, but diffrent Rx locations
+        elseif size( h_builder.rx_track,2 ) == 1 && n_mobiles > 1               % Single rx-track, but different Rx locations
             % Make sure there are orientation information
             if isempty( h_builder.rx_track(1,1).orientation )                   % Add orientation information
                 h_builder.rx_track(1,1).calc_orientation;
@@ -123,7 +123,7 @@ else
                 'Number of rx-tracks must match the number of mobiles.');
             
         else % As many rx-tracks as there are mobiles
-            for r = 1 : n_mobiles                                               % Make sure theere are orientation informations
+            for r = 1 : n_mobiles                                               % Make sure there is orientation information
                 if isempty( h_builder.rx_track(1,r).orientation )               % Add orientation information
                     h_builder.rx_track(1,r).calc_orientation;
                 end
@@ -241,7 +241,7 @@ else
             end
             single_tx_track = true;                                             % Indicate that there is only one Tx track
             
-        elseif size( h_builder.tx_track,2 ) == 1 && n_mobiles > 1               % Single tx-track, but diffrent tx locations
+        elseif size( h_builder.tx_track,2 ) == 1 && n_mobiles > 1               % Single tx-track, but different tx locations
             % Make sure there are orientation information
             if isempty( h_builder.tx_track(1,1).orientation )                   % Add orientation information
                 h_builder.tx_track(1,1).calc_orientation;
@@ -256,7 +256,7 @@ else
                 'Number of tx-tracks must match the number of mobiles.');
             
         else % As many tx-tracks as there are mobiles
-            for t = 1 : n_mobiles                                               % Make sure there are orientation informations
+            for t = 1 : n_mobiles                                               % Make sure there is orientation information
                 if isempty( h_builder.tx_track(1,t).orientation )               % Add orientation information
                     h_builder.tx_track(1,t).calc_orientation;
                 end
@@ -272,7 +272,7 @@ else
                 'Tx-antenna must be of class "qd_arrayant".');
         end
         
-        if numel( h_builder.tx_array ) == 1                                     % Single Rx-array for all mobiles anf frequencies
+        if numel( h_builder.tx_array ) == 1                                     % Single Rx-array for all mobiles and frequencies
             h_builder.tx_array = h_builder.tx_array( o_freq, o_mobiles );       % Copy handles to all frequencies and mobiles
             
         elseif size( h_builder.tx_array,1 ) == n_freq && size( h_builder.tx_array,2 ) == 1 && n_mobiles > 1

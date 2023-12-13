@@ -1,5 +1,5 @@
 function ic2 = find_overlapping_segment( h_channel, ic1, seg_ind )
-%FIND_OVERLAPPING_SEGMENT Finds the oferlapping segment of a channel
+%FIND_OVERLAPPING_SEGMENT Finds the overlapping segment of a channel
 %
 % Input:
 %   h_channel
@@ -9,7 +9,7 @@ function ic2 = find_overlapping_segment( h_channel, ic1, seg_ind )
 %   Index of the current segment [ 1 x 1 ]
 %
 %   seg_ind
-%   The index-list of the sgements [ N x 1 ]
+%   The index-list of the segments [ N x 1 ]
 %
 % Output:
 %   ic2
@@ -40,7 +40,7 @@ if ~exist( 'seg_ind','var' ) || isempty( seg_ind )
 end
 
 current_trk = seg_ind( ic1 );           % Current  track index
-trk_ind = seg_ind == current_trk;       % Indices that blong to the current track
+trk_ind = seg_ind == current_trk;       % Indices that belong to the current track
 n_seg = sum( trk_ind );                 % Number of segments belonging to the current track
 i_seg = sum( trk_ind( 1:ic1 ) );        % Current segment
 

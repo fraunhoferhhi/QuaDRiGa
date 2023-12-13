@@ -275,7 +275,7 @@ else
         EoD  = angles(:,3);
         EoA  = angles(:,4);
         
-    elseif use_ground_reflection && n_clusters == 2   % Only LOS and GR componenet
+    elseif use_ground_reflection && n_clusters == 2   % Only LOS and GR component
         
         pow  = zeros( n_mobiles, n_clusters, n_freq );
         pow( :,1,: ) = (1-Rsq);
@@ -307,11 +307,11 @@ else
         alt_AS_mapping = true;
         
         % Step 5: Generate cluster delays
-        % Generate initial delays following an exponenetial distribution; eq. (7.5-1)
+        % Generate initial delays following an exponential distribution; eq. (7.5-1)
         X = rand( n_mobiles,n_clusters_baseline );
         taus = -r_DS * DS(:,o_clusters_baseline) .* log( X );
         
-        % Subtract the minimum delay and sort the normalised delays to ascending order; eq. (7.5-2)
+        % Subtract the minimum delay and sort the normalized delays to ascending order; eq. (7.5-2)
         taus = sort( taus - min(taus,[],2)*o_clusters_baseline , 2 );
         
         % Additional scaling of delays is required to compensate for the effect of LOS peak; eq. (7.5-3)
@@ -462,7 +462,7 @@ else
         C(ii) = -real(C(ii)) + 1j*imag(C(ii));
         EoD = angle( C );
         
-        % If we have a ground reflecion, we now add its deterministic values to the path list
+        % If we have a ground reflection, we now add its deterministic values to the path list
         if use_ground_reflection
             p1 = pow( :,1 );
             pow = [ zeros(n_mobiles,2), pow(:,2:end) ];
@@ -481,7 +481,7 @@ else
         pow  = zeros( n_mobiles, n_clusters, n_freq );
         taus = zeros( n_mobiles, n_clusters );
         
-        % Generate initial delays following an exponenetial distribution
+        % Generate initial delays following an exponential distribution
         if isempty( path_sos )
             randC = rand( n_mobiles,n_nlos_clusters );
         else
@@ -534,18 +534,18 @@ else
             
             if i_ang == 4 && ~use_ground_reflection    % Do not apply NLOS EaA rotation (e.g. for satellites)
                 % We must maintain spatial consistency and channel reciprocity in dual-mobility
-                % scenarios. Hence, if Tx and Rx are at the same heigt, we must apply the elevation
-                % angle rotation. If the heigth difference is large (e.g. for a satellite in the sky),
-                % the elevation angle rotation can be disabled. However, we must avoiid decision
+                % scenarios. Hence, if Tx and Rx are at the same height, we must apply the elevation
+                % angle rotation. If the height difference is large (e.g. for a satellite in the sky),
+                % the elevation angle rotation can be disabled. However, we must avoid decision
                 % boundaries to maintain spatial consistency. This is done by a smooth transition.
                 
                 i_kf = all(KF<1e-9,2);                      % KF must be < -90 dB (no LOS component)
                 d_height = tx_pos(3,:) - rx_pos(3,:);       % Height difference between Tx and Rx
                 
-                % Calculate the sacling weights
+                % Calculate the scaling weights
                 w_height = (abs(d_height.')-10)/10;         % Smooth transitions from 10 to 20 meters
-                w_height(w_height<0) = 0;                   % EoA rotaion from -10 to 10 meters
-                w_height(w_height>1) = 1;                   % No EoA rotation for more then 20 meters diffrence
+                w_height(w_height<0) = 0;                   % EoA rotation from -10 to 10 meters
+                w_height(w_height>1) = 1;                   % No EoA rotation for more then 20 meters difference
                 w_height = cos(pi/2*w_height).^2;           % Continuous transition function
                 w_height(~i_kf) = 1;
                 
@@ -683,9 +683,9 @@ else
                 ang  = path_angles(:,:,i_ang);
                 as   = qf.calc_angular_spreads( ang , pow(:,:,i_freq), 1 );
                 
-                % The following itertive optimization tries to find the optimal STD of the NLOS angles
+                % The following iterative optimization tries to find the optimal STD of the NLOS angles
                 % such that the given angular spread is reached. This iteration is needed to correctly
-                % uncorporate the ground reflection.
+                % incorporate the ground reflection.
                 
                 % Calculate the scaling coefficient as start values for an iterative optimization
                 sL = 10*log10( AS(:,i_freq,i_ang) ./ as  );
@@ -819,7 +819,7 @@ else
     
     % If we do not use spatial consistency, we sort the clusters by powers in descending
     % order. A subsequent call of "generate_subpaths" then splits only the first two
-    % clusters into sub-clusters. If spatial consistenncy is used, all clusters are split
+    % clusters into sub-clusters. If spatial consistency is used, all clusters are split
     % and no sorting operations are allowed.
     if use_3GPP_baseline || strcmp( h_builder.simpar(1,1).autocorrelation_function, 'Disable' ) || ...
             h_builder.scenpar.SC_lambda == 0
@@ -858,7 +858,7 @@ else
             % This depends on 3 conditions:
             %   1. The per-cluster delay spread is set to values > 0 in the scenario definition
             %   2. The number of sub-paths is set to 20
-            %   3. There is at least 1 NLOS path (exluding ground reflection)
+            %   3. There is at least 1 NLOS path (excluding ground reflection)
             use_cluster_DS = h_builder.scenpar.PerClusterDS ~= 0 &...
                 h_builder.scenpar.NumSubPaths == 20 &...
                 n_clusters > n_los_clusters;
@@ -872,7 +872,7 @@ else
             
             % According the 3GPP 38.901 16.1.0, Table 7.5-5, p40, the 2 strongest clusters should
             % be split in sub-clusters with a delay-offset that is determined by the
-            % "PerClusterDS". However, this would break the spatial consistency sice the strongest
+            % "PerClusterDS". However, this would break the spatial consistency since the strongest
             % clusters change with locations. To solve this, ALL clusters are split into sub-clusters.
             
             no_SC = strcmp( h_builder.simpar(1,1).autocorrelation_function, 'Disable' ) | ...
@@ -970,7 +970,7 @@ else
                     randC = val( h_builder.clst_dl_sos( n-n_los_clusters,: ), rx_pos, tx_pos_SOS ).';
                 end
                 
-                % Genreate delay offsets
+                % Generate delay offsets
                 powers = zeros( n_mobiles, M, size( PerClusterDS,2) );
                 for iF = 1 : size( PerClusterDS,2)
                     delays = -r_DS * PerClusterDS(1,iF) * log( randC );                     % Calc delays
@@ -998,7 +998,7 @@ else
                     pow(:,st:st+M-1,iF) = powers(:,:,iF) .* (Cpow(:,n,iF)*oM);
                 end
                 
-                % Generate angle offsets (laplacian angular offsets)
+                % Generate angle offsets (Laplacian angular offsets)
                 ao = 1:floor( (M+0.1)/2 );
                 if ao(end) > M/2-0.1
                     ao = [ log(2*ao/(M+1)), -log(2*ao(end:-1:1)/(M+1)) ];   % Even number of subpaths
@@ -1068,7 +1068,7 @@ else
         gamma = zeros( n_mobiles, n_nlos_paths, n_freq );
         kappa = zeros( n_mobiles, n_nlos_paths, n_freq );
         
-        % Polarization rotation is indepentently genertated for different frequencies
+        % Polarization rotation is independently generated for different frequencies
         for iF = 1 : n_freq
             
             % Generate spatially correlated random variables for the linear polarization offset

@@ -55,11 +55,11 @@ else
     % Fix for octave 4.0 (conversion from object-array to single object)
     h_builder = h_builder(1,1);
     
-    if ignore_gr % Save exisiting GR parameters
+    if ignore_gr % Save existing GR parameters
         gr_epsilon_r = h_builder.gr_epsilon_r;
     end
         
-    % Remove exisiting LSF parameters
+    % Remove existing LSF parameters
     h_builder.gen_lsf_parameters(0,0);
     
     % Get required variables
@@ -75,7 +75,7 @@ else
         % Test size of delays
         if  size(h_builder.taus,1) ~= n_rx || size(h_builder.taus,2) ~= n_clusters || ...
                 ~( size(h_builder.taus,3) == 1 || size(h_builder.taus,3) == n_freq )
-            error('QuaDRiGa:qd_builder:get_lsp_from_ssp','SSF Parameters are not correclty initialized.');
+            error('QuaDRiGa:qd_builder:get_lsp_from_ssp','SSF Parameters are not correctly initialized.');
         end
         
         % Test if all SSF parameters are given
@@ -88,7 +88,7 @@ else
                 size(h_builder.xprmat,3) ~= n_rx || size(h_builder.xprmat,4) ~= n_freq || ...
                 any( size( tx_pos ) ~= [ 3,n_rx ] ) || ...
                 any( size( rx_pos ) ~= [ 3,n_rx ] )
-            error('QuaDRiGa:qd_builder:get_lsp_from_ssp','SSF Parameters are not correclty initialized.');
+            error('QuaDRiGa:qd_builder:get_lsp_from_ssp','SSF Parameters are not correctly initialized.');
         end
         
         % Determine if the builder has a GR component

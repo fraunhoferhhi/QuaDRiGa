@@ -2,7 +2,7 @@ function h_qd_arrayant = gen_arrayant_parametric( Ain, Bin, Cin, Din )
 %GEN_ARRAYANT_PARAMETRIC
 %
 %   An antenna with the radiation pattern set to
-%        E-theta = A·sqrt( B+(1-B)·(cos(theta))^C ·(-D·phi^2))
+%        E_theta = A·sqrt(B+(1-B)·(cos(theta))^C·exp(-D·phi^2))
 %
 % 
 % QuaDRiGa Copyright (C) 2011-2019

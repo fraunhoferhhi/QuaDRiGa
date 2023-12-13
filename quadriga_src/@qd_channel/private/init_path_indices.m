@@ -12,7 +12,7 @@ function [ ip, ip1 ] = init_path_indices( h_channel, ic1, seg_ind, seg_has_gr )
 %   A [ N x 1 ] uint16 array indicating which channel object links to which track.
 %
 %   seg_has_gr
-%   A [ N x 1 ] logical array indicating if the segment has a ground reflection componenet.
+%   A [ N x 1 ] logical array indicating if the segment has a ground reflection component.
 %
 % Output:
 %   ip

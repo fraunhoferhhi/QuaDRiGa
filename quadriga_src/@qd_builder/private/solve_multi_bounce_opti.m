@@ -92,7 +92,7 @@ elseif size(dist,1) == 1 && size(dist,2) == N && size(dist,3) == 1 && M > 1
     dist = reshape( dist(:,:,ones(1,M)) , 1 , NM );
 end
 
-% Calculate the maximum distance betwee the RX and the LBS
+% Calculate the maximum distance between the RX and the LBS
 dist_los = sqrt(sum(abs(r).^2,1));
 d_max = min( 0.5*(dist+dist_los), 4000 );
 

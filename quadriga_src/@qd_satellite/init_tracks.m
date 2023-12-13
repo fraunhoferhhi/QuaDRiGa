@@ -55,7 +55,7 @@ function h_qd_track = init_tracks( h_qd_satellite, ue_pos, t, i_sat, only_visibl
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>.
 
 if numel( h_qd_satellite ) > 1
-    error('QuaDRiGa:h_qd_satellite:init_tracks','init_tracks not definded for object arrays.');
+    error('QuaDRiGa:h_qd_satellite:init_tracks','init_tracks not defined for object arrays.');
 else
     h_qd_satellite = h_qd_satellite(1,1); % workaround for octave
 end
@@ -70,7 +70,7 @@ if ~exist('t','var') || isempty( t )
 elseif ischar(t) && numel(t) == 6 && strcmp(t(1:3),'utc') && ~isempty( h_qd_satellite.epoch )
     t = ( now - str2double(t(4:6))/24 - h_qd_satellite.epoch)*86400;
 elseif ~( isnumeric(t) && isreal(t) )
-    error('QuaDRiGa:h_qd_satellite:init_layout','Invalit time offset or epoch not given.');
+    error('QuaDRiGa:h_qd_satellite:init_layout','Invalid time offset or epoch not given.');
 else
     t = reshape( t,[],1 );
 end
@@ -87,7 +87,7 @@ end
 % We also calculate "DxyzU" here so save computing time
 if only_visible
     [ ~,i_visible ] = h_qd_satellite.ue_perspective( ue_pos, t+0.1 );   % Sat-positions and visibility
-    i_sat = intersect( find( any(i_visible,1) ),i_sat);                 % Update inides
+    i_sat = intersect( find( any(i_visible,1) ),i_sat);                 % Update indices
 end
 
 nS = numel( i_sat );
@@ -99,7 +99,7 @@ h_qd_track = qd_track([]);
 for n = 1 : nS
     iS = i_sat( n );
     
-    % Calculate Satelite positions at timepoint t
+    % Calculate Satellite positions at timepoint t
     [ xyzU,~,orientation ] = h_qd_satellite.ue_perspective( ue_pos, t, iS ); 
     
     % Speed in km/s
@@ -110,7 +110,7 @@ for n = 1 : nS
     if ~isempty( h_qd_satellite.sat_name )
         h_qd_track(1,n).name = h_qd_satellite.sat_name{1,iS};
     end
-    h_qd_track(1,n).initial_position = xyzU(:,1)*1e3;              % Values mut be in [m]
+    h_qd_track(1,n).initial_position = xyzU(:,1)*1e3;              % Values must be in [m]
     h_qd_track(1,n).positions = (xyzU - xyzU(:,oT))*1e3;
     h_qd_track(1,n).orientation = orientation*pi/180;              % Values in [rad]
     h_qd_track(1,n).ReferenceCoord = ue_pos;                       % Save reference position

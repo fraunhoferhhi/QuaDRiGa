@@ -23,12 +23,12 @@ function [ is1n, is1o, is2o, isn, iso ] = find_overlapping_snapshots( h_channel,
 %   The overlapping fraction
 %
 %   seg_ind
-%   The index-list of the sgements [ N x 1 ]
+%   The index-list of the segments [ N x 1 ]
 %
 % Output:
 %   is1n
 %   The non-overlapping part of the first segment ranging from the initial position of the
-%   first segment to the beginning of the overlappig part. Example: [ 3,4 ]
+%   first segment to the beginning of the overlapping part. Example: [ 3,4 ]
 %
 %   is1o
 %   The overlapping part of the first segment. Example: [ 5,6,7,8 ]
@@ -99,7 +99,7 @@ end
 
 % Find the track in the channel objects
 current_trk = seg_ind( ic1 );            % Current  track index
-trk_ind = seg_ind == current_trk;        % Indices that blong to the current track
+trk_ind = seg_ind == current_trk;        % Indices that belong to the current track
 i_seg = sum( trk_ind( 1:ic1 ) );         % Current segment
 
 % Output starting point

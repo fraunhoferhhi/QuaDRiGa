@@ -1,4 +1,4 @@
-function o2i_loss_dB = gen_o2i_loss( h_layout, method, low_loss_fraction, SC_lambda, max_indoor_dist )
+function o2i_loss_dB = gen_o2i_loss( h_layout, method, low_loss_fraction, SC_lambda, max_indoor_dist, gen_per_tx )
 %GEN_O2I_LOSS Generates the outdoor-to-indoor penetration loss
 %
 % Calling object:
@@ -35,6 +35,11 @@ function o2i_loss_dB = gen_o2i_loss( h_layout, method, low_loss_fraction, SC_lam
 %   max_indoor_dist
 %   The maximum indoor distance between the building wall and the UE. Default is 25 m.
 %
+%   gen_per_tx
+%   Logical variable to enable or disable (default) per-BS parameter generation. By default, the
+%   same O2I-loss applies for each BS. However, this can be changed so that the O2I-loss is
+%   generated independently for each BS by setting this variable to 'true'.
+%
 % Output:
 %   o2i_loss_dB
 %   A cell array containing the results for each MT. These values are identical to the ones stored
@@ -42,7 +47,7 @@ function o2i_loss_dB = gen_o2i_loss( h_layout, method, low_loss_fraction, SC_lam
 %   correspond to: [ BS, Segment, Frequency ]. For outdoor-scenarios, an empty array is returned.
 %
 % 
-% QuaDRiGa Copyright (C) 2011-2019
+% QuaDRiGa Copyright (C) 2011-2021
 % Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. acting on behalf of its
 % Fraunhofer Heinrich Hertz Institute, Einsteinufer 37, 10587 Berlin, Germany
 % All rights reserved.
@@ -60,14 +65,14 @@ function o2i_loss_dB = gen_o2i_loss( h_layout, method, low_loss_fraction, SC_lam
 % QuaDRiGa Channel Model along with QuaDRiGa. If not, see <http://quadriga-channel-model.de/>. 
 
 if numel( h_layout ) > 1 
-   error('QuaDRiGa:qd_layout:gen_o2i_loss','gen_o2i_loss not definded for object arrays.');
+   error('QuaDRiGa:qd_layout:gen_o2i_loss','gen_o2i_loss not defined for object arrays.');
 else
     h_layout = h_layout(1,1); % workaround for octave
 end
 
 % Fraction of the MTs with low-loss
 if ~exist( 'method', 'var' ) || isempty( method )
-    error('QuaDRiGa:qd_layout:gen_o2i_loss','O2I loss method is not definded.');
+    error('QuaDRiGa:qd_layout:gen_o2i_loss','O2I loss method is not defined.');
 end
 
 % Fraction of the MTs with low-loss
@@ -84,6 +89,12 @@ end
 if ~exist( 'max_indoor_dist', 'var' ) || isempty( max_indoor_dist )
     max_indoor_dist = 25;
 end
+min_outdoor_dist = 10;
+
+% Spatial consistency variable
+if ~exist( 'gen_per_tx', 'var' ) || isempty( gen_per_tx )
+    gen_per_tx = false;
+end
 
 % Parse some often used variables
 no_rx   = h_layout.no_rx;
@@ -93,7 +104,7 @@ f_GHz   = h_layout.simpar(1,1).center_frequency / 1e9;
 o_tx    = ones(no_tx,1);
 o_frq   = ones(1,no_freq);
 
-% Get the mateial-specific losses
+% Get the material-specific losses
 % See. TR 38.901 v14.1.0, Page 28, Table 7.4.3-1: Material penetration losses
 % Same values apply for mmMAGIC model
 L_glass    =  2    + 0.2  * f_GHz;
@@ -103,7 +114,7 @@ L_concrete =  5    + 4    * f_GHz;
 % Get the loss through external wall in [dB]
 % See. TR 38.901 v14.1.0, Page 28, Table 7.4.3-2: O2I building penetration loss model
 % Same values apply for mmMAGIC model
-PL_tw_low  = 5 - 10*log10( 0.3 * 10.^( -L_glass/10 ) + 0.7 * 10.^( -L_concrete/10 ) );
+PL_tw_low  = 5 - 10*log10( 0.3 * 10.^( -L_glass/10 )   + 0.7 * 10.^( -L_concrete/10 ) );
 PL_tw_high = 5 - 10*log10( 0.7 * 10.^( -L_IRglass/10 ) + 0.3 * 10.^( -L_concrete/10 ) );
 
 % Parse the positions
@@ -135,14 +146,22 @@ end
 
 % 3GPP generates "d_2d_in" by drawing two random variables and using the minimum. However,
 % this is incompatible with spatial consistency. Therefore, we get only one, spatially
-% consistent random variable (unifor distribution) and transform it into the desired
+% consistent random variable (uniform distribution) and transform it into the desired
 % distribution.
 
 % Generate spatially correlated uniform random variable for the "d_2d_in"
 if SC_lambda == 0
-    randC = rand( 1, no_seg );
+    if gen_per_tx   % Create independent variables for each TX
+        randC = rand( no_tx, no_seg );
+    else
+        randC = rand( 1, no_seg );
+    end
 else
-    randC = qd_sos.rand( SC_lambda , pos );
+    if gen_per_tx   % Create independent variables for each TX
+        randC = qd_sos.rand( SC_lambda*ones(1,no_tx) , pos );
+    else
+        randC = qd_sos.rand( SC_lambda , pos );
+    end
 end
 
 % Transform into target distribution
@@ -177,8 +196,11 @@ end
 % Use interpolation to get the desired variables
 d_2d_in = qf.interp( cdf, 0, val, randC );
 
-% Duplicate for each transmitter
-d_2d_in = o_tx * d_2d_in;
+if gen_per_tx
+    d_2d_in = reshape( d_2d_in, size(randC) );
+else % Duplicate for each transmitter
+    d_2d_in = o_tx * d_2d_in;
+end
 
 % Scale with the maximum indoor distance
 d_2d_in = d_2d_in * max_indoor_dist;
@@ -186,10 +208,19 @@ d_2d_in = d_2d_in * max_indoor_dist;
 % Indoor distance cannot larger than outdoor distance
 d_2d_in( d_2d_in > d_2d ) = d_2d( d_2d_in > d_2d );
 
-% Calculate the indor 3D distance
+% Calculate the indoor 3D distance
 d_3d_in = d_3d .* (1 - (d_2d - d_2d_in) ./ d_2d);
+
+% Make sure the indoor 3D distance does not exceed the total 3D distance
 d_3d_in( isnan( d_3d_in ) ) = inf;
 d_3d_in( d_3d_in > d_3d ) = d_3d( d_3d_in > d_3d );
+
+% Maintain the minimum outdoor distance
+ii = d_3d - d_3d_in < min_outdoor_dist;
+d_3d_in( ii ) = d_3d( ii ) - min_outdoor_dist;
+
+% Set minimum indoor-distance to 0
+d_3d_in( d_3d_in < 0 ) = 0;
 
 switch method
     case '3GPP_38.901'
@@ -219,10 +250,10 @@ switch method
         PL_in = alpha(o_tx,:) .* max( d_2d_in - d_room(o_tx,:) , 0 );
         
     otherwise
-        error('QuaDRiGa:qd_layout:gen_o2i_loss','O2I loss method is not definded.');
+        error('QuaDRiGa:qd_layout:gen_o2i_loss','O2I loss method is not defined.');
 end
 
-% Copy indoor loss for all vrequencies
+% Copy indoor loss for all frequencies
 PL_in = PL_in( :,:,o_frq );
 
 % Elevation dependency of the penetration loss (only for mmMAGIC model)
@@ -234,7 +265,7 @@ switch method
         PL_el = zeros( no_tx, no_seg, no_freq );
 end
 
-% Standard devialtion of the penetration-loss
+% Standard deviation of the penetration-loss
 switch method
     case '3GPP_38.901'
         % Std. of the penetration loss
@@ -249,23 +280,31 @@ end
 
 % Generate spatially correlated uniform random variable for the "N(0,sigma_p)"
 if SC_lambda == 0
-    randC = randn( 1, no_seg );
+    if gen_per_tx   % Create independent variables for each TX
+        randC = rand( no_tx, no_seg );
+    else
+        randC = o_tx * rand( 1, no_seg );
+    end
 else
-    randC = qd_sos.randn( SC_lambda , pos );
+    if gen_per_tx   % Create independent variables for each TX
+        randC = qd_sos.rand( SC_lambda*ones(1,no_tx) , pos );
+    else
+        randC = o_tx * qd_sos.rand( SC_lambda , pos );
+    end
 end
 
-% Gernate random penetration loss
+% Generate random penetration loss
 PL_sf = zeros( no_tx, no_seg, no_freq );
 
 % Apply for each tx
 for f = 1 : no_freq
     for t = 1 : no_tx
-        PL_sf( t,  use_low_loss, f ) = randC( 1 , use_low_loss )  *  sig_P_low(1,f);
-        PL_sf( t, use_high_loss, f ) = randC( 1 , use_high_loss ) * sig_P_high(1,f);
+        PL_sf( t,  use_low_loss, f ) = randC( t , use_low_loss )  *  sig_P_low(1,f);
+        PL_sf( t, use_high_loss, f ) = randC( t , use_high_loss ) * sig_P_high(1,f);
     end
 end
 
-% Combine the three componenets
+% Combine the three components
 PL = PL_tw + PL_el + PL_in + PL_sf;
 
 % Write to track objects

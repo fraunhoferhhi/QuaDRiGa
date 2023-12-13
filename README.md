@@ -15,6 +15,13 @@ Software License for The QuaDRiGa Channel Model
 email: quadriga@hhi.fraunhofer.de
 
 # Version history
+
+## Added features in version 2.8:
+
+* Site specific simulations
+* Partial GPU acceleration using NVIDIA CUDA (optional)
+* Octave 8 compatibility
+
 ## Added features in version 2.6:
 
 * Octave 6.2 compatibility

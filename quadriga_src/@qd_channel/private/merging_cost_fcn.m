@@ -22,10 +22,10 @@ function [ mse , weight, ds, pow ] = merging_cost_fcn( oA , oB , p , d , ds_targ
 % Input:
 %   oA      The order of the paths to ramp down [ 1 x L1 ]
 %   oB      The order of the paths to ramp up [ 1 x L2 ]
-%   p       The concatted power values [ 1 x L1+L2 ]
-%   d       The concatted delay values [ L1+L2 x 1 ]
+%   p       The concatenated power values [ 1 x L1+L2 ]
+%   d       The concatenated delay values [ L1+L2 x 1 ]
 %   ds_target   The desired delay spread for each segment [ N x 1 ]
-%   ramp    The ramp for unpiared paths [ N x 1 ] 
+%   ramp    The ramp for unpaired paths [ N x 1 ] 
 %   inA     Start index for NLOS pats in segment A (2 for LOS, 3 for GR)
 %   inB     Start index for NLOS pats in segment B (2 for LOS, 3 for GR)
 %
@@ -57,7 +57,7 @@ p1 = sum(p(1:L1));
 p2 = sum(p(L1+1:end));
 pow_target = p1 - ( p1-p2 ) * ramp;
 
-% Here, we calculate the weight matrix for each supsegment.
+% Here, we calculate the weight matrix for each subsegment.
 % This will later be used to estimate the DS during merging.
 weight = zeros(no_subseg , L1+L2,'single');
 one = triu( ones(no_subseg,'single') );

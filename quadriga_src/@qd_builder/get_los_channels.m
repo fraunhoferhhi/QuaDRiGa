@@ -33,7 +33,7 @@ function h_channel = get_los_channels( h_builder, precision, return_coeff, tx_ar
 %   has the dimensions: [ n_rx, n_tx, n_pos ] 
 %
 %   return_coeff = 'raw'; 
-%   Same as 'coeff' but without applying the distance-dependant phase and the path loss. The
+%   Same as 'coeff' but without applying the distance-dependent phase and the path loss. The
 %   rx-antenna is assumed to be dual-polarized with two elements (i.e. the rx interpolation is
 %   omitted). This mode is used QuaDRiGa-internally by [qd_arrayant.combine_pattern]
 %
@@ -87,7 +87,7 @@ else
 end
 
 if return_coeff && numel( h_builder ) ~= 1
-    error('Raw channel coefficients can only be generted for scalar builder opjects.')
+    error('Raw channel coefficients can only be generated for scalar builder objects.')
 end
 
 if ~exist( 'tx_array_mask','var' )
@@ -148,9 +148,9 @@ else
         h_builder.check_dual_mobility;
     end
     
-    % Check if we have a single-grequency builder
+    % Check if we have a single-frequency builder
     if numel( h_builder.simpar(1,1).center_frequency ) > 1
-         error('QuaDRiGa:qd_builder:get_los_channels','get_los_channels only works for single-freqeuncy simulations.');
+         error('QuaDRiGa:qd_builder:get_los_channels','get_los_channels only works for single-frequency simulations.');
     end
      
     lambda  = h_builder.simpar(1,1).wavelength;
@@ -219,7 +219,7 @@ else
     
     if raw_coeff
         
-        % Use two Rx elements for the two polarizaions
+        % Use two Rx elements for the two polarizations
         n_rx = 2;
         
         % It is possible to provide different Jones matrices for the raw coefficients
@@ -235,7 +235,7 @@ else
         % Calculate the LOS channel coefficients (LOS polarization transfer matrix is [ 1 0 ; 0 -1 ])
         c = repmat([1;0],[1,n_tx,n_positions]) .* repmat(Vt,[n_rx,1,1]) - repmat([0;1],[1,n_tx,n_positions]) .* repmat(Ht,[n_rx,1,1]);
         
-        % Appy the per-element phase offset
+        % Apply the per-element phase offset
         c = c.* exp( -1j*(wave_no.*(repmat(Pt,[2,1,1])))) ;
          
     else
@@ -262,7 +262,7 @@ else
         end
         phase = reshape( phase,1,1,n_positions );
         
-        % Appy phase to channel coefficients
+        % Apply phase to channel coefficients
         c = c.* exp( -1j*(wave_no.*(repmat(Pr,[1,n_tx,1]) + repmat(Pt,[n_rx,1,1])) + repmat(phase,[n_rx,n_tx,1])) );
         
         % Calculate the path loss
@@ -274,7 +274,7 @@ else
         end
         rx_power = sqrt( 10.^( 0.1 * rx_power ) );
         
-        % Appy the path loss
+        % Apply the path loss
         c = c .* repmat(reshape( rx_power,1,1,n_positions ),[n_rx,n_tx,1]);
     end
         
@@ -289,7 +289,7 @@ else
             all(size(Cr) == [ n_rx , n_rx ]) && ...
             all(all( abs( Cr - eye(n_rx)) < 1e-10 ))
         
-        % Both coupling matrixes are identity matrices.
+        % Both coupling matrices are identity matrices.
         coeff = c;
         
     elseif all(size(Ct) == [ n_tx , n_tx ]) && ...
@@ -326,7 +326,7 @@ else
         end
         
     else
-        % Both coupling matrixes are not identity matrices.
+        % Both coupling matrices are not identity matrices.
         coeff = zeros( size(Cr,1) , size(Ct,2) , n_positions , precision );
         for n = 1:n_positions
             coeff(:,:,n) = Cr * c(:,:,n) * Ct;

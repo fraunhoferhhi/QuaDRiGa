@@ -63,7 +63,7 @@ else
     % The list of properties that need to be copied
     prop = {'name','version','Pcoeff','Pdelay','Ppar','Pinitial_position','Ptx_position','Prx_position','center_frequency'};
     
-    % Empty outout
+    % Empty out
     out = [];
     
     % Copy the data

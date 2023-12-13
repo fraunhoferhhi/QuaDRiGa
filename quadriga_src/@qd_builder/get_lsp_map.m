@@ -56,7 +56,7 @@ if h_builder.dual_mobility == -1
     h_builder.check_dual_mobility;
 end
 if h_builder.dual_mobility ~= 0
-    error('QuaDRiGa:qd_builder:get_lsp_map','Parameter-maps are meamimgless for dual-mobility setups.')
+    error('QuaDRiGa:qd_builder:get_lsp_map','Parameter-maps are meaningless for dual-mobility setups.')
 end
 
 if numel( h_builder.simpar(1,1).center_frequency ) > 1

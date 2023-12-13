@@ -63,7 +63,7 @@ R_e = 6378.137*1e3;
 % Get the UE positions in XYZ coordinates
 xyzUE = (R_e + hnnUE).*[  cosd(lonUE).*cosd(latUE); sind(lonUE).*cosd(latUE); sind(latUE) ];
 
-% Align with QuaDRiGa X-Y-Z coordintes (east = 0, counter-clockwise)
+% Align with QuaDRiGa X-Y-Z coordinates (east = 0, counter-clockwise)
 Rz = [cosd(-lonUE) -sind(-lonUE) 0; sind(-lonUE) cosd(-lonUE) 0; 0 0 1];
 Ry = [cosd(latUE-90) 0 sind(latUE-90); 0 1 0; -sind(latUE-90) 0 cosd(latUE-90)];
 Rzz = [cosd(-90) -sind(-90) 0; sind(-90) cosd(-90) 0; 0 0 1];

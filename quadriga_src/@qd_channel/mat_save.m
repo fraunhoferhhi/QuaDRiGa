@@ -108,7 +108,7 @@ for n = 1 : prod( sic )
     if ~isempty( h_channel(i1,i2,i3,i4).par )
         names = fieldnames( h_channel(i1,i2,i3,i4).par );
         
-        % Save list of varaibels in PAR
+        % Save list of variables in PAR
         var_name = ['channel_',num2str(channel_no,'%05.0f'),'_PARnames'];
         chn.(var_name) = names;
         
@@ -124,7 +124,7 @@ for n = 1 : prod( sic )
                 
             elseif ischar( h_channel(i1,i2,i3,i4).par.(names{i_par})) || ...        % Strings
                     isinteger( h_channel(i1,i2,i3,i4).par.(names{i_par})) || ...    % Integer Numbers
-                    islogical( h_channel(i1,i2,i3,i4).par.(names{i_par}))           % Ligical numbers
+                    islogical( h_channel(i1,i2,i3,i4).par.(names{i_par}))           % Logical numbers
                 chn.(var_name) = h_channel(i1,i2,i3,i4).par.(names{i_par});
                 
             else % Numeric data types
